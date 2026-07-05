@@ -104,4 +104,27 @@ function M.notify_result(files, spots)
   vim.notify(string.format("[replacer] %d spot(s) in %d file(s)", spots, files))
 end
 
+--------------------------------------------------------------------------------
+-- which-key (optional)
+--------------------------------------------------------------------------------
+
+--- Register which-key labels for buffer-local picker keymaps. Soft
+--- dependency: a no-op if which-key.nvim isn't installed, or if its `add()`
+--- API isn't present (older/incompatible versions) — picker keymaps work
+--- identically either way, this only adds a hint in which-key's popup.
+--- @param bufnr integer
+--- @param entries { lhs: string, desc: string, modes?: string[] }[]
+function M.register_which_key(bufnr, entries)
+  local ok, wk = pcall(require, "which-key")
+  if not ok or type(wk.add) ~= "function" then return end
+
+  local spec = {}
+  for _, e in ipairs(entries) do
+    for _, mode in ipairs(e.modes or { "n" }) do
+      spec[#spec + 1] = { e.lhs, desc = e.desc, mode = mode, buffer = bufnr }
+    end
+  end
+  pcall(wk.add, spec)
+end
+
 return M

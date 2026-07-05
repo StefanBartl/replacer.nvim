@@ -8,6 +8,9 @@
 
 Project-wide search-and-replace with ripgrep, an interactive picker (fzf-lua or Telescope), live preview, and precise application of changes.
 
+> Uses [`lib.nvim`](https://github.com/StefanBartl/lib.nvim) (optional) for its
+> progress indicator — one helper library shared across the author's plugins.
+
 ______________________________________________________________________
 
 - [Features](#features)
@@ -15,16 +18,15 @@ ______________________________________________________________________
 - [Usage](#usage)
   - [Command Syntax](#command-syntax)
   - [Picker Keymaps](#picker-keymaps)
-- [Features](#features)
 - [Installation](#installation)
   - [With Lazy.nvim](#with-lazynvim)
+  - [With packer.nvim](#with-packernvim)
 - [Configuration](#configuration)
 - [Progress Indicator](#progress-indicator)
 - [Safety & Notes](#safety--notes)
 - [Development](#development)
-- [License](#license)
-- [Disclaimer](#license)
-- [Feedback](#Feedback)
+- [Disclaimer](#disclaimer)
+- [Feedback](#feedback)
 
 ______________________________________________________________________
 
@@ -102,21 +104,18 @@ is an alias. Search is always **literal** (regex would need per-match capture).
 :Surround word                   # prompt: "Surround with: "
 ```
 
-**After picker opened:**
+### Picker Keymaps
 
-fzf-lua:
+All keys except `<CR>` (apply) are configurable via `keymaps` in `setup()` —
+defaults match the behavior below exactly:
 
-- Tab: toggle selection
-- Enter: apply to the currently selected entries
-- Ctrl-A: replace all matches at once (confirmation depends on `confirm_all`)
-- Esc: first press leaves terminal-insert (normal mode), second press closes
+- `<Tab>` / `<S-Tab>`: toggle selection, move next/previous (`keymaps.toggle_select` / `toggle_select_prev`)
+- `<CR>`: apply to the selected entry/entries (fixed — the picker's own default key)
+- `<C-a>`: replace ALL matches at once, respects `confirm_all` (`keymaps.apply_all`)
+- `<Esc>`: 1st press leaves terminal-insert/insert mode (fixed); 2nd press (normal mode) closes the picker (`keymaps.quit`)
 
-Telescope:
-
-- Tab: toggle selection
-- Enter: apply to the highlighted entry
-- Ctrl-A: replace all matches at once (confirmation depends on `confirm_all`)
-- Esc: first press switches to normal mode, second press closes
+Full reference (incl. which-key support per backend, usrcmds, and the
+explicit "no autocmds" note): [`docs/BINDINGS.md`](docs/BINDINGS.md).
 
 ______________________________________________________________________
 
@@ -173,6 +172,7 @@ ______________________________________________________________________
   "StefanBartl/replacer",
   name = "replacer.nvim",
   main = "replacer",
+  cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
   dependencies = { "StefanBartl/lib.nvim" }, -- optional: enables the progress indicator
   opts = {
     engine = "auto",           -- "auto" | "fzf" | "telescope"
@@ -187,6 +187,7 @@ ______________________________________________________________________
   "StefanBartl/replacer",
   name = "replacer.nvim",
   main = "replacer",
+  cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
   dependencies = { "StefanBartl/lib.nvim" }, -- optional: enables the progress indicator
   opts = {
     engine = "auto",           -- picker: "auto" | "fzf" | "telescope"
@@ -210,6 +211,13 @@ ______________________________________________________________________
     globs = {},                   -- default include globs, e.g. { "*.lua" }
     exclude = {},                 -- default exclude patterns, e.g. { "node_modules" }
 
+    keymaps = {                -- picker keymaps (buffer-local); shown values are the defaults
+      toggle_select = "<Tab>",
+      toggle_select_prev = "<S-Tab>",
+      apply_all = "<C-a>",
+      quit = "<Esc>",
+    },
+
     fzf = {                    -- extra fzf-lua options (optional)
       winopts = { width = 0.85, height = 0.70 },
     },
@@ -218,6 +226,22 @@ ______________________________________________________________________
     },
   },
 }
+```
+
+### With packer.nvim
+
+```lua
+use({
+  "StefanBartl/replacer",
+  as = "replacer.nvim",
+  cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
+  requires = { "StefanBartl/lib.nvim" }, -- optional: enables the progress indicator
+  config = function()
+    require("replacer").setup({
+      engine = "auto",
+    })
+  end,
+})
 ```
 
 ______________________________________________________________________
@@ -347,12 +371,6 @@ ______________________________________________________________________
   - In picker, inspect preview; Tab to select specific hits; Enter to apply
   - Ctrl-A to replace all with confirmation
   - Set `write_changes=false` to review changes before writing
-
-______________________________________________________________________
-
-## License
-
-[MIT](./License)
 
 ______________________________________________________________________
 

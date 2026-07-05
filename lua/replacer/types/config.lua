@@ -9,6 +9,13 @@
 ---@class RP_PickerTelescope
 ---@field layout_config table|nil
 
+---Buffer-local picker keymaps. All set inside the picker window only.
+---@class RP_Keymaps
+---@field toggle_select?      string -- multi-select + move to next (default "<Tab>")
+---@field toggle_select_prev? string -- multi-select + move to previous (default "<S-Tab>")
+---@field apply_all?          string -- replace ALL matches, respects confirm_all (default "<C-a>")
+---@field quit?                string -- close the picker (default "<Esc>")
+
 ---@class RP_Config
 ---@field engine?               "fzf"|"telescope"|"auto"  -- picker UI; "auto" -> fzf-lua if present, else telescope
 ---@field search_engine?        "ripgrep"|"vimgrep"|"auto" -- match collector; "auto" -> ripgrep if present, else vimgrep
@@ -29,6 +36,7 @@
 ---@field fzf?                  RP_PickerFzf|nil
 ---@field telescope?            RP_PickerTelescope|nil
 ---@field git_ignore?           boolean
+---@field keymaps?              RP_Keymaps
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

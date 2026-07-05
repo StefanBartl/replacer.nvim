@@ -1,8 +1,9 @@
 ---@module 'replacer.pickers.telescope'
 --- Telescope-based interactive selection with consistent UX:
----   - <Tab>/<S-Tab>: toggle + move
----   - <CR>: apply multi if present, else single
----   - <C-a>: apply ALL (respects cfg.confirm_all)
+---   - <CR>: apply multi if present, else single (fixed, Telescope's own default key)
+---   - cfg.keymaps.toggle_select / toggle_select_prev: toggle + move (default <Tab>/<S-Tab>)
+---   - cfg.keymaps.apply_all: apply ALL (respects cfg.confirm_all; default <C-a>)
+---   - cfg.keymaps.quit: close the picker (default <Esc>)
 --- Preview:
 ---   - Uses common.preview_lines_with_pos to compute exact (row,col)
 ---   - Highlights the target span via extmarks (hl_group = "ReplacerTarget")
@@ -124,10 +125,13 @@ local function run(items, new_text, cfg, apply_func)
         end
       end
 
-      -- <CR>: multi-aware default action
+      local keys = (cfg.keymaps or {}) --[[@as RP_Keymaps]]
+
+      -- <CR>: multi-aware default action (not user-remappable: Telescope
+      -- treats <CR> as its own default select key, replaced in place).
       actions.select_default:replace(apply_selected_or_one)
 
-      -- <Tab>/<S-Tab>: toggle + move
+      -- toggle_select/toggle_select_prev: toggle + move
       local function toggle_next()
         actions.toggle_selection(prompt_bufnr)
         actions.move_selection_next(prompt_bufnr)
@@ -136,10 +140,12 @@ local function run(items, new_text, cfg, apply_func)
         actions.toggle_selection(prompt_bufnr)
         actions.move_selection_previous(prompt_bufnr)
       end
-      map("i", "<Tab>", toggle_next);  map("n", "<Tab>", toggle_next)
-      map("i", "<S-Tab>", toggle_prev); map("n", "<S-Tab>", toggle_prev)
+      local key_next = keys.toggle_select or "<Tab>"
+      local key_prev = keys.toggle_select_prev or "<S-Tab>"
+      map("i", key_next, toggle_next);  map("n", key_next, toggle_next)
+      map("i", key_prev, toggle_prev); map("n", key_prev, toggle_prev)
 
-      -- <C-a>: replace ALL matches with optional confirmation
+      -- apply_all: replace ALL matches with optional confirmation
       local function do_all()
         if cfg.confirm_all then
           local msg = string.format("Apply replacement to ALL %d spot(s)?", #items)
@@ -149,12 +155,21 @@ local function run(items, new_text, cfg, apply_func)
         common.notify_result(files, spots)
         actions.close(prompt_bufnr)
       end
-      map("i", "<C-a>", do_all); map("n", "<C-a>", do_all)
+      local key_all = keys.apply_all or "<C-a>"
+      map("i", key_all, do_all); map("n", key_all, do_all)
 
       -- Double-escape: 1st <Esc> leaves insert -> Telescope normal mode,
-      -- 2nd <Esc> (normal mode) closes the picker.
-      map("i", "<Esc>", function() vim.cmd("stopinsert") end)
-      map("n", "<Esc>", actions.close)
+      -- 2nd (normal mode, "quit" key) closes the picker.
+      local key_quit = keys.quit or "<Esc>"
+      map("i", key_quit, function() vim.cmd("stopinsert") end)
+      map("n", key_quit, actions.close)
+
+      common.register_which_key(prompt_bufnr, {
+        { lhs = key_next, desc = "replacer: toggle select + next", modes = { "n", "i" } },
+        { lhs = key_prev, desc = "replacer: toggle select + previous", modes = { "n", "i" } },
+        { lhs = key_all, desc = "replacer: apply to ALL matches", modes = { "n", "i" } },
+        { lhs = key_quit, desc = "replacer: close picker", modes = { "n" } },
+      })
 
       return true
     end,

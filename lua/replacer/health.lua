@@ -207,6 +207,28 @@ local function check_config(health)
   end
 end
 
+--- Check optional integrations (progress indicator, which-key).
+--- Both are soft dependencies: missing is fine, this is informational only.
+---@param health table vim.health module
+local function check_optional(health)
+  health.start("Optional integrations")
+
+  if pcall(require, "lib.nvim.progress") then
+    health.ok("lib.nvim.progress available — progress_style is functional")
+  else
+    health.info(
+      "lib.nvim not installed — progress_style has no effect",
+      { "Add 'StefanBartl/lib.nvim' as a dependency to enable the progress indicator" }
+    )
+  end
+
+  if pcall(require, "which-key") then
+    health.ok("which-key.nvim available — picker keymaps show labels in its popup")
+  else
+    health.info("which-key.nvim not installed — picker keymaps still work, just unlabeled there")
+  end
+end
+
 --- Check UTF-8 support
 ---@param health table vim.health module
 local function check_utf8(health)
@@ -243,6 +265,7 @@ function M.check()
   check_pickers(health)
   check_config(health)
   check_utf8(health)
+  check_optional(health)
 
   -- Summary
   health.start("Summary")

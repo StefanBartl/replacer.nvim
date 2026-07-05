@@ -1,7 +1,6 @@
 *replacer.txt*  Project-wide search and replace with interactive picker
 
 Author:  Stefan Bartl
-License: MIT
 Version: 0.5
 
 ==============================================================================
@@ -94,7 +93,9 @@ In picker (Telescope/fzf-lua):
     <CR>      Apply to selected entry/entries
     <Tab>     Toggle selection (multi-select)
     <C-a>     Replace all matches at once
-    r         Replace single entry and reopen picker
+
+Keys other than <CR> are configurable via `keymaps` in setup(), see
+|replacer-mappings| and docs/BINDINGS.md.
 
 ==============================================================================
 5. COMMANDS                                              *replacer-commands*
@@ -395,21 +396,27 @@ lualine / vanilla-statusline snippets.
 ==============================================================================
 8. PICKER MAPPINGS                                      *replacer-mappings*
 
+All keys below except <CR> are configurable: `require("replacer").setup({
+keymaps = { toggle_select=..., toggle_select_prev=..., apply_all=..., quit=... } })`.
+Defaults shown match the previous hardcoded behavior exactly. which-key.nvim
+(if installed) shows labels for these — see docs/BINDINGS.md for exactly
+which keys are visible to which-key per backend.
+
                                               *replacer-mappings-telescope*
 Telescope mappings:~
-    <CR>      Apply replacement to selected entry/entries
-    <Tab>     Toggle selection (multi-select mode)
-    <C-a>     Replace all matches at once (with confirmation)
-    r         Replace selected entry and reopen picker with remaining
-    <Esc>     1st: switch to normal mode · 2nd (in normal mode): close
+    <CR>      Apply replacement to selected entry/entries (fixed)
+    <Tab>     Toggle selection (multi-select mode)         [keymaps.toggle_select]
+    <S-Tab>   Toggle selection, move backward              [keymaps.toggle_select_prev]
+    <C-a>     Replace all matches at once (with confirmation) [keymaps.apply_all]
+    <Esc>     1st: switch to normal mode · 2nd (in normal mode): close [keymaps.quit]
 
                                                   *replacer-mappings-fzf*
 fzf-lua mappings:~
-    <CR>      Apply replacement to selected entries
-    <Tab>     Toggle selection
-    <C-a>     Replace all matches at once (with confirmation)
-    r         Replace selected entry and reopen picker with remaining
-    <Esc>     1st: leave terminal-insert (normal mode) · 2nd: close
+    <CR>      Apply replacement to selected entries (fixed)
+    <Tab>     Toggle selection                             [keymaps.toggle_select]
+    <S-Tab>   Toggle selection, move backward               [keymaps.toggle_select_prev]
+    <C-a>     Replace all matches at once (with confirmation) [keymaps.apply_all]
+    <Esc>     1st: leave terminal-insert (fixed) · 2nd: close [keymaps.quit]
 
 ==============================================================================
 9. ADVANCED USAGE                                        *replacer-advanced*
@@ -600,7 +607,6 @@ require("replacer.config").get()
 
 Project: https://github.com/StefanBartl/replacer.nvim
 Issues:  https://github.com/StefanBartl/replacer.nvim/issues
-License: MIT
 
 Maintainer: Stefan Bartl
 

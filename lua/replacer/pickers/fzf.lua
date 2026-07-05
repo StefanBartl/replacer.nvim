@@ -3,11 +3,26 @@
 ---  - Pass buffer_or_file ctor + grep hints so previewer highlights FULL span.
 ---
 --- Keys:
----  - <Tab>  multi-select (marker "*")
----  - <CR>   apply multi if present, else single
----  - <C-a>  apply ALL (respects cfg.confirm_all)
+---  - <CR>                        apply multi if present, else single (fixed, fzf's own default)
+---  - cfg.keymaps.toggle_select / toggle_select_prev: multi-select (default <Tab>/<S-Tab>, marker "*")
+---  - cfg.keymaps.apply_all       apply ALL (respects cfg.confirm_all; default <C-a>)
+---  - cfg.keymaps.quit            close the picker (default <Esc>, after leaving terminal-insert)
 
 local common = require("replacer.pickers.common")
+
+--- Translate a Neovim-style key notation ("<C-a>", "<Tab>", "<S-Tab>", "<Esc>")
+--- into fzf's own `--bind`/actions-table key spec ("ctrl-a", "tab", "shift-tab", "esc").
+--- Covers the modifiers replacer's default keymaps actually use; unrecognized
+--- input is lowercased as a best-effort fallback rather than erroring.
+---@param nvim_key string
+---@return string
+local function to_fzf_key(nvim_key)
+  local s = tostring(nvim_key or ""):gsub("^<", ""):gsub(">$", "")
+  s = s:gsub("[Cc]%-", "ctrl-"):gsub("[Ss]%-", "shift-"):gsub("[MmAa]%-", "alt-")
+  s = s:lower()
+  if s == "cr" then return "enter" end
+  return s
+end
 
 ---@param old string
 ---@param items RP_Match[]
@@ -55,6 +70,11 @@ local function run(old, items, new_text, cfg, apply_func)
     last_query = utils.rg_escape(last_query)
   end
 
+  local keys = (cfg.keymaps or {}) --[[@as RP_Keymaps]]
+  local key_all = to_fzf_key(keys.apply_all or "<C-a>")
+  local key_next = to_fzf_key(keys.toggle_select or "<Tab>")
+  local key_prev = to_fzf_key(keys.toggle_select_prev or "<S-Tab>")
+
   local actions = {
     ["default"] = function(selected)
       if not selected or #selected == 0 then return end
@@ -69,7 +89,7 @@ local function run(old, items, new_text, cfg, apply_func)
       local files, spots = apply_func(chosen, new_text, cfg.write_changes)
       common.notify_result(files, spots)
     end,
-    ["ctrl-a"] = function()
+    [key_all] = function()
       local all = {} ---@type RP_Match[]
       for _, s in ipairs(source) do
         local id = s:match("\t(ID%d+)$")
@@ -99,6 +119,9 @@ local function run(old, items, new_text, cfg, apply_func)
       ["--delimiter"] = "\t",
       ["--no-mouse"]  = true,
       ["--marker"]    = "*",
+      -- fzf's own default already toggles on tab/shift-tab; this bind is a
+      -- no-op in that common case and only matters when the keys are remapped.
+      ["--bind"]      = string.format("%s:toggle+down,%s:toggle+up", key_next, key_prev),
     },
     actions = actions,
   }
@@ -112,18 +135,29 @@ local function run(old, items, new_text, cfg, apply_func)
   end
 
   -- Double-escape: fzf runs in a terminal, so the analog of "normal mode" is
-  -- terminal-normal mode. 1st <Esc> leaves terminal-insert (<C-\><C-n>);
-  -- 2nd <Esc> (now in normal mode) closes the picker window.
+  -- terminal-normal mode. 1st <Esc> leaves terminal-insert (<C-\><C-n>) — this
+  -- step is the standard Vim terminal-mode convention, not part of "quit", so
+  -- it stays fixed even when cfg.keymaps.quit is remapped. The quit key itself
+  -- (now in normal mode) closes the picker window.
   do
+    local key_quit = keys.quit or "<Esc>"
     local prev_on_create = opts.winopts.on_create
     opts.winopts.on_create = function(...)
       if type(prev_on_create) == "function" then pcall(prev_on_create, ...) end
       local buf = vim.api.nvim_get_current_buf()
       pcall(vim.keymap.set, "t", "<Esc>", [[<C-\><C-n>]],
         { buffer = buf, nowait = true, silent = true })
-      pcall(vim.keymap.set, "n", "<Esc>", function()
+      pcall(vim.keymap.set, "n", key_quit, function()
         pcall(vim.api.nvim_win_close, vim.api.nvim_get_current_win(), true)
       end, { buffer = buf, nowait = true, silent = true })
+
+      -- Only "quit" is a real Neovim keymap which-key can see: toggle_select
+      -- and apply_all are fzf's own terminal-native bindings (--bind/actions
+      -- table), consumed by the fzf binary before Neovim's keymap layer ever
+      -- sees them, so which-key cannot label those two.
+      common.register_which_key(buf, {
+        { lhs = key_quit, desc = "replacer: close picker", modes = { "n" } },
+      })
     end
   end
 

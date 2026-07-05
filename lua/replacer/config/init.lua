@@ -12,42 +12,13 @@
 ---   - `search_engine` selects the match collector ("ripgrep"|"vimgrep"|"auto").
 ---     "auto" prefers ripgrep when the `rg` executable is available and falls
 ---     back to the native (vimgrep-style) scanner otherwise.
+---   - Pure default values live in `replacer.config.DEFAULTS`; this module only
+---     holds validation/merging logic.
 
 local M = {}
 
---------------------------------------------------------------------------------
--- Defaults & state
---------------------------------------------------------------------------------
-
 ---@type RP_Config
-local Defaults = {
-  -- Picker UI: "auto" picks fzf-lua when available, else telescope.
-  engine = "auto",
-  -- Search backend: "auto" picks ripgrep when available, else vimgrep (native).
-  search_engine = "auto",
-  -- Progress indicator style (requires lib.nvim; silently skipped otherwise):
-  -- "auto" | "notify" | "statusline" | "fidget". See lib.nvim.progress.
-  progress_style = "auto",
-
-  write_changes = true,
-  confirm_all = true,
-  confirm_wide_scope = false,
-  preview_context = 3,
-  hidden = true,
-  exclude_git_dir = true,
-  literal = true,
-  smart_case = true,
-  default_scope = "%",
-
-  -- Filters (also overridable per-run via command flags).
-  file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }
-  globs = {},      -- include glob patterns, e.g. { "*.lua" }
-  exclude = {},    -- path/glob patterns to exclude, e.g. { "node_modules", "*.min.js" }
-
-  fzf = { winopts = { width = 0.85, height = 0.70 } },
-  telescope = { layout_config = { width = 0.85, height = 0.70 } },
-  git_ignore = true,
-}
+local Defaults = require("replacer.config.DEFAULTS")
 
 ---@type RP_Config
 local state = vim.deepcopy(Defaults)
@@ -139,6 +110,25 @@ local function pick_bool(v, default)
   return b
 end
 
+--- Merge user-supplied keymaps over the defaults, key by key. An invalid
+--- (non-string or empty) value for a given key silently keeps its default
+--- instead of disabling the keymap outright.
+---@param v any
+---@return table<string, string>
+local function as_keymaps(v)
+  local user = tbl(v)
+  local out = vim.deepcopy(Defaults.keymaps)
+  for key, default_val in pairs(out) do
+    local uv = user[key]
+    if type(uv) == "string" and uv ~= "" then
+      out[key] = uv
+    else
+      out[key] = default_val
+    end
+  end
+  return out
+end
+
 ---@param cfg table|nil
 ---@return RP_Config
 local function validate(cfg)
@@ -167,6 +157,8 @@ local function validate(cfg)
   out.file_types = as_string_list(cfg.file_types)
   out.globs      = as_string_list(cfg.globs)
   out.exclude    = as_string_list(cfg.exclude)
+
+  out.keymaps = as_keymaps(cfg.keymaps)
 
   -- nested picker tables (shallow-merge over defaults)
   do
