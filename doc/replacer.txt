@@ -13,11 +13,12 @@ CONTENTS                                                   *replacer-contents*
     4. Quick Start .......................... |replacer-quickstart|
     5. Commands ............................. |replacer-commands|
     6. Configuration ........................ |replacer-configuration|
-    7. Picker Mappings ...................... |replacer-mappings|
-    8. Advanced Usage ....................... |replacer-advanced|
-    9. Troubleshooting ...................... |replacer-troubleshooting|
-   10. API .................................. |replacer-api|
-   11. About ................................ |replacer-about|
+    7. Progress Indicator ................... |replacer-progress|
+    8. Picker Mappings ...................... |replacer-mappings|
+    9. Advanced Usage ....................... |replacer-advanced|
+   10. Troubleshooting ...................... |replacer-troubleshooting|
+   11. API .................................. |replacer-api|
+   12. About ................................ |replacer-about|
 
 ==============================================================================
 1. INTRODUCTION                                       *replacer-introduction*
@@ -42,6 +43,9 @@ Replacer provides project-wide search-and-replace with:
 • ONE of the following pickers:
   - telescope.nvim (+ plenary.nvim): https://github.com/nvim-telescope/telescope.nvim
   - fzf-lua: https://github.com/ibhagwan/fzf-lua
+• Optional: lib.nvim (https://github.com/StefanBartl/lib.nvim) for the
+  progress indicator, see |replacer-progress|. Without it, searches simply
+  run without any indicator — nothing else changes.
 
 ==============================================================================
 3. INSTALLATION                                       *replacer-installation*
@@ -51,6 +55,7 @@ With lazy.nvim: >lua
       "StefanBartl/replacer.nvim",
       name = "replacer.nvim",
       main = "replacer",
+      dependencies = { "StefanBartl/lib.nvim" }, -- optional: progress indicator
       opts = {
         engine = "telescope",  -- or "fzf"
         write_changes = true,
@@ -197,6 +202,9 @@ Default configuration: >lua
       -- Search backend: "auto" picks ripgrep if present, else vimgrep (native).
       search_engine = "auto",            -- "auto" | "ripgrep" | "vimgrep"
 
+      -- Progress indicator (requires lib.nvim; silently skipped otherwise).
+      progress_style = "auto",           -- "auto"|"notify"|"statusline"|"fidget"|"float"
+
       -- Behavior
       write_changes = true,              -- write buffers after replace
       confirm_all = true,                -- ask before replacing all
@@ -244,6 +252,15 @@ search_engine~
 
     Match backend. "auto" prefers ripgrep when installed, else the native
     vimgrep scanner.
+
+                                            *replacer-config-progress_style*
+progress_style~
+    Type: string
+    Default: "auto"
+    Values: "auto" | "notify" | "statusline" | "fidget" | "float"
+
+    Progress indicator style. Requires the optional lib.nvim dependency;
+    silently has no effect if it isn't installed. See |replacer-progress|.
 
                                              *replacer-config-write_changes*
 write_changes~
@@ -322,7 +339,61 @@ file_types~ globs~ exclude~
         exclude     exclude path/glob patterns, e.g. { "node_modules" }
 
 ==============================================================================
-7. PICKER MAPPINGS                                      *replacer-mappings*
+7. PROGRESS INDICATOR                                    *replacer-progress*
+
+A search on a large scope (cwd, a big directory) can take a few seconds.
+Replacer reports on this via lib.nvim's `lib.nvim.progress` module — an
+OPTIONAL dependency (see |replacer-installation|). Without it, everything
+works exactly as before, just silently without any indicator.
+
+A handle only becomes visible after ~150ms, so a fast search on a small scope
+never flashes any UI, regardless of style.
+
+                                                *replacer-progress-styles*
+Styles (|replacer-config-progress_style|):~
+
+    "auto"        (default) prefers "fidget" if fidget.nvim is installed,
+                  else "notify". Never picks "float" on its own.
+    "notify"      vim.notify; updated in place if the active backend
+                  supports it (e.g. nvim-notify), else sequential notifies.
+    "statusline"  draws nothing — read the live text from your own
+                  statusline, see |replacer-progress-statusline| below.
+    "fidget"      renders through fidget.nvim's LSP-style progress corner
+                  (requires fidget.nvim; falls back to "notify" if missing
+                  when requested explicitly).
+    "float"       small floating window, bottom-right, never steals focus.
+                  Focus it on purpose and press <Esc> (normal mode) for a
+                  confirm prompt: "Yes" aborts the running search, "No"
+                  leaves it running. The <Esc> keymap is buffer-local to
+                  that window, so nothing happens while any other window is
+                  focused.
+
+                                             *replacer-progress-statusline*
+Using the "statusline" style~
+
+This style draws nothing by design — it exists so you can fold the current
+search status into your OWN statusline. Read it from
+`lib.nvim.progress.styles.statusline`: >lua
+
+    local replacer_status = require("lib.nvim.progress.styles.statusline")
+
+    local function my_statusline_component()
+      local active = replacer_status.active()  -- string[], oldest first
+      if #active == 0 then return "" end
+      return table.concat(active, " | ")
+    end
+<
+`active()` returns one entry per currently in-flight progress handle across
+ALL plugins using this style (a shared, headless registry, not replacer-
+specific), already prefixed with each handle's title (e.g. "[replacer] ").
+It updates live and clears itself on finish/cancel — no polling needed, and
+every change triggers :redrawstatus so it refreshes even while you're idle.
+
+See docs/progress-indicator.md in the repository for copy-pasteable
+lualine / vanilla-statusline snippets.
+
+==============================================================================
+8. PICKER MAPPINGS                                      *replacer-mappings*
 
                                               *replacer-mappings-telescope*
 Telescope mappings:~
@@ -341,7 +412,7 @@ fzf-lua mappings:~
     <Esc>     1st: leave terminal-insert (normal mode) · 2nd: close
 
 ==============================================================================
-8. ADVANCED USAGE                                        *replacer-advanced*
+9. ADVANCED USAGE                                        *replacer-advanced*
 
                                                     *replacer-utf8-handling*
 UTF-8 Multi-Byte Characters~
@@ -421,7 +492,7 @@ Backslash escapes work outside quotes too: >vim
 <
 
 ==============================================================================
-9. TROUBLESHOOTING                                *replacer-troubleshooting*
+10. TROUBLESHOOTING                                *replacer-troubleshooting*
 
                                               *replacer-troubleshooting-utf8*
 Problem: matches reported as "skipped (changed content)"~
@@ -473,9 +544,18 @@ Check configuration: >lua
 Or manually save: >vim
     :w
 <
+                                     *replacer-troubleshooting-no-progress*
+Problem: No progress indicator ever appears~
+
+`lib.nvim` is not installed, or the search finished in under ~150ms (the
+delay-guard). Confirm the dependency loads: >lua
+    :lua print(pcall(require, "lib.nvim.progress"))
+<
+Should print `true`. If it prints `false`, add
+`dependencies = { "StefanBartl/lib.nvim" }` to replacer's lazy.nvim spec.
 
 ==============================================================================
-10. API                                                      *replacer-api*
+11. API                                                      *replacer-api*
 
 For plugin developers and advanced users.
 
@@ -516,7 +596,7 @@ require("replacer.config").get()
 <
 
 ==============================================================================
-11. ABOUT                                                    *replacer-about*
+12. ABOUT                                                    *replacer-about*
 
 Project: https://github.com/StefanBartl/replacer.nvim
 Issues:  https://github.com/StefanBartl/replacer.nvim/issues

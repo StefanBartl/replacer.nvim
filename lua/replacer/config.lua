@@ -25,6 +25,9 @@ local Defaults = {
   engine = "auto",
   -- Search backend: "auto" picks ripgrep when available, else vimgrep (native).
   search_engine = "auto",
+  -- Progress indicator style (requires lib.nvim; silently skipped otherwise):
+  -- "auto" | "notify" | "statusline" | "fidget". See lib.nvim.progress.
+  progress_style = "auto",
 
   write_changes = true,
   confirm_all = true,
@@ -91,6 +94,17 @@ local function as_search_engine(v)
   return nil
 end
 
+---@param v any
+---@return "auto"|"notify"|"statusline"|"fidget"|"float"|nil
+local function as_progress_style(v)
+  if type(v) ~= "string" then return nil end
+  local s = v:lower():gsub("%s+", "")
+  if s == "auto" or s == "notify" or s == "statusline" or s == "fidget" or s == "float" then
+    return s
+  end
+  return nil
+end
+
 --- Coerce a value into a clean array of non-empty strings.
 --- Accepts a single string (wrapped) or a list; ignores non-strings.
 ---@param v any
@@ -134,6 +148,7 @@ local function validate(cfg)
 
   out.engine             = as_engine(cfg.engine)               or out.engine
   out.search_engine      = as_search_engine(cfg.search_engine) or out.search_engine
+  out.progress_style     = as_progress_style(cfg.progress_style) or out.progress_style
   out.write_changes      = pick_bool(cfg.write_changes,      out.write_changes)
   out.confirm_all        = pick_bool(cfg.confirm_all,        out.confirm_all)
   out.confirm_wide_scope = pick_bool(cfg.confirm_wide_scope, out.confirm_wide_scope)

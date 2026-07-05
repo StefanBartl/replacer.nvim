@@ -19,6 +19,7 @@ ______________________________________________________________________
 - [Installation](#installation)
   - [With Lazy.nvim](#with-lazynvim)
 - [Configuration](#configuration)
+- [Progress Indicator](#progress-indicator)
 - [Safety & Notes](#safety--notes)
 - [Development](#development)
 - [License](#license)
@@ -172,6 +173,7 @@ ______________________________________________________________________
   "StefanBartl/replacer",
   name = "replacer.nvim",
   main = "replacer",
+  dependencies = { "StefanBartl/lib.nvim" }, -- optional: enables the progress indicator
   opts = {
     engine = "auto",           -- "auto" | "fzf" | "telescope"
   },
@@ -185,9 +187,13 @@ ______________________________________________________________________
   "StefanBartl/replacer",
   name = "replacer.nvim",
   main = "replacer",
+  dependencies = { "StefanBartl/lib.nvim" }, -- optional: enables the progress indicator
   opts = {
     engine = "auto",           -- picker: "auto" | "fzf" | "telescope"
     search_engine = "auto",    -- backend: "auto" | "ripgrep" | "vimgrep"
+    progress_style = "auto",   -- "auto" | "notify" | "statusline" | "fidget" | "float" (needs lib.nvim)
+                               -- "float": small window, bottom-right, never steals focus;
+                               -- focus it + <Esc> asks (English prompt) to abort the search
     write_changes = true,      -- write buffers after replace
     confirm_all = true,        -- ask before replacing all
     preview_context = 3,       -- lines of context in preview
@@ -224,6 +230,7 @@ ______________________________________________________________________
 | --------------- | ------- | -------------------------------------------------------------- |
 | engine          | string  | Picker UI: "auto" / "fzf" / "telescope" ("auto" → fzf-lua if present, else telescope) |
 | search_engine   | string  | Match backend: "auto" / "ripgrep" / "vimgrep" ("auto" → ripgrep if present, else vimgrep) |
+| progress_style  | string  | Progress indicator style (requires [`lib.nvim`](#with-lazynvim), silently skipped otherwise): "auto" / "notify" / "statusline" / "fidget" / "float" — see [Progress Indicator](#progress-indicator) |
 | write_changes   | boolean | Write modified buffers on apply (true) or keep unsaved (false) |
 | confirm_all     | boolean | Ask confirmation before replacing all matches at once          |
 | confirm_wide_scope | boolean | Extra confirmation for non-buffer (cwd/dir) ALL applies      |
@@ -246,6 +253,7 @@ ______________________________________________________________________
 require("replacer").setup({
   engine = "auto",           -- "auto" | "fzf" | "telescope"
   search_engine = "auto",    -- "auto" | "ripgrep" | "vimgrep"
+  progress_style = "auto",   -- "auto" | "notify" | "statusline" | "fidget" | "float"
   default_scope = "%",
   write_changes = true,
   confirm_all = true,        -- affects <C-a> and :Replace!
@@ -262,6 +270,61 @@ require("replacer").setup({
   telescope = { layout_config = { width = 0.85, height = 0.70 } },
 })
 ```
+
+______________________________________________________________________
+
+## Progress Indicator
+
+On a large `cwd` scope (many projects/files) a search can take a few seconds.
+Replacer reports on this via [`lib.nvim`](https://github.com/StefanBartl/lib.nvim)'s
+[`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md)
+module — an **optional** dependency (see [Installation](#installation)). Without it,
+everything works exactly as before, just silently without any indicator.
+
+Configure it with `progress_style` (default `"auto"`):
+
+| Style         | What it does                                                                 | Extra dependency |
+| ------------- | ----------------------------------------------------------------------------- | ---------------- |
+| `"auto"`      | Prefers `"fidget"` when `fidget.nvim` is installed, else `"notify"`. Never picks `"float"` on its own. | none (uses whatever is present) |
+| `"notify"`    | `vim.notify`; updated in place if your notify backend supports it (e.g. [nvim-notify](https://github.com/rcarriga/nvim-notify)), otherwise one notification per update. | none |
+| `"statusline"`| Headless — nothing is drawn by replacer itself. You read the live text from your own statusline component (see below). | none |
+| `"fidget"`    | Renders through [fidget.nvim](https://github.com/j-hui/fidget.nvim)'s LSP-style progress corner. | `fidget.nvim` |
+| `"float"`     | A small floating window, bottom-right, that never steals focus. Focus it deliberately and press `<Esc>` (normal mode) to get a confirm prompt — "Yes" aborts the running search, "No" (or leaving the window) keeps it running. | none |
+
+A search only ever becomes visible after ~150ms, so a fast search on a small
+scope never flashes any UI — regardless of style.
+
+### Using the `"statusline"` style
+
+This style deliberately draws nothing; it exists so you can fold the current
+search status into your **own** statusline instead of getting a separate
+notification/float. Read the active text(s) from
+`lib.nvim.progress.styles.statusline`:
+
+```lua
+local replacer_status = require("lib.nvim.progress.styles.statusline")
+
+local function my_statusline_component()
+  local active = replacer_status.active() -- string[], oldest first, e.g. { "[replacer] 42 match(es) found… (3/9)" }
+  if #active == 0 then
+    return "" -- nothing running right now
+  end
+  return table.concat(active, " | ")
+end
+```
+
+`active()` returns every currently in-flight progress text across **all**
+plugins using this style (not just replacer), oldest first — one line per
+handle. It updates live as `h:update(...)` is called and clears itself on
+`finish`/`cancel`, so you never need to poll or clean up. Every change also
+triggers `:redrawstatus`, so your component refreshes even while you're
+sitting idle watching the search run — not just on the next unrelated redraw.
+
+See [`docs/progress-indicator.md`](docs/progress-indicator.md) for a deeper
+walkthrough (all styles, `--` interaction with `--dry`, and copy-pasteable
+statusline snippets for lualine/vanilla `statusline`).
+
+______________________________________________________________________
 
 ## Safety & Notes
 

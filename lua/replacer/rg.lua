@@ -19,6 +19,22 @@
 local M = {}
 
 --------------------------------------------------------------------------------
+-- Progress reporting (optional: soft dependency on lib.nvim)
+--------------------------------------------------------------------------------
+
+local ok_progress, progress_mod = pcall(require, "lib.nvim.progress")
+
+--- Start a progress handle, or nil when lib.nvim isn't installed. Every call
+--- site must guard with `if h then ... end` — the search still works without
+--- lib.nvim, only the indicator is skipped.
+---@param cfg RP_RG_Config
+---@return Lib.Progress.Handle|nil
+local function new_progress(cfg)
+  if not ok_progress then return nil end
+  return progress_mod.create({ title = "[replacer]", style = cfg.progress_style or "auto" })
+end
+
+--------------------------------------------------------------------------------
 -- Shared: occurrence scanning
 --------------------------------------------------------------------------------
 
@@ -230,6 +246,11 @@ local function collect_ripgrep(old, roots, cfg)
   return parse_rg_json(out, old, cfg)
 end
 
+--- Minimum time between progress redraws while streaming stdout. Prevents
+--- flooding a "notify" style that cannot replace in place (no nvim-notify)
+--- with one notification per stdout chunk on large searches.
+local PROGRESS_THROTTLE_MS = 100
+
 --- Run ripgrep asynchronously (non-blocking). Falls back to sync when
 --- `vim.system` is unavailable. Errors are passed to `on_done` (not notified
 --- here) so the calling layer decides how to surface them.
@@ -243,18 +264,60 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
     return
   end
   local args = build_rg_args(old, roots, cfg)
-  vim.system(args, { text = true }, function(obj)
+  local h = new_progress(cfg)
+
+  local chunks, n_chunks = {}, 0
+  local match_count = 0
+  local last_update_ms = 0
+
+  local proc = vim.system(args, {
+    text = true,
+    stdout = function(_, data)
+      if not data then return end
+      n_chunks = n_chunks + 1
+      chunks[n_chunks] = data
+      if not h then return end
+      for _ in data:gmatch('"type":"match"') do
+        match_count = match_count + 1
+      end
+      local uv = vim.uv or vim.loop
+      local now = uv.now()
+      if now - last_update_ms >= PROGRESS_THROTTLE_MS then
+        last_update_ms = now
+        vim.schedule(function()
+          h:update({ text = string.format("%d match(es) found…", match_count) })
+        end)
+      end
+    end,
+  }, function(obj)
     -- on_exit runs off the main loop; re-enter it before any vim.* work.
     vim.schedule(function()
       local code = obj and obj.code or 1
       if code ~= 0 and code ~= 1 then
-        on_done(nil, require("replacer.error").search_error(
-          "ripgrep failed", obj and obj.stderr or nil))
+        local err = (h and h.cancelled)
+          and require("replacer.error").search_error("search cancelled")
+          or require("replacer.error").search_error("ripgrep failed", obj and obj.stderr or nil)
+        if h then h:cancel("search failed") end
+        on_done(nil, err)
         return
       end
-      on_done(parse_rg_json(obj and obj.stdout or "", old, cfg), nil)
+      local items = parse_rg_json(table.concat(chunks), old, cfg)
+      if h then
+        local files, n_files = {}, 0
+        for _, it in ipairs(items) do
+          if not files[it.path] then files[it.path] = true; n_files = n_files + 1 end
+        end
+        h:finish(string.format("%d match(es) in %d file(s)", #items, n_files))
+      end
+      on_done(items, nil)
     end)
   end)
+
+  if h then
+    h:on_cancel(function()
+      pcall(function() proc:kill(15) end)
+    end)
+  end
 end
 
 --------------------------------------------------------------------------------
@@ -369,6 +432,64 @@ local function collect_vimgrep(old, roots, cfg)
   return matches
 end
 
+--- Number of files scanned per `vim.schedule` tick in the async variant.
+--- Keeps the native fallback responsive (non-blocking) on large trees.
+local VIMGREP_CHUNK_SIZE = 25
+
+--- Async, chunked counterpart to `collect_vimgrep`: scans `VIMGREP_CHUNK_SIZE`
+--- files per event-loop tick instead of one blocking loop, and reports
+--- progress after each chunk. Used only by `M.collect_async`; `M.collect`
+--- (sync API, used by tests) keeps calling the blocking `collect_vimgrep`.
+---@param old string
+---@param roots string[]
+---@param cfg RP_RG_Config
+---@param on_done fun(items: RP_Match[]|nil, err: RP_Error|nil)
+local function collect_vimgrep_async(old, roots, cfg, on_done)
+  ---@type string[]
+  local files = {}
+  for _, root in ipairs(roots) do
+    if vim.fn.isdirectory(root) ~= 0 then
+      list_files(root, cfg, files)
+    elseif passes_filters(root, cfg) then
+      files[#files + 1] = root
+    end
+  end
+
+  local h = new_progress(cfg)
+  local total = #files
+  local matches, id, i = {}, 0, 0
+
+  local function step()
+    if h and h.cancelled then
+      on_done(nil, require("replacer.error").search_error("search cancelled"))
+      return
+    end
+
+    local last = math.min(i + VIMGREP_CHUNK_SIZE, total)
+    for j = i + 1, last do
+      id = scan_file(old, files[j], cfg, id, matches)
+    end
+    i = last
+    if h then h:update({ text = "scanning files…", current = i, total = total }) end
+
+    if i < total then
+      vim.schedule(step)
+      return
+    end
+
+    if h then
+      local fileset, n_files = {}, 0
+      for _, it in ipairs(matches) do
+        if not fileset[it.path] then fileset[it.path] = true; n_files = n_files + 1 end
+      end
+      h:finish(string.format("%d match(es) in %d file(s)", #matches, n_files))
+    end
+    on_done(matches, nil)
+  end
+
+  step()
+end
+
 --------------------------------------------------------------------------------
 -- Backend selection
 --------------------------------------------------------------------------------
@@ -436,9 +557,10 @@ function M.collect(old, roots, cfg)
 end
 
 --- Collect matches asynchronously, invoking `on_done(items, err)` when ready.
---- ripgrep runs non-blocking (no UI freeze on large repos); the native vimgrep
---- backend and the modified-buffer fast path complete synchronously and call
---- `on_done` immediately. Errors are reported via `err` (the caller notifies).
+--- Both ripgrep and the native vimgrep backend run non-blocking (no UI freeze
+--- on large repos); only the modified-buffer fast path completes synchronously
+--- and calls `on_done` immediately. Errors are reported via `err` (the caller
+--- notifies).
 ---@param old string
 ---@param roots string[]
 ---@param cfg RP_RG_Config
@@ -464,7 +586,13 @@ function M.collect_async(old, roots, cfg, on_done)
       end
     end)
   else
-    on_done(apply_line_range(collect_vimgrep(old, roots, cfg), cfg), nil)
+    collect_vimgrep_async(old, roots, cfg, function(items, err)
+      if err then
+        on_done(nil, err)
+      else
+        on_done(apply_line_range(items, cfg), nil)
+      end
+    end)
   end
 end
 
