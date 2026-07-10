@@ -204,6 +204,17 @@ function M.run(request, new_text, scope, all)
       vim.notify("[replacer] no matches found", vim.log.levels.INFO)
       return
     end
+    -- Optional post-collection filter (e.g. :Surround skipping already-wrapped
+    -- matches). Applied here so plan/ALL/picker all see the same reduced set.
+    if request.filter then
+      local kept = vim.tbl_filter(request.filter, items)
+      if #kept == 0 then
+        vim.notify(request.filter_empty_msg or "[replacer] no matches left after filtering",
+          vim.log.levels.INFO)
+        return
+      end
+      items = kept
+    end
     dispatch(request, cfg, single_file, items)
   end)
 end

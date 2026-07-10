@@ -93,6 +93,7 @@ is an alias. Search is always **literal** (regex would need per-match capture).
 
 - `delim` — a literal char/string (`` ` `` `"` `'` `*` `**` `_`), a **named alias**, or a **bracket opener** (`(` `[` `{` `<`) which pairs with its closer. Omit it to be prompted.
 - Aliases: `b`→`` ` ``, `q`→`"`, `s`→`'`, `star`→`*`, `bold`→`**`, `italic`→`_`, `paren`→`( )`, `bracket`→`[ ]`, `brace`→`{ }`, `angle`→`< >`.
+- **Idempotent by default** — matches already wrapped by the chosen delimiter are skipped, so re-running is safe: `:Surround test **` on `**test**` leaves it as `**test**` (not `****test****`). Pass `--nested` (alias `--allow-nested`) to force another layer.
 
 ```sh
 :Surround word `                 # `word`  in the current buffer
@@ -102,6 +103,7 @@ is an alias. Search is always **literal** (regex would need per-match capture).
 :Surround! name q %              # "name"  everywhere in buffer, no picker
 :'<,'>Surround item *            # *item*  within the selected lines
 :Surround word                   # prompt: "Surround with: "
+:Surround word ** --nested       # wrap even already-**bold** matches
 ```
 
 ### Picker Keymaps

@@ -17,8 +17,13 @@
 ---              When omitted, you are prompted for it.
 ---   [scope]    %|buf · cwd|. · <file|dir>   (default: config.default_scope)
 ---
---- Flags are identical to :Replace (--all, --dry, --hidden, --type=, …). The
---- bang form (:Surround!) is shorthand for --all. Regex mode is force-disabled.
+--- Flags are identical to :Replace (--all, --dry, --hidden, --type=, …), plus
+--- one Surround-only flag:
+---   --nested   also wrap matches that are ALREADY surrounded by this delimiter.
+---              By default such matches are skipped, so re-running :Surround is
+---              idempotent (`**test**` is left alone instead of becoming
+---              `****test****`). Use --nested to force another layer.
+--- The bang form (:Surround!) is shorthand for --all. Regex mode is force-disabled.
 ---
 --- Examples:
 ---   :Surround word `            → `word`   in the current buffer
@@ -26,6 +31,7 @@
 ---   :Surround "foo bar" ** cwd  → **foo bar**  across the working directory
 ---   :Surround TODO ( .          → (TODO)  project-wide, all files
 ---   :Surround! name q %         → "name"  everywhere in the buffer, no picker
+---   :Surround word ** --nested  → wrap even already-**bold** occurrences
 
 local command = require("replacer.command")
 
@@ -77,6 +83,33 @@ local function resolve_delim(tok)
 end
 
 --------------------------------------------------------------------------------
+-- Idempotency: skip already-surrounded matches
+--------------------------------------------------------------------------------
+
+--- Build a keep-predicate that drops matches already flanked by `left`/`right`.
+--- A match at byte column `col0` on `line` is considered already surrounded when
+--- the bytes immediately before it equal `left` AND those immediately after it
+--- equal `right`. Such matches are removed so re-wrapping is idempotent
+--- (`**test**` stays `**test**` instead of becoming `****test****`).
+---@param left string
+---@param right string
+---@return fun(match: RP_Match): boolean
+local function skip_surrounded_filter(left, right)
+  local llen, rlen = #left, #right
+  return function(m)
+    local line = m.line or ""
+    local s = m.col0                 -- 0-based byte start of the match
+    local mlen = #(m.old or "")      -- matched text length (== pattern, literal)
+    -- 1-based ranges: left occupies (s-llen+1 .. s); right occupies the bytes
+    -- right after the match (s+mlen+1 .. s+mlen+rlen).
+    local before = (s - llen >= 0) and line:sub(s - llen + 1, s) or ""
+    local after  = line:sub(s + mlen + 1, s + mlen + rlen)
+    -- Keep only when NOT already wrapped by this exact delimiter.
+    return not (before == left and after == right)
+  end
+end
+
+--------------------------------------------------------------------------------
 -- Request construction
 --------------------------------------------------------------------------------
 
@@ -90,8 +123,9 @@ local USAGE =
 ---@param scope string
 ---@param req RP_Request        # already carries flags applied by apply_tokens
 ---@param line_range integer[]|nil
+---@param nested boolean        # when true, also wrap already-surrounded matches
 ---@return RP_Request
-local function build_request(pattern, delim, scope, req, line_range)
+local function build_request(pattern, delim, scope, req, line_range, nested)
   local left, right = resolve_delim(delim)
   req.old        = pattern
   req.new        = left .. pattern .. right
@@ -100,6 +134,14 @@ local function build_request(pattern, delim, scope, req, line_range)
   -- Regex would need per-match capture expansion, which the applier does not do;
   -- force literal so `new` is a valid fixed replacement for every spot.
   req.overrides.literal = true
+  -- Idempotency: unless --nested was given, skip spots already wrapped by this
+  -- delimiter so repeated :Surround runs don't stack extra layers.
+  if not nested then
+    req.filter = skip_surrounded_filter(left, right)
+    req.filter_empty_msg =
+      string.format("[replacer] every match is already surrounded by %s…%s (use --nested to wrap again)",
+        left, right)
+  end
   return req
 end
 
@@ -113,6 +155,22 @@ end
 local function handle(run_fun, opts)
   local raw = (type(opts.args) == "string") and opts.args or ""
   local tokens = command.tokenize(raw)
+
+  -- Pull the Surround-only --nested / --allow-nested flag out before handing the
+  -- rest to the shared :Replace token parser (which would reject it as unknown).
+  local nested = false
+  do
+    local kept = {}
+    for _, t in ipairs(tokens) do
+      local lc = t:lower()
+      if lc == "--nested" or lc == "--allow-nested" then
+        nested = true
+      else
+        kept[#kept + 1] = t
+      end
+    end
+    tokens = kept
+  end
 
   ---@type RP_Request
   local req = {
@@ -163,7 +221,7 @@ local function handle(run_fun, opts)
       vim.notify("Surround: cancelled (no delimiter)", vim.log.levels.INFO)
       return
     end
-    run_fun(build_request(pattern, d, scope, req, line_range))
+    run_fun(build_request(pattern, d, scope, req, line_range, nested))
   end
 
   if delim == nil then
@@ -189,7 +247,7 @@ local COMPLETIONS = {
   -- flags (mirror :Replace)
   "--literal", "--smart-case", "--hidden", "--no-ignore",
   "--type=", "--glob=", "--exclude=", "--engine=", "--context=",
-  "--dry", "--export=", "--all",
+  "--dry", "--export=", "--all", "--nested",
 }
 
 --- Register :Surround (and :Wrap alias). `run_fun` is replacer.run.
@@ -217,5 +275,6 @@ end
 
 -- Exposed for tests.
 M.resolve_delim = resolve_delim
+M.skip_surrounded_filter = skip_surrounded_filter
 
 return M

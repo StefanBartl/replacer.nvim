@@ -74,6 +74,8 @@
 ---@field line_range integer[]|nil # {line1, line2} when a [range] was given
 ---@field overrides RP_Overrides
 ---@field filters RP_Filters
+---@field filter? fun(match: RP_Match): boolean  # keep predicate applied post-collection (true = keep)
+---@field filter_empty_msg? string  # notice shown when filter removes every match
 
 ---@alias ReplacerRunCallback fun(request: RP_Request): nil
 ---@alias ReplacerResolveScopeFn fun(scope: RP_Scope): string[], boolean

@@ -87,5 +87,55 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 5) skip_surrounded_filter: idempotency predicate (unit)
+--------------------------------------------------------------------------------
+do
+  ---@diagnostic disable: missing-fields
+  -- Partial RP_Match doubles: the filter only reads col0/old/line.
+  local keep = surround.skip_surrounded_filter("**", "**")
+  -- "**test**": "test" starts at byte col 2 (0-based); flanked by ** on both sides.
+  check("filter: already **wrapped** is skipped",
+    keep({ col0 = 2, old = "test", line = "**test**" }) == false)
+  -- Bare "test": not wrapped -> kept.
+  check("filter: bare match is kept",
+    keep({ col0 = 0, old = "test", line = "test" }) == true)
+  -- "*test*": flanked by single * (not the ** delimiter) -> kept.
+  check("filter: partial/other delimiter is kept",
+    keep({ col0 = 1, old = "test", line = "*test*" }) == true)
+
+  local keepp = surround.skip_surrounded_filter("(", ")")
+  check("filter: already (wrapped) is skipped",
+    keepp({ col0 = 1, old = "x", line = "(x)" }) == false)
+  ---@diagnostic enable: missing-fields
+end
+
+--------------------------------------------------------------------------------
+-- 6) End-to-end idempotency: re-running :Surround does not stack layers,
+--    and --nested forces another wrap.
+--------------------------------------------------------------------------------
+do
+  local fc = tmp .. "/idem.md"
+  local fh = assert(io.open(fc, "w")); fh:write("test\n"); fh:close()
+
+  vim.cmd(string.format("Surround! test bold %s", fc))
+  vim.wait(300)
+  local c1 = assert(io.open(fc, "r")):read("*a")
+  check("idem: first wrap -> **test**", c1:match("^%*%*test%*%*") ~= nil, c1)
+
+  -- Second run must be a no-op (default skips already-surrounded).
+  vim.cmd(string.format("Surround! test bold %s", fc))
+  vim.wait(300)
+  local c2 = assert(io.open(fc, "r")):read("*a")
+  check("idem: re-run leaves **test** unchanged", c2 == c1, c2)
+
+  -- --nested opts in to another layer -> ****test****.
+  vim.cmd(string.format("Surround! test bold %s --nested", fc))
+  vim.wait(300)
+  local c3 = assert(io.open(fc, "r")):read("*a")
+  check("idem: --nested adds a layer -> ****test****",
+    c3:match("^%*%*%*%*test%*%*%*%*") ~= nil, c3)
+end
+
+--------------------------------------------------------------------------------
 print(string.format("\n=== %d passed, %d failed ===", pass, fail))
 if fail > 0 then vim.cmd("cquit 1") end

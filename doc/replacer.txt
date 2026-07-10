@@ -171,6 +171,17 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
         [range]    Restricts matching to the selected buffer lines.
         !          Shorthand for --all (non-interactive, no picker).
 
+    Idempotency:~
+        By default, matches that are ALREADY wrapped by the chosen delimiter are
+        skipped, so re-running :Surround never stacks extra layers. Running
+        `:Surround test **` on `**test**` leaves it untouched instead of
+        producing `****test****`. Pass --nested (alias --allow-nested) to opt in
+        to another layer.
+
+    Surround-only flag:~
+        --nested   Also wrap matches already surrounded by this delimiter
+                   (default: skip them). Alias: --allow-nested.
+
     Delimiter aliases:~
         b bt backtick tick code ........ `
         q dq quote quotes .............. "
@@ -191,6 +202,7 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
         :Surround! name q %              " "name"  everywhere in buffer, no picker
         :'<,'>Surround item *            " *item*  within the selected lines
         :Surround word                   " prompt: "Surround with: "
+        :Surround word ** --nested       " wrap even already-**bold** matches
 
 ==============================================================================
 6. CONFIGURATION                                    *replacer-configuration*
