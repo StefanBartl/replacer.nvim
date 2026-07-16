@@ -12,6 +12,8 @@
 ---   - `preview_lines_with_pos` returns the 0-based row/col where the match starts
 ---     inside the preview buffer. Pickers decide how to highlight (buf HL vs ANSI).
 
+local notify = require("replacer.util.notify")
+
 local M = {}
 
 --------------------------------------------------------------------------------
@@ -101,7 +103,7 @@ end
 --- @param files integer
 --- @param spots integer
 function M.notify_result(files, spots)
-  vim.notify(string.format("[replacer] %d spot(s) in %d file(s)", spots, files))
+  notify.info(string.format("%d spot(s) in %d file(s)", spots, files))
 end
 
 --------------------------------------------------------------------------------

@@ -2,6 +2,8 @@
 --- Debug utilities for troubleshooting replacer issues.
 --- Usage: :ReplaceDebug {on|off|status|test}
 
+local notify = require("replacer.util.notify")
+
 local M = {}
 
 ---@type boolean
@@ -16,7 +18,7 @@ function M.enable()
     replacer.options.ext_highlight_opts = replacer.options.ext_highlight_opts or {}
     replacer.options.ext_highlight_opts.debug = true
   end
-  vim.notify("[replacer] Debug mode ENABLED", vim.log.levels.INFO)
+  notify.info("Debug mode ENABLED")
 end
 
 --- Disable debug mode
@@ -28,7 +30,7 @@ function M.disable()
       replacer.options.ext_highlight_opts.debug = false
     end
   end
-  vim.notify("[replacer] Debug mode DISABLED", vim.log.levels.INFO)
+  notify.info("Debug mode DISABLED")
 end
 
 --- Get debug status
@@ -40,23 +42,20 @@ function M.status()
     and replacer.options.ext_highlight_opts.debug
     or false
 
-  vim.notify(
-    string.format(
-      "[replacer] Debug: %s (config: %s)",
-      debug_enabled and "ON" or "OFF",
-      cfg_debug and "ON" or "OFF"
-    ),
-    vim.log.levels.INFO
-  )
+  notify.info(string.format(
+    "Debug: %s (config: %s)",
+    debug_enabled and "ON" or "OFF",
+    cfg_debug and "ON" or "OFF"
+  ))
   return debug_enabled
 end
 
 --- Run test suite
 function M.test()
-  vim.notify("[replacer] Running test suite...", vim.log.levels.INFO)
+  notify.info("Running test suite...")
   local ok, test = pcall(require, "test.utf8_offsets")
   if not ok then
-    vim.notify("[replacer] Test suite not found", vim.log.levels.ERROR)
+    notify.error("Test suite not found")
     return
   end
 
@@ -100,7 +99,7 @@ function M.analyze_line(lnum, pattern)
   local bufnr = vim.api.nvim_get_current_buf()
   local lines = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, false)
   if not lines or #lines == 0 then
-    vim.notify("Line not found", vim.log.levels.ERROR)
+    notify.error("Line not found")
     return
   end
 
@@ -162,13 +161,10 @@ function M.register_command()
       if _lnum and pattern then
         M.analyze_line(_lnum, pattern)
       else
-        vim.notify("Usage: :ReplaceDebug analyze <line> <pattern>", vim.log.levels.ERROR)
+        notify.error("Usage: :ReplaceDebug analyze <line> <pattern>")
       end
     else
-      vim.notify(
-        "Usage: :ReplaceDebug {on|off|status|test|inspect|analyze <line> <pattern>}",
-        vim.log.levels.INFO
-      )
+      notify.info("Usage: :ReplaceDebug {on|off|status|test|inspect|analyze <line> <pattern>}")
     end
   end, {
     nargs = "*",

@@ -11,6 +11,7 @@
 --- All offsets are byte-based (col0), consistent with the collectors.
 
 local Err = require("replacer.error")
+local notify = require("replacer.util.notify")
 
 local M = {}
 
@@ -149,9 +150,9 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
 
     skipped_total = skipped_total + skipped
     if skipped > 0 and skipped >= #list * 0.5 then
-      vim.notify(string.format(
-        "[replacer] %s: %d/%d spot(s) skipped — buffer may have changed; re-run :Replace",
-        vim.fn.fnamemodify(path, ":."), skipped, #list), vim.log.levels.WARN)
+      notify.warn(string.format(
+        "%s: %d/%d spot(s) skipped — buffer may have changed; re-run :Replace",
+        vim.fn.fnamemodify(path, ":."), skipped, #list))
     end
 
     -- Write or count modified files.
@@ -174,13 +175,11 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
   end
 
   if skipped_total > 0 then
-    vim.notify(string.format(
-      "[replacer] %d match(es) skipped due to changed content.", skipped_total),
-      vim.log.levels.WARN)
+    notify.warn(string.format("%d match(es) skipped due to changed content.", skipped_total))
   end
 
   for i = 1, #errors do
-    vim.notify("[replacer] " .. Err.format(errors[i]), vim.log.levels.ERROR)
+    notify.error(Err.format(errors[i]))
   end
 
   return files, spots, errors

@@ -32,6 +32,7 @@
 ---   M.resolve_scope(scope)  resolve a scope token -> roots, single_file
 ---   M.parse_request(raw, o) parse a raw arg string -> ok, request, err (testable)
 local uv = vim.uv or vim.loop
+local notify = require("replacer.util.notify")
 
 local M = {}
 
@@ -294,7 +295,7 @@ local function resolve_scope(scope)
   if scope_lc == "%" or scope_lc == "buf" then
     local f = vim.api.nvim_buf_get_name(0)
     if f == "" then
-      vim.notify("[replacer] current buffer has no file path", vim.log.levels.ERROR)
+      notify.error("current buffer has no file path")
       return {}, false
     end
     return { f }, true
@@ -314,7 +315,7 @@ local function resolve_scope(scope)
   if scope == "" or scope_lc == "cwd" or scope_lc == "." then
     local ok, cwd = pcall(function() return uv.cwd() end)
     if not ok or not cwd then
-      vim.notify("[replacer] failed to determine cwd", vim.log.levels.WARN)
+      notify.warn("failed to determine cwd")
       return {}, false
     end
     return { cwd }, false
@@ -352,7 +353,7 @@ function M.register(run_fun)
       -- Defer so the message shows as a clean notification instead of bubbling
       -- up as a raw "Vim:Replace:" command error.
       local msg = err or "Replace: invalid arguments"
-      vim.schedule(function() vim.notify(msg, vim.log.levels.ERROR) end)
+      vim.schedule(function() notify.error(msg) end)
       return
     end
     run_fun(request)

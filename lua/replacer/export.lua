@@ -161,13 +161,7 @@ function M.write_export(path, results, new_text)
   local is_json = path:lower():match("%.json$") ~= nil
   local content = is_json and M.build_json(results, new_text) or M.build_patch(results)
 
-  local ok, fh = pcall(io.open, path, "w")
-  if not ok or not fh then
-    return false, "could not open export target: " .. path
-  end
-  fh:write(content)
-  fh:close()
-  return true, nil
+  return require("lib.nvim.fs.write.to_file")(path, content)
 end
 
 return M

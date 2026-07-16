@@ -13,6 +13,8 @@
 ---   - For regex, extend the collector to provide match length/col1 if needed.
 
 local common = require("replacer.pickers.common")
+local notify = require("replacer.util.notify")
+local confirm = require("lib.nvim.ui.kit.confirm")
 
 
 --------------------------------------------------------------------------------
@@ -30,7 +32,7 @@ local NS = vim.api.nvim_create_namespace("replacer_preview")
 local function run(items, new_text, cfg, apply_func)
   local ok, _ = pcall(require, "telescope")
   if not ok then
-    vim.notify("[replacer] telescope.nvim not found", vim.log.levels.ERROR)
+    notify.error("telescope.nvim not found")
     return
   end
 
@@ -41,7 +43,7 @@ local function run(items, new_text, cfg, apply_func)
   local actions_ok, actions = pcall(require, "telescope.actions")
   local action_state_ok, action_state = pcall(require, "telescope.actions.state")
   if not (pickers_ok and finders_ok and previewers_ok and conf_ok and actions_ok and action_state_ok) then
-    vim.notify("[replacer] telescope submodules missing", vim.log.levels.ERROR)
+    notify.error("telescope submodules missing")
     return
   end
 
@@ -149,7 +151,16 @@ local function run(items, new_text, cfg, apply_func)
       local function do_all()
         if cfg.confirm_all then
           local msg = string.format("Apply replacement to ALL %d spot(s)?", #items)
-          if vim.fn.confirm(msg, "&Yes\n&No", 2) ~= 1 then return end
+          confirm.open({
+            question = msg,
+            on_answer = function(yes)
+              if not yes then return end
+              local files, spots = apply_func(items, new_text, cfg.write_changes)
+              common.notify_result(files, spots)
+              actions.close(prompt_bufnr)
+            end,
+          })
+          return
         end
         local files, spots = apply_func(items, new_text, cfg.write_changes)
         common.notify_result(files, spots)

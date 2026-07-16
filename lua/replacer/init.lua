@@ -20,6 +20,8 @@ local apply = require("replacer.apply")
 local export = require("replacer.export")
 local common = require("replacer.pickers.common")
 local cmd_mod = require("replacer.command")
+local notify = require("replacer.util.notify")
+local confirm = require("lib.nvim.ui.kit.confirm")
 
 --------------------------------------------------------------------------------
 -- Public API
@@ -90,17 +92,17 @@ end
 ---@return nil
 local function plan(request, items)
   local results, totals = export.build_results(items, request.new)
-  vim.notify(string.format(
-    "[replacer] dry-run: %d spot(s) in %d file(s)%s — no changes written",
+  notify.info(string.format(
+    "dry-run: %d spot(s) in %d file(s)%s — no changes written",
     totals.spots, totals.files,
     totals.skipped > 0 and string.format(" (%d skipped)", totals.skipped) or ""))
 
   if request.export and request.export ~= "" then
     local ok, err = export.write_export(request.export, results, request.new)
     if ok then
-      vim.notify("[replacer] plan exported to " .. request.export)
+      notify.info("plan exported to " .. request.export)
     else
-      vim.notify("[replacer] " .. (err or "export failed"), vim.log.levels.ERROR)
+      notify.error(err or "export failed")
     end
   end
 
@@ -134,10 +136,18 @@ local function dispatch(request, cfg, single_file, items)
     local wide = (not single_file) and cfg.confirm_wide_scope
     if cfg.confirm_all or wide then
       local msg = string.format("Apply ALL %d spot(s) across %d file(s)?", #items, filecount)
-      if vim.fn.confirm(msg, "&Yes\n&No", 2) ~= 1 then
-        vim.notify("[replacer] cancelled", vim.log.levels.INFO)
-        return
-      end
+      confirm.open({
+        question = msg,
+        on_answer = function(yes)
+          if not yes then
+            notify.info("cancelled")
+            return
+          end
+          local files, spots = apply_func(items, request.new, cfg.write_changes)
+          common.notify_result(files, spots)
+        end,
+      })
+      return
     end
 
     local files, spots = apply_func(items, request.new, cfg.write_changes)
@@ -148,8 +158,7 @@ local function dispatch(request, cfg, single_file, items)
   -- Interactive picker dispatch (auto-detected when engine = "auto").
   local engine = pick_picker(cfg)
   if not engine then
-    vim.notify("[replacer] no picker available — install fzf-lua or telescope.nvim",
-      vim.log.levels.ERROR)
+    notify.error("no picker available — install fzf-lua or telescope.nvim")
     return
   end
   if engine == "fzf" then
@@ -197,11 +206,11 @@ function M.run(request, new_text, scope, all)
   --    then 3) dispatch to plan / ALL / picker inside the callback.
   rg.collect_async(request.old, roots, cfg, function(items, err)
     if err then
-      vim.notify("[replacer] " .. require("replacer.error").format(err), vim.log.levels.ERROR)
+      notify.error(require("replacer.error").format(err))
       return
     end
     if not items or #items == 0 then
-      vim.notify("[replacer] no matches found", vim.log.levels.INFO)
+      notify.info("no matches found")
       return
     end
     -- Optional post-collection filter (e.g. :Surround skipping already-wrapped
@@ -209,8 +218,7 @@ function M.run(request, new_text, scope, all)
     if request.filter then
       local kept = vim.tbl_filter(request.filter, items)
       if #kept == 0 then
-        vim.notify(request.filter_empty_msg or "[replacer] no matches left after filtering",
-          vim.log.levels.INFO)
+        notify.info(request.filter_empty_msg or "no matches left after filtering")
         return
       end
       items = kept

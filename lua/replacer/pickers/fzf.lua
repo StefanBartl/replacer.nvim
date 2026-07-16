@@ -9,6 +9,8 @@
 ---  - cfg.keymaps.quit            close the picker (default <Esc>, after leaving terminal-insert)
 
 local common = require("replacer.pickers.common")
+local notify = require("replacer.util.notify")
+local confirm = require("lib.nvim.ui.kit.confirm")
 
 --- Translate a Neovim-style key notation ("<C-a>", "<Tab>", "<S-Tab>", "<Esc>")
 --- into fzf's own `--bind`/actions-table key spec ("ctrl-a", "tab", "shift-tab", "esc").
@@ -32,7 +34,7 @@ end
 local function run(old, items, new_text, cfg, apply_func)
   local ok_fzf, fzf = pcall(require, "fzf-lua")
   if not ok_fzf then
-    vim.notify("[replacer] fzf-lua not found", vim.log.levels.ERROR)
+    notify.error("fzf-lua not found")
     return
   end
 
@@ -100,11 +102,18 @@ local function run(old, items, new_text, cfg, apply_func)
       if cfg.confirm_all then
         local fileset = {}; for _, it in ipairs(all) do fileset[it.path] = true end
         local fc = 0; for _ in pairs(fileset) do fc = fc + 1 end
-        if vim.fn.confirm(
-          string.format("Apply replacement to ALL %d spot(s) across %d file(s)?", #all, fc),
-          "&Yes\n&No", 2) ~= 1 then
-          vim.notify("[replacer] cancelled"); return
-        end
+        confirm.open({
+          question = string.format("Apply replacement to ALL %d spot(s) across %d file(s)?", #all, fc),
+          on_answer = function(yes)
+            if not yes then
+              notify.info("cancelled")
+              return
+            end
+            local files, spots = apply_func(all, new_text, cfg.write_changes)
+            common.notify_result(files, spots)
+          end,
+        })
+        return
       end
       local files, spots = apply_func(all, new_text, cfg.write_changes)
       common.notify_result(files, spots)

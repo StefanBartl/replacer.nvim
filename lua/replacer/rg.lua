@@ -16,6 +16,8 @@
 --- A modified, file-backed buffer is scanned from its in-memory content to avoid
 --- stale coordinates against the on-disk file.
 
+local notify = require("replacer.util.notify")
+
 local M = {}
 
 --------------------------------------------------------------------------------
@@ -233,14 +235,14 @@ local function collect_ripgrep(old, roots, cfg)
     local obj = vim.system(args, { text = true }):wait()
     local code = obj and obj.code or 1
     if code ~= 0 and code ~= 1 then
-      vim.notify("[replacer] rg failed: " .. (obj and obj.stderr or ""), vim.log.levels.ERROR)
+      notify.error("rg failed: " .. (obj and obj.stderr or ""))
       return {}
     end
     return parse_rg_json(obj and obj.stdout or "", old, cfg)
   end
   local out = vim.fn.system(table.concat(vim.tbl_map(vim.fn.shellescape, args), " "))
   if vim.v.shell_error ~= 0 and vim.v.shell_error ~= 1 then
-    vim.notify("[replacer] rg failed (sync): " .. (out or ""), vim.log.levels.ERROR)
+    notify.error("rg failed (sync): " .. (out or ""))
     return {}
   end
   return parse_rg_json(out, old, cfg)
@@ -503,7 +505,7 @@ local function pick_backend(cfg)
   if want == "vimgrep" then return "vimgrep" end
   if want == "ripgrep" then
     if has_rg then return "ripgrep" end
-    vim.notify("[replacer] ripgrep not found — falling back to vimgrep", vim.log.levels.WARN)
+    notify.warn("ripgrep not found — falling back to vimgrep")
     return "vimgrep"
   end
   return has_rg and "ripgrep" or "vimgrep"
@@ -543,7 +545,7 @@ function M.collect(old, roots, cfg)
   if #roots == 1 then
     local modified, bufnr = is_buffer_modified(roots[1])
     if modified and bufnr then
-      vim.notify("[replacer] scanning modified buffer instead of disk", vim.log.levels.INFO)
+      notify.info("scanning modified buffer instead of disk")
       return apply_line_range(collect_from_buffer(old, bufnr, cfg), cfg)
     end
   end
@@ -571,7 +573,7 @@ function M.collect_async(old, roots, cfg, on_done)
   if #roots == 1 then
     local modified, bufnr = is_buffer_modified(roots[1])
     if modified and bufnr then
-      vim.notify("[replacer] scanning modified buffer instead of disk", vim.log.levels.INFO)
+      notify.info("scanning modified buffer instead of disk")
       on_done(apply_line_range(collect_from_buffer(old, bufnr, cfg), cfg), nil)
       return
     end

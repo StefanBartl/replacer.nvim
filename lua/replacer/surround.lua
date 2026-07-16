@@ -34,6 +34,7 @@
 ---   :Surround word ** --nested  → wrap even already-**bold** occurrences
 
 local command = require("replacer.command")
+local notify = require("replacer.util.notify")
 
 local M = {}
 
@@ -139,7 +140,7 @@ local function build_request(pattern, delim, scope, req, line_range, nested)
   if not nested then
     req.filter = skip_surrounded_filter(left, right)
     req.filter_empty_msg =
-      string.format("[replacer] every match is already surrounded by %s…%s (use --nested to wrap again)",
+      string.format("every match is already surrounded by %s…%s (use --nested to wrap again)",
         left, right)
   end
   return req
@@ -183,22 +184,22 @@ local function handle(run_fun, opts)
 
   local positionals, err = command.apply_tokens(tokens, req)
   if not positionals then
-    vim.schedule(function() vim.notify(err, vim.log.levels.ERROR) end)
+    vim.schedule(function() notify.error(err) end)
     return
   end
 
   if #positionals < 1 then
     vim.schedule(function()
-      vim.notify("Surround: missing {pattern}.\n" .. USAGE, vim.log.levels.ERROR)
+      notify.error("Surround: missing {pattern}.\n" .. USAGE)
     end)
     return
   end
   if #positionals > 3 then
     vim.schedule(function()
-      vim.notify(string.format(
+      notify.error(string.format(
         "Surround: too many arguments — got %d; expected {pattern} [delim] [scope]. " ..
         "Quote values with spaces, e.g. :Surround \"foo bar\" `.\n%s",
-        #positionals, USAGE), vim.log.levels.ERROR)
+        #positionals, USAGE))
     end)
     return
   end
@@ -218,7 +219,7 @@ local function handle(run_fun, opts)
 
   local function finish(d)
     if not d or d == "" then
-      vim.notify("Surround: cancelled (no delimiter)", vim.log.levels.INFO)
+      notify.info("Surround: cancelled (no delimiter)")
       return
     end
     run_fun(build_request(pattern, d, scope, req, line_range, nested))

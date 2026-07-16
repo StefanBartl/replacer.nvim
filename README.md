@@ -8,8 +8,9 @@
 
 Project-wide search-and-replace with ripgrep, an interactive picker (fzf-lua or Telescope), live preview, and precise application of changes.
 
-> Uses [`lib.nvim`](https://github.com/StefanBartl/lib.nvim) (optional) for its
-> progress indicator — one helper library shared across the author's plugins.
+> Requires [`lib.nvim`](https://github.com/StefanBartl/lib.nvim) — used for
+> notifications, the confirm dialog, file export, and the progress indicator.
+> One helper library shared across the author's plugins.
 
 ______________________________________________________________________
 
@@ -175,7 +176,7 @@ ______________________________________________________________________
   name = "replacer.nvim",
   main = "replacer",
   cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
-  dependencies = { "StefanBartl/lib.nvim" }, -- optional: enables the progress indicator
+  dependencies = { "StefanBartl/lib.nvim" },
   opts = {
     engine = "auto",           -- "auto" | "fzf" | "telescope"
   },
@@ -190,7 +191,7 @@ ______________________________________________________________________
   name = "replacer.nvim",
   main = "replacer",
   cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
-  dependencies = { "StefanBartl/lib.nvim" }, -- optional: enables the progress indicator
+  dependencies = { "StefanBartl/lib.nvim" },
   opts = {
     engine = "auto",           -- picker: "auto" | "fzf" | "telescope"
     search_engine = "auto",    -- backend: "auto" | "ripgrep" | "vimgrep"
