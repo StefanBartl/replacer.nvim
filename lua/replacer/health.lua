@@ -22,9 +22,7 @@ local function get_version(cmd, args)
     ok = obj.code == 0
     result = obj.stdout or ""
   else
-    local full_cmd = table.concat(vim.tbl_map(vim.fn.shellescape, vim.list_extend({ cmd }, args)), " ")
-    result = vim.fn.system(full_cmd)
-    ok = vim.v.shell_error == 0
+    ok, result = require("lib.nvim.cross.run_argv").run_blocking_captured(vim.list_extend({ cmd }, args))
   end
 
   if not ok then return nil end
