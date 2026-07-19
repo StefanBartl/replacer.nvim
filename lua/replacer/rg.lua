@@ -240,8 +240,8 @@ local function collect_ripgrep(old, roots, cfg)
     end
     return parse_rg_json(obj and obj.stdout or "", old, cfg)
   end
-  local out = vim.fn.system(table.concat(vim.tbl_map(vim.fn.shellescape, args), " "))
-  if vim.v.shell_error ~= 0 and vim.v.shell_error ~= 1 then
+  local ok_run, out = require("lib.nvim.cross.run_argv").run_blocking_captured(args)
+  if not ok_run and vim.v.shell_error ~= 1 then
     notify.error("rg failed (sync): " .. (out or ""))
     return {}
   end
