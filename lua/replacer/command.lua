@@ -290,7 +290,7 @@ end
 ---@param scope RP_Scope
 ---@return string[] roots, boolean single_file
 local function resolve_scope(scope)
-  scope = scope or ""
+  scope = require("lib.nvim.cross.fs.expand_path")(scope or "")
   local scope_lc = scope:lower()
 
   if scope_lc == "%" or scope_lc == "buf" then
