@@ -224,28 +224,28 @@ local function parse_rg_json(stdout, old, cfg)
   return matches
 end
 
---- Run ripgrep synchronously and parse the result.
+--- Run ripgrep synchronously and parse the result. Errors are returned (not
+--- notified here) so the calling layer decides how to surface them — matches
+--- the async sibling `collect_ripgrep_async` below.
 ---@param old string
 ---@param roots string[]
 ---@param cfg RP_RG_Config
----@return RP_Match[]
+---@return RP_Match[], RP_Error|nil
 local function collect_ripgrep(old, roots, cfg)
   local args = build_rg_args(old, roots, cfg)
   if vim.system then
     local obj = vim.system(args, { text = true }):wait()
     local code = obj and obj.code or 1
     if code ~= 0 and code ~= 1 then
-      notify.error("rg failed: " .. (obj and obj.stderr or ""))
-      return {}
+      return {}, require("replacer.error").search_error("rg failed", obj and obj.stderr or nil)
     end
-    return parse_rg_json(obj and obj.stdout or "", old, cfg)
+    return parse_rg_json(obj and obj.stdout or "", old, cfg), nil
   end
   local ok_run, out = require("lib.nvim.cross.run_argv").run_blocking_captured(args)
   if not ok_run and vim.v.shell_error ~= 1 then
-    notify.error("rg failed (sync): " .. (out or ""))
-    return {}
+    return {}, require("replacer.error").search_error("rg failed (sync)", out or nil)
   end
-  return parse_rg_json(out, old, cfg)
+  return parse_rg_json(out, old, cfg), nil
 end
 
 --- Minimum time between progress redraws while streaming stdout. Prevents
@@ -536,26 +536,31 @@ end
 --------------------------------------------------------------------------------
 
 --- Collect matches for `old` under `roots` using the configured backend.
+--- Errors from the ripgrep backend are returned (not notified here) so the
+--- calling layer decides how to surface them — matches `M.collect_async`.
 ---@param old string
 ---@param roots string[]
 ---@param cfg RP_RG_Config
----@return RP_Match[]
+---@return RP_Match[], RP_Error|nil
 function M.collect(old, roots, cfg)
   -- Modified, file-backed single buffer: scan in-memory content.
   if #roots == 1 then
     local modified, bufnr = is_buffer_modified(roots[1])
     if modified and bufnr then
       notify.info("scanning modified buffer instead of disk")
-      return apply_line_range(collect_from_buffer(old, bufnr, cfg), cfg)
+      return apply_line_range(collect_from_buffer(old, bufnr, cfg), cfg), nil
     end
   end
 
   local backend = pick_backend(cfg)
-  local items = (backend == "ripgrep")
-    and collect_ripgrep(old, roots, cfg)
-    or collect_vimgrep(old, roots, cfg)
+  local items, err
+  if backend == "ripgrep" then
+    items, err = collect_ripgrep(old, roots, cfg)
+  else
+    items = collect_vimgrep(old, roots, cfg)
+  end
 
-  return apply_line_range(items, cfg)
+  return apply_line_range(items, cfg), err
 end
 
 --- Collect matches asynchronously, invoking `on_done(items, err)` when ready.

@@ -11,6 +11,8 @@
 local common = require("replacer.pickers.common")
 local notify = require("replacer.util.notify")
 local confirm = require("lib.nvim.ui.kit.confirm")
+local map = require("lib.nvim.map")
+local window = require("lib.nvim.window")
 
 --- Translate a Neovim-style key notation ("<C-a>", "<Tab>", "<S-Tab>", "<Esc>")
 --- into fzf's own `--bind`/actions-table key spec ("ctrl-a", "tab", "shift-tab", "esc").
@@ -154,11 +156,10 @@ local function run(old, items, new_text, cfg, apply_func)
     opts.winopts.on_create = function(...)
       if type(prev_on_create) == "function" then pcall(prev_on_create, ...) end
       local buf = vim.api.nvim_get_current_buf()
-      pcall(vim.keymap.set, "t", "<Esc>", [[<C-\><C-n>]],
+      local win = vim.api.nvim_get_current_win()
+      pcall(map, "t", "<Esc>", [[<C-\><C-n>]],
         { buffer = buf, nowait = true, silent = true })
-      pcall(vim.keymap.set, "n", key_quit, function()
-        pcall(vim.api.nvim_win_close, vim.api.nvim_get_current_win(), true)
-      end, { buffer = buf, nowait = true, silent = true })
+      window.nice_quit(win, { keys = { key_quit }, force = true })
 
       -- Only "quit" is a real Neovim keymap which-key can see: toggle_select
       -- and apply_all are fzf's own terminal-native bindings (--bind/actions

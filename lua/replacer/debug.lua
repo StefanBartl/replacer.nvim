@@ -3,6 +3,7 @@
 --- Usage: :ReplaceDebug {on|off|status|test}
 
 local notify = require("replacer.util.notify")
+local usercmd = require("lib.nvim.usercmd")
 
 local M = {}
 
@@ -141,7 +142,7 @@ end
 
 --- Register debug command
 function M.register_command()
-  vim.api.nvim_create_user_command("ReplaceDebug", function(opts)
+  usercmd.create("ReplaceDebug", function(opts)
     local arg = opts.args or ""
     local cmd = arg:lower()
 
