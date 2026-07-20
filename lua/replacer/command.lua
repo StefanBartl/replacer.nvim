@@ -33,6 +33,7 @@
 ---   M.parse_request(raw, o) parse a raw arg string -> ok, request, err (testable)
 local uv = vim.uv or vim.loop
 local notify = require("replacer.util.notify")
+local composer = require("lib.nvim.usercmd.composer")
 
 local M = {}
 
@@ -330,14 +331,40 @@ end
 -- Command registration
 --------------------------------------------------------------------------------
 
-local COMPLETIONS = {
-  "%", "cwd", ".", "All",
-  "--literal", "--regex", "--smart-case", "--hidden", "--no-ignore",
-  "--type=", "--glob=", "--exclude=", "--engine=", "--context=",
-  "--dry", "--export=", "--all",
+-- Shared FlagSpec list for both :Replace and :Surround's composer routes
+-- (mirrors BOOL_FLAGS/VALUE_FLAGS above) -- drives <Tab> completion only.
+-- Dispatch never reads ctx.flags: see the `run` comment below for why.
+---@type table[]
+M.FLAGS = {
+  { name = "dry", bool = true },
+  { name = "all", bool = true },
+  { name = "literal", bool = true },
+  { name = "no-literal", bool = true },
+  { name = "regex", bool = true },
+  { name = "smart-case", bool = true },
+  { name = "no-smart-case", bool = true },
+  { name = "hidden", bool = true },
+  { name = "no-hidden", bool = true },
+  { name = "ignore", bool = true },
+  { name = "no-ignore", bool = true },
+  { name = "type", type = "STRING", repeatable = true },
+  { name = "glob", type = "STRING", repeatable = true },
+  { name = "exclude", type = "STRING", repeatable = true },
+  { name = "engine", type = "STRING", enum = { "fzf", "telescope" } },
+  { name = "context", type = "INT" },
+  { name = "export", type = "STRING" },
 }
 
---- Register :Replace and :Replacer user commands.
+--- Register :Replace and :Replacer user commands, built via
+--- lib.nvim.usercmd.composer. The route declares `args`/`flags` purely to
+--- drive <Tab> completion; dispatch bypasses composer's own bound
+--- ctx.args/ctx.flags entirely and calls the ORIGINAL handler(opts) with
+--- ctx.raw (composer's untouched nvim-callback opts table -- same .args
+--- string, .bang, .range/.line1/.line2 shape as before this migration), so
+--- parse_request/apply_tokens/BOOL_FLAGS/VALUE_FLAGS run byte-for-byte
+--- unchanged. This is a `path = {}` root route: it matches with zero
+--- literal subcommand tokens, reproducing the flat
+--- `:Replace {old} {new} [scope] [--flags]` grammar verbatim.
 ---@param run_fun fun(request: RP_Request): nil
 ---@return nil
 function M.register(run_fun)
@@ -359,23 +386,24 @@ function M.register(run_fun)
     run_fun(request)
   end
 
-  local cmd_opts = {
-    nargs = "*",
-    bang = true,
-    range = true,
-    complete = function(arglead, _, _)
-      if arglead == "" then return COMPLETIONS end
-      local matches = {}
-      for _, c in ipairs(COMPLETIONS) do
-        if c:sub(1, #arglead) == arglead then matches[#matches + 1] = c end
-      end
-      return matches
-    end,
+  local spec = {
     desc = "Interactive replace: :[range]Replace[!] {old} {new} [scope] [--flags]",
+    bang = true,
+    routes = {
+      { path = {},
+        args = {
+          { name = "old", type = "STRING" },
+          { name = "new", type = "STRING" },
+          { name = "scope", type = "STRING", optional = true, values = { "%", "cwd", "." } },
+        },
+        flags = M.FLAGS,
+        range = true,
+        run = function(ctx) handler(ctx.raw) end },
+    },
   }
 
-  vim.api.nvim_create_user_command("Replace", handler, cmd_opts)
-  vim.api.nvim_create_user_command("Replacer", handler, cmd_opts)
+  composer.verb("Replace", spec)
+  composer.verb("Replacer", spec)
 end
 
 M.resolve_scope = resolve_scope

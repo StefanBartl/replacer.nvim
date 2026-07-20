@@ -53,6 +53,24 @@ local function check_neovim(health)
   end
 end
 
+--- Check lib.nvim: required for the :Replace/:Replacer/:Surround/:Wrap
+--- command layer (lib.nvim.usercmd.composer). Notify/confirm/export also
+--- depend on it directly; only progress_style (see check_optional) stays
+--- genuinely soft.
+---@param health table vim.health module
+local function check_lib_nvim(health)
+  health.start("lib.nvim")
+
+  if pcall(require, "lib.nvim.usercmd.composer") then
+    health.ok("lib.nvim detected (:Replace/:Surround command layer available)")
+  else
+    health.error(
+      "lib.nvim not found — commands will fail to register",
+      { "Add 'StefanBartl/lib.nvim' as a dependency" }
+    )
+  end
+end
+
 --- Check ripgrep
 ---@param health table vim.health module
 local function check_ripgrep(health)
@@ -259,6 +277,7 @@ function M.check()
   local health = vim.health or require("health")
 
   check_neovim(health)
+  check_lib_nvim(health)
   check_ripgrep(health)
   check_pickers(health)
   check_config(health)

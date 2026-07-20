@@ -42,9 +42,12 @@ Replacer provides project-wide search-and-replace with:
 • ONE of the following pickers:
   - telescope.nvim (+ plenary.nvim): https://github.com/nvim-telescope/telescope.nvim
   - fzf-lua: https://github.com/ibhagwan/fzf-lua
-• Optional: lib.nvim (https://github.com/StefanBartl/lib.nvim) for the
-  progress indicator, see |replacer-progress|. Without it, searches simply
-  run without any indicator — nothing else changes.
+• lib.nvim (https://github.com/StefanBartl/lib.nvim) — REQUIRED: the
+  :Replace/:Surround command layer (lib.nvim.usercmd.composer), notifications,
+  the confirm dialog, and file export all depend on it directly. The
+  progress indicator specifically (see |replacer-progress|) stays optional
+  on top of that — without lib.nvim, searches simply run without any
+  indicator.
 
 ==============================================================================
 3. INSTALLATION                                       *replacer-installation*
@@ -54,7 +57,7 @@ With lazy.nvim: >lua
       "StefanBartl/replacer.nvim",
       name = "replacer.nvim",
       main = "replacer",
-      dependencies = { "StefanBartl/lib.nvim" }, -- optional: progress indicator
+      dependencies = { "StefanBartl/lib.nvim" }, -- required
       opts = {
         engine = "telescope",  -- or "fzf"
         write_changes = true,

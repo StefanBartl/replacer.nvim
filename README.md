@@ -9,6 +9,7 @@
 Project-wide search-and-replace with ripgrep, an interactive picker (fzf-lua or Telescope), live preview, and precise application of changes.
 
 > Requires [`lib.nvim`](https://github.com/StefanBartl/lib.nvim) — used for
+> the `:Replace`/`:Surround` command layer (`lib.nvim.usercmd.composer`),
 > notifications, the confirm dialog, file export, and the progress indicator.
 > One helper library shared across the author's plugins.
 
@@ -238,7 +239,7 @@ use({
   "StefanBartl/replacer",
   as = "replacer.nvim",
   cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
-  requires = { "StefanBartl/lib.nvim" }, -- optional: enables the progress indicator
+  requires = { "StefanBartl/lib.nvim" }, -- required: command layer + progress indicator
   config = function()
     require("replacer").setup({
       engine = "auto",

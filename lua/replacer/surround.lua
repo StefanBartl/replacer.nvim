@@ -33,6 +33,7 @@
 ---   :Surround! name q %         → "name"  everywhere in the buffer, no picker
 ---   :Surround word ** --nested  → wrap even already-**bold** occurrences
 
+local composer = require("lib.nvim.usercmd.composer")
 local command = require("replacer.command")
 local notify = require("replacer.util.notify")
 
@@ -239,39 +240,44 @@ end
 -- Registration
 --------------------------------------------------------------------------------
 
-local COMPLETIONS = {
-  -- delimiters / aliases
+-- Delimiter aliases + Surround-only --nested/--allow-nested, for <Tab>
+-- completion on the (unnamed, optional) `delim` positional slot.
+local DELIM_VALUES = {
   "`", '"', "'", "*", "**", "_", "(", "[", "{", "<",
   "b", "q", "s", "star", "bold", "italic", "paren", "bracket", "brace", "angle",
-  -- scopes
-  "%", "cwd", ".",
-  -- flags (mirror :Replace)
-  "--literal", "--smart-case", "--hidden", "--no-ignore",
-  "--type=", "--glob=", "--exclude=", "--engine=", "--context=",
-  "--dry", "--export=", "--all", "--nested",
 }
 
---- Register :Surround (and :Wrap alias). `run_fun` is replacer.run.
+local FLAGS = vim.deepcopy(command.FLAGS)
+FLAGS[#FLAGS + 1] = { name = "nested", bool = true }
+FLAGS[#FLAGS + 1] = { name = "allow-nested", bool = true }
+
+--- Register :Surround (and :Wrap alias), built via lib.nvim.usercmd.composer.
+--- Same design as :Replace/:Replacer in command.lua: the route's args/flags
+--- exist only for <Tab> completion. Dispatch bypasses composer's own bound
+--- ctx.args/ctx.flags and calls the ORIGINAL handle(run_fun, opts) with
+--- ctx.raw, so tokenize/apply_tokens/the --nested pre-filter all run
+--- unchanged.
 ---@param run_fun fun(request: RP_Request): nil
 ---@return nil
 function M.register(run_fun)
-  local cmd_opts = {
-    nargs = "*",
-    bang = true,
-    range = true,
-    complete = function(arglead, _, _)
-      if arglead == "" then return COMPLETIONS end
-      local out = {}
-      for _, c in ipairs(COMPLETIONS) do
-        if c:sub(1, #arglead) == arglead then out[#out + 1] = c end
-      end
-      return out
-    end,
+  local spec = {
     desc = "Wrap every match of a pattern: :[range]Surround[!] {pattern} [delim] [scope] [--flags]",
+    bang = true,
+    routes = {
+      { path = {},
+        args = {
+          { name = "pattern", type = "STRING" },
+          { name = "delim", type = "STRING", optional = true, values = DELIM_VALUES },
+          { name = "scope", type = "STRING", optional = true, values = { "%", "cwd", "." } },
+        },
+        flags = FLAGS,
+        range = true,
+        run = function(ctx) handle(run_fun, ctx.raw) end },
+    },
   }
 
-  vim.api.nvim_create_user_command("Surround", function(o) handle(run_fun, o) end, cmd_opts)
-  vim.api.nvim_create_user_command("Wrap", function(o) handle(run_fun, o) end, cmd_opts)
+  composer.verb("Surround", spec)
+  composer.verb("Wrap", spec)
 end
 
 -- Exposed for tests.
