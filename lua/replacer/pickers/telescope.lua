@@ -151,13 +151,17 @@ local function run(items, new_text, cfg, apply_func)
       local function do_all()
         if cfg.confirm_all then
           local msg = string.format("Apply replacement to ALL %d spot(s)?", #items)
+          -- Close the picker before opening the confirm float: leaving it open
+          -- underneath a second focus-stealing float corrupts Telescope's
+          -- internal picker registry, so closing it afterward (from
+          -- on_answer) crashes on a nil picker lookup inside actions.close.
+          actions.close(prompt_bufnr)
           confirm.open({
             question = msg,
             on_answer = function(yes)
               if not yes then return end
               local files, spots = apply_func(items, new_text, cfg.write_changes)
               common.notify_result(files, spots)
-              actions.close(prompt_bufnr)
             end,
           })
           return
