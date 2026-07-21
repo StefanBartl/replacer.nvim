@@ -9,7 +9,7 @@ return {
   -- Search backend: "auto" picks ripgrep when available, else vimgrep (native).
   search_engine = "auto",
   -- Progress indicator style (requires lib.nvim; silently skipped otherwise):
-  -- "auto" | "notify" | "statusline" | "fidget" | "float". See lib.nvim.progress.
+  -- "auto" | "notify" | "statusline" | "fidget" | "float" | "kit". See lib.nvim.progress.
   progress_style = "auto",
 
   write_changes = true,

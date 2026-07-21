@@ -16,7 +16,7 @@ decouples "an operation is running" from "how that gets shown".
 
 ```lua
 require("replacer").setup({
-  progress_style = "auto", -- "auto" | "notify" | "statusline" | "fidget" | "float"
+  progress_style = "auto", -- "auto" | "notify" | "statusline" | "fidget" | "float" | "kit"
 })
 ```
 
@@ -45,8 +45,8 @@ detects the missing module via `pcall` and continues without any indicator.
 
 Prefers `"fidget"` if [fidget.nvim](https://github.com/j-hui/fidget.nvim) is
 installed and loadable, otherwise falls back to `"notify"`. Never picks
-`"float"` on its own — that style is more intrusive (it opens a real window)
-and must be requested explicitly.
+`"float"`/`"kit"` on its own — those styles are more intrusive (they open a
+real window) and must be requested explicitly.
 
 Use this if you just want *something* reasonable without thinking about it.
 
@@ -108,6 +108,28 @@ require("replacer").setup({ progress_style = "float" })
 
 The window auto-closes a moment after the search finishes (or is cancelled),
 showing the final result text first.
+
+### `"kit"`
+
+Identical interaction model to `"float"` — same non-focus-stealing window,
+same focus + `<Esc>` + confirm-prompt cancel flow — but rendered through
+[`lib.nvim.ui.kit`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/ui/kit/README.md)'s
+themed `surface` primitive instead of a hardcoded border. If you already use
+`lib.nvim.ui.kit` for other popups in your config (notes, toasts, confirms),
+`"kit"` gives the progress window the same border/highlight preset instead of
+looking like a one-off.
+
+```lua
+require("replacer").setup({ progress_style = "kit" })
+```
+
+Pick a specific ui.kit preset for just this handle via `kit_theme` — not
+exposed as a top-level `replacer` option (it's a `lib.nvim.progress`-level
+knob), so set it once for your whole config instead:
+
+```lua
+require("lib.nvim.ui.kit").setup({ default = "double" }) -- affects every kit popup, including replacer's
+```
 
 ---
 

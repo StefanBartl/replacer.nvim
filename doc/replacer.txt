@@ -219,7 +219,7 @@ Default configuration: >lua
       search_engine = "auto",            -- "auto" | "ripgrep" | "vimgrep"
 
       -- Progress indicator (requires lib.nvim; silently skipped otherwise).
-      progress_style = "auto",           -- "auto"|"notify"|"statusline"|"fidget"|"float"
+      progress_style = "auto",           -- "auto"|"notify"|"statusline"|"fidget"|"float"|"kit"
 
       -- Behavior
       write_changes = true,              -- write buffers after replace
@@ -273,7 +273,7 @@ search_engine~
 progress_style~
     Type: string
     Default: "auto"
-    Values: "auto" | "notify" | "statusline" | "fidget" | "float"
+    Values: "auto" | "notify" | "statusline" | "fidget" | "float" | "kit"
 
     Progress indicator style. Requires the optional lib.nvim dependency;
     silently has no effect if it isn't installed. See |replacer-progress|.
@@ -369,7 +369,7 @@ never flashes any UI, regardless of style.
 Styles (|replacer-config-progress_style|):~
 
     "auto"        (default) prefers "fidget" if fidget.nvim is installed,
-                  else "notify". Never picks "float" on its own.
+                  else "notify". Never picks "float"/"kit" on its own.
     "notify"      vim.notify; updated in place if the active backend
                   supports it (e.g. nvim-notify), else sequential notifies.
     "statusline"  draws nothing — read the live text from your own
@@ -383,6 +383,9 @@ Styles (|replacer-config-progress_style|):~
                   leaves it running. The <Esc> keymap is buffer-local to
                   that window, so nothing happens while any other window is
                   focused.
+    "kit"         same interaction as "float", rendered through
+                  lib.nvim.ui.kit's themed surface instead of a fixed look
+                  (matches whatever preset you configured for ui.kit).
 
                                              *replacer-progress-statusline*
 Using the "statusline" style~

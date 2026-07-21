@@ -196,9 +196,10 @@ ______________________________________________________________________
   opts = {
     engine = "auto",           -- picker: "auto" | "fzf" | "telescope"
     search_engine = "auto",    -- backend: "auto" | "ripgrep" | "vimgrep"
-    progress_style = "auto",   -- "auto" | "notify" | "statusline" | "fidget" | "float" (needs lib.nvim)
-                               -- "float": small window, bottom-right, never steals focus;
+    progress_style = "auto",   -- "auto" | "notify" | "statusline" | "fidget" | "float" | "kit" (needs lib.nvim)
+                               -- "float"/"kit": small window, bottom-right, never steals focus;
                                -- focus it + <Esc> asks (English prompt) to abort the search
+                               -- ("kit" is themed via lib.nvim.ui.kit's preset system)
     write_changes = true,      -- write buffers after replace
     confirm_all = true,        -- ask before replacing all
     preview_context = 3,       -- lines of context in preview
@@ -258,7 +259,7 @@ ______________________________________________________________________
 | --------------- | ------- | -------------------------------------------------------------- |
 | engine          | string  | Picker UI: "auto" / "fzf" / "telescope" ("auto" → fzf-lua if present, else telescope) |
 | search_engine   | string  | Match backend: "auto" / "ripgrep" / "vimgrep" ("auto" → ripgrep if present, else vimgrep) |
-| progress_style  | string  | Progress indicator style (requires [`lib.nvim`](#with-lazynvim), silently skipped otherwise): "auto" / "notify" / "statusline" / "fidget" / "float" — see [Progress Indicator](#progress-indicator) |
+| progress_style  | string  | Progress indicator style (requires [`lib.nvim`](#with-lazynvim), silently skipped otherwise): "auto" / "notify" / "statusline" / "fidget" / "float" / "kit" — see [Progress Indicator](#progress-indicator) |
 | write_changes   | boolean | Write modified buffers on apply (true) or keep unsaved (false) |
 | confirm_all     | boolean | Ask confirmation before replacing all matches at once          |
 | confirm_wide_scope | boolean | Extra confirmation for non-buffer (cwd/dir) ALL applies      |
@@ -281,7 +282,7 @@ ______________________________________________________________________
 require("replacer").setup({
   engine = "auto",           -- "auto" | "fzf" | "telescope"
   search_engine = "auto",    -- "auto" | "ripgrep" | "vimgrep"
-  progress_style = "auto",   -- "auto" | "notify" | "statusline" | "fidget" | "float"
+  progress_style = "auto",   -- "auto" | "notify" | "statusline" | "fidget" | "float" | "kit"
   default_scope = "%",
   write_changes = true,
   confirm_all = true,        -- affects <C-a> and :Replace!
@@ -313,11 +314,12 @@ Configure it with `progress_style` (default `"auto"`):
 
 | Style         | What it does                                                                 | Extra dependency |
 | ------------- | ----------------------------------------------------------------------------- | ---------------- |
-| `"auto"`      | Prefers `"fidget"` when `fidget.nvim` is installed, else `"notify"`. Never picks `"float"` on its own. | none (uses whatever is present) |
+| `"auto"`      | Prefers `"fidget"` when `fidget.nvim` is installed, else `"notify"`. Never picks `"float"`/`"kit"` on its own. | none (uses whatever is present) |
 | `"notify"`    | `vim.notify`; updated in place if your notify backend supports it (e.g. [nvim-notify](https://github.com/rcarriga/nvim-notify)), otherwise one notification per update. | none |
 | `"statusline"`| Headless — nothing is drawn by replacer itself. You read the live text from your own statusline component (see below). | none |
 | `"fidget"`    | Renders through [fidget.nvim](https://github.com/j-hui/fidget.nvim)'s LSP-style progress corner. | `fidget.nvim` |
 | `"float"`     | A small floating window, bottom-right, that never steals focus. Focus it deliberately and press `<Esc>` (normal mode) to get a confirm prompt — "Yes" aborts the running search, "No" (or leaving the window) keeps it running. | none |
+| `"kit"`       | Same interaction as `"float"` (focus + `<Esc>` to cancel), but rendered through [`lib.nvim.ui.kit`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/ui/kit/README.md)'s themed `surface` — matches your configured ui.kit preset (border/highlights) instead of a fixed look. | none (part of `lib.nvim`) |
 
 A search only ever becomes visible after ~150ms, so a fast search on a small
 scope never flashes any UI — regardless of style.

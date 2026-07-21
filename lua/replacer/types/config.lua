@@ -19,7 +19,7 @@
 ---@class RP_Config
 ---@field engine?               "fzf"|"telescope"|"auto"  -- picker UI; "auto" -> fzf-lua if present, else telescope
 ---@field search_engine?        "ripgrep"|"vimgrep"|"auto" -- match collector; "auto" -> ripgrep if present, else vimgrep
----@field progress_style?       "auto"|"notify"|"statusline"|"fidget"|"float" -- lib.nvim.progress style (requires lib.nvim; skipped otherwise). "float" opens a small window; focus it + <Esc> asks to cancel the search
+---@field progress_style?       "auto"|"notify"|"statusline"|"fidget"|"float"|"kit" -- lib.nvim.progress style (requires lib.nvim; skipped otherwise). "float"/"kit" open a small window; focus it + <Esc> asks to cancel the search ("kit" is themed via lib.nvim.ui.kit)
 ---@field write_changes?        boolean
 ---@field confirm_all?          boolean
 ---@field confirm_wide_scope?   boolean

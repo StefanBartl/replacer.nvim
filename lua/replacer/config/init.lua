@@ -66,11 +66,11 @@ local function as_search_engine(v)
 end
 
 ---@param v any
----@return "auto"|"notify"|"statusline"|"fidget"|"float"|nil
+---@return "auto"|"notify"|"statusline"|"fidget"|"float"|"kit"|nil
 local function as_progress_style(v)
   if type(v) ~= "string" then return nil end
   local s = v:lower():gsub("%s+", "")
-  if s == "auto" or s == "notify" or s == "statusline" or s == "fidget" or s == "float" then
+  if s == "auto" or s == "notify" or s == "statusline" or s == "fidget" or s == "float" or s == "kit" then
     return s
   end
   return nil
