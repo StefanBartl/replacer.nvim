@@ -110,7 +110,7 @@ function M.build_patch(results)
   for _, r in ipairs(results) do
     local a = table.concat(r.old_lines, "\n") .. "\n"
     local b = table.concat(r.new_lines, "\n") .. "\n"
-    local hunks = vim.diff(a, b, { result_type = "unified", ctxlen = 3 })
+    local hunks = vim.text.diff(a, b, { result_type = "unified", ctxlen = 3 })
     if type(hunks) == "string" and hunks ~= "" then
       local rel = vim.fn.fnamemodify(r.path, ":.")
       out[#out + 1] = "--- a/" .. rel
