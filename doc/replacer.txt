@@ -153,6 +153,10 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                                              ALL-mode: ask All/Skip/Only-some/
                                              Quit per file (supersedes
                                              confirm_all/confirm_wide_scope)
+        --also-rename-file | --no-also-rename-file
+                                             single-file scope only: after a
+                                             successful content replace, offer
+                                             to also rename the file itself
         --checkpoint | --no-checkpoint       ALL-mode: snapshot touched files
                                              first; |:ReplaceUndo| restores them
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
@@ -739,6 +743,21 @@ Events: before_apply (may return false to skip/veto that file), after_apply,
 before_write, after_write — all fire once per file. A hook error is caught
 and warned via notify.warn(), never aborts the apply. See
 lua/replacer/hooks.lua.
+
+                                                *replacer-rename-assist*
+Rename-Assist~
+
+--also-rename-file pairs a single-file content replace with an offer to
+also rename the file itself the same way (e.g. a class and its file in one
+go). Scoped to single-file scope only (%/buf or an explicit file path —
+never a directory tree; see |:ReplaceFNames| for that). A no-op (no prompt
+at all) when the file's own basename doesn't contain {old} as a literal
+substring — independent of --case-preserve, which only affects replaced
+content, not the filename match: >vim
+    :Replace MyWidget MyButton % --also-rename-file --all
+<
+If the file is named e.g. MyWidget.lua, you're asked "Also rename
+MyWidget.lua -> MyButton.lua?". See lua/replacer/rename_assist.lua.
 
                                                    *replacer-i18n-messages*
 i18n / Messages~

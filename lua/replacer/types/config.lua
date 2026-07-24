@@ -39,6 +39,7 @@
 ---@field literal?              boolean     -- default search mode (flags may override per-run)
 ---@field _old_len? 	           number
 ---@field _changed_only?       string[]    -- internal: set by --changed, see replacer.gitfiles
+---@field _also_rename_file?   boolean     -- internal: set by --also-rename-file
 ---@field smart_case?           boolean
 ---@field default_scope?        string      -- "%", "cwd", ".", or explicit path
 ---@field file_types?           string[]    -- ripgrep --type values (e.g. { "lua" })

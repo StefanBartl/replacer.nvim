@@ -67,6 +67,7 @@ local function effective_cfg(request)
   cfg._line_range = request.line_range
   cfg._old_len = cfg.literal and #request.old or 0
   cfg._changed_only = request.overrides and request.overrides.changed_only
+  cfg._also_rename_file = request.overrides and request.overrides.also_rename_file
   return cfg
 end
 
@@ -140,6 +141,14 @@ local function dispatch(request, cfg, single_file, items)
     pcall(function()
       require("replacer.history").add(request, { files = files, spots = spots })
     end)
+    -- --also-rename-file: single-file scope only (never a directory tree —
+    -- that's :ReplaceFNames' job). Guarded so a rename-assist failure never
+    -- affects the content apply it followed.
+    if cfg._also_rename_file and single_file and files > 0 and chosen[1] then
+      pcall(function()
+        require("replacer.rename_assist").maybe_rename(chosen[1].path, request.old, replacement, cfg)
+      end)
+    end
     return files, spots
   end
 

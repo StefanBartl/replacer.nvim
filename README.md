@@ -68,6 +68,7 @@ Each occurrence on a line becomes its own selectable entry (multiple hits per li
 | `--to-loclist` | send matches to the current window's location list and open it (never writes) |
 | `--changed` / `--changed=<kinds>` | restrict to git changed files; bare = modified+staged+untracked, or a comma-list subset (e.g. `--changed=modified,staged`) |
 | `--confirm-per-file` / `--no-confirm-per-file` | ALL-mode: ask All/Skip/Only-some/Quit per file instead of one global confirmation |
+| `--also-rename-file` / `--no-also-rename-file` | single-file scope only: after a successful content replace, offer to also rename the file itself the same way |
 | `--checkpoint` / `--no-checkpoint` | ALL-mode: snapshot every about-to-be-touched file first; `:ReplaceUndo` restores them |
 | `--type=<ft>` *(repeatable)* | restrict to a filetype (ripgrep `--type`) |
 | `--glob=<pat>` *(repeatable)* | include glob pattern |
@@ -199,6 +200,23 @@ on its own if its name still matches afterward.
 Does not follow the rename through source references (imports/requires)
 across the project — see [Rename-Assist](#rename-assist) for the narrower,
 single-file case that pairs a content replace with renaming that same file.
+
+### Rename-Assist
+
+`--also-rename-file` pairs a single-file content replace with an offer to
+also rename the file itself the same way — e.g. renaming a class and its
+file in one go. Scoped to single-file scope only (`%`/`buf` or an explicit
+file path — never a directory tree; use [`:ReplaceFNames`](#renaming-files--directories)
+for that). A no-op (no prompt at all) when the file's own basename doesn't
+contain `{old}`.
+
+```sh
+:Replace MyWidget MyButton % --also-rename-file --all
+" content replaced; if the file is named e.g. MyWidget.lua, you're asked:
+" "Also rename MyWidget.lua -> MyButton.lua?"
+" (the file rename is a literal substring match on the basename, independent
+" of --case-preserve, which only affects replaced content)
+```
 
 ### i18n / Messages
 

@@ -623,6 +623,60 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 2q) rename_assist: --also-rename-file (single-file scope only)
+--------------------------------------------------------------------------------
+do
+  local rename_assist = require("replacer.rename_assist")
+
+  local ra_dir = tmp .. "/ra"
+  vim.fn.mkdir(ra_dir, "p")
+  local old_file = ra_dir .. "/foo_widget.txt"
+  do local fh = assert(io.open(old_file, "w")); fh:write("foo content\n"); fh:close() end
+
+  local orig_confirm = vim.fn.confirm
+  local confirm_calls = 0
+
+  -- No match in the basename -> no-op, no prompt at all.
+  vim.fn.confirm = function() confirm_calls = confirm_calls + 1; return 2 end
+  rename_assist.maybe_rename(old_file, "nonexistent_pattern", "bar", {})
+  check("rename_assist: no basename match -> no prompt at all", confirm_calls == 0)
+
+  -- Match + Yes -> renamed.
+  vim.fn.confirm = function() confirm_calls = confirm_calls + 1; return 1 end
+  rename_assist.maybe_rename(old_file, "foo", "bar", {})
+  vim.fn.confirm = orig_confirm
+  check("rename_assist: match + Yes -> file renamed", confirm_calls == 1
+    and vim.fn.filereadable(ra_dir .. "/bar_widget.txt") == 1
+    and vim.fn.filereadable(old_file) == 0)
+
+  -- Match + No -> left alone.
+  local old_file2 = ra_dir .. "/foo_second.txt"
+  do local fh = assert(io.open(old_file2, "w")); fh:write("x\n"); fh:close() end
+  vim.fn.confirm = function() return 2 end
+  rename_assist.maybe_rename(old_file2, "foo", "bar", {})
+  vim.fn.confirm = orig_confirm
+  check("rename_assist: match + No -> left alone", vim.fn.filereadable(old_file2) == 1)
+
+  -- End-to-end via replacer.run with --also-rename-file, single-file scope.
+  local content_file = ra_dir .. "/foo_target.txt"
+  do local fh = assert(io.open(content_file, "w")); fh:write("foo body\n"); fh:close() end
+  vim.fn.confirm = function() return 1 end -- Yes
+  replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
+  local req = {
+    old = "foo", new = "bar", scope = content_file, all = true, dry = false, export = nil,
+    line_range = nil, overrides = { also_rename_file = true },
+    filters = { file_types = {}, globs = {}, exclude = {} },
+  }
+  replacer.run(req)
+  vim.wait(300)
+  vim.fn.confirm = orig_confirm
+  check("rename_assist: end-to-end via --also-rename-file renames the file",
+    vim.fn.filereadable(ra_dir .. "/bar_target.txt") == 1 and vim.fn.filereadable(content_file) == 0)
+  local final_content = assert(io.open(ra_dir .. "/bar_target.txt", "r")):read("*a")
+  check("rename_assist: content also replaced", final_content:match("bar body") ~= nil, final_content)
+end
+
+--------------------------------------------------------------------------------
 -- 3) Pure edit computation
 --------------------------------------------------------------------------------
 do

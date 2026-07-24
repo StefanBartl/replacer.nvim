@@ -25,5 +25,3 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
   exactly, falling back to plain text replace otherwise.
 - **Streaming picker fill** — populate the picker as ripgrep results stream
   in, so you can start selecting before the search finishes.
-- **Rename-assist** — pair a content replace with an optional file rename
-  (e.g. class name ↔ file name), previewed together.
