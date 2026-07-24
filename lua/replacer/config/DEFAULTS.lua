@@ -48,6 +48,10 @@ return {
   -- ALL-mode: snapshot every about-to-be-touched file before applying, so
   -- :ReplaceUndo can restore them. See lua/replacer/checkpoint.lua.
   checkpoint = false,
+  -- Lua before/after callbacks around the apply pipeline. Each key takes a
+  -- single function or a list of functions: { before_apply = fn, ... }.
+  -- See lua/replacer/hooks.lua.
+  hooks = {},
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }

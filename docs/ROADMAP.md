@@ -40,8 +40,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
   exactly, falling back to plain text replace otherwise.
 - **Streaming picker fill** — populate the picker as ripgrep results stream
   in, so you can start selecting before the search finishes.
-- **Hook system** — Lua before/after callbacks (per file or global) to run a
-  linter/formatter, invalidate a cache, etc.
 - **Rename-assist** — pair a content replace with an optional file rename
   (e.g. class name ↔ file name), previewed together.
 - **i18n / message customization** — configurable prompt/confirmation text,

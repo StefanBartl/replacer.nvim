@@ -19,6 +19,7 @@ local root = require("replacer.root")
 local gitfiles = require("replacer.gitfiles")
 local perfile = require("replacer.perfile")
 local checkpoint = require("replacer.checkpoint")
+local hooks = require("replacer.hooks")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -368,6 +369,60 @@ do
 
   local _, err2 = checkpoint.undo("does-not-exist")
   check("checkpoint: undo of unknown id -> error", err2 ~= nil, err2)
+end
+
+--------------------------------------------------------------------------------
+-- 2j) hooks: config.hooks + M.on(), veto, and wired-in apply_matches
+--------------------------------------------------------------------------------
+do
+  local calls = {}
+  local proceed = hooks.run("before_apply", { path = "x" }, {
+    hooks = { before_apply = function(ctx) calls[#calls + 1] = "cfg:" .. ctx.path end },
+  })
+  check("hooks: config-declared hook fires", #calls == 1 and calls[1] == "cfg:x", vim.inspect(calls))
+  check("hooks: no veto -> proceed true", proceed == true)
+
+  hooks.clear()
+  calls = {}
+  hooks.on("before_apply", function(ctx) calls[#calls + 1] = "on:" .. ctx.path end)
+  hooks.run("before_apply", { path = "y" }, nil)
+  check("hooks: M.on() programmatic hook fires without cfg.hooks",
+    #calls == 1 and calls[1] == "on:y", vim.inspect(calls))
+
+  hooks.clear()
+  hooks.on("before_apply", function() return false end)
+  local proceed2 = hooks.run("before_apply", { path = "z" }, nil)
+  check("hooks: before_apply returning false vetoes", proceed2 == false)
+
+  hooks.clear()
+  hooks.on("before_apply", function() error("boom") end)
+  local ok_run, proceed3 = pcall(hooks.run, "before_apply", { path = "z" }, nil)
+  check("hooks: an erroring hook is caught, never aborts the caller", ok_run == true and proceed3 == true)
+
+  hooks.clear()
+
+  -- End-to-end: a before_apply hook vetoing one file via apply_matches.
+  local file_h1 = tmp .. "/hook1.txt"
+  local file_h2 = tmp .. "/hook2.txt"
+  do local fh = assert(io.open(file_h1, "w")); fh:write("foo\n"); fh:close() end
+  do local fh = assert(io.open(file_h2, "w")); fh:write("foo\n"); fh:close() end
+
+  ---@diagnostic disable: missing-fields
+  local hitems = {
+    { id = 1, path = file_h1, lnum = 1, col0 = 0, old = "foo" },
+    { id = 2, path = file_h2, lnum = 1, col0 = 0, old = "foo" },
+  }
+  ---@diagnostic enable: missing-fields
+
+  hooks.on("before_apply", function(ctx) return ctx.path ~= file_h2 end)
+  local hfiles, hspots = apply.apply_matches(hitems, "foo", "bar", true, {})
+  hooks.clear()
+
+  check("hooks: veto'd file is skipped by apply_matches", hfiles == 1 and hspots == 1, hfiles .. " " .. hspots)
+  local hc1 = assert(io.open(file_h1, "r")):read("*a")
+  local hc2 = assert(io.open(file_h2, "r")):read("*a")
+  check("hooks: non-vetoed file was updated", hc1:match("bar") ~= nil, hc1)
+  check("hooks: vetoed file left untouched", hc2:match("foo") ~= nil, hc2)
 end
 
 --------------------------------------------------------------------------------

@@ -16,6 +16,15 @@
 ---@field apply_all?          string -- replace ALL matches, respects confirm_all (default "<C-a>")
 ---@field quit?                string -- close the picker (default "<Esc>")
 
+---Lua before/after callbacks around the apply pipeline. Each key takes a
+---single function or a list of functions; a before_apply hook may return
+---`false` to skip (veto) that file. See lua/replacer/hooks.lua.
+---@class RP_Hooks
+---@field before_apply? fun(ctx: table)|fun(ctx: table)[]
+---@field after_apply?  fun(ctx: table)|fun(ctx: table)[]
+---@field before_write? fun(ctx: table)|fun(ctx: table)[]
+---@field after_write?  fun(ctx: table)|fun(ctx: table)[]
+
 ---@class RP_Config
 ---@field engine?               "fzf"|"telescope"|"auto"  -- picker UI; "auto" -> fzf-lua if present, else telescope
 ---@field search_engine?        "ripgrep"|"vimgrep"|"auto" -- match collector; "auto" -> ripgrep if present, else vimgrep
@@ -47,6 +56,7 @@
 ---@field skip_binary?          boolean     -- only enforced when safe_mode is true
 ---@field confirm_per_file?     boolean     -- ALL-mode: ask All/Skip/Only-some/Quit per file
 ---@field checkpoint?           boolean     -- ALL-mode: snapshot files before applying (:ReplaceUndo)
+---@field hooks?                RP_Hooks    -- before/after callbacks around the apply pipeline
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

@@ -149,6 +149,33 @@ positional (scope is always the detected root):
 :ReplaceRoot! old new       # bang = --all
 ```
 
+### Hooks
+
+Lua before/after callbacks around the apply pipeline — run a linter/formatter,
+invalidate a cache, log every change, etc. Two ways to register:
+
+```lua
+require("replacer").setup({
+  hooks = {
+    before_apply = function(ctx) -- ctx = { path, matches, new_text }
+      if ctx.path:match("%.generated%.lua$") then return false end -- veto: skip this file
+    end,
+    after_write = function(ctx) -- ctx = { path, bufnr, ok }
+      if ctx.ok then vim.system({ "stylua", ctx.path }) end
+    end,
+  },
+})
+
+-- or programmatically, in addition to config.hooks:
+require("replacer.hooks").on("after_apply", function(ctx) -- ctx = { path, spots, skipped }
+  print(string.format("%s: %d spot(s)", ctx.path, ctx.spots))
+end)
+```
+
+Events: `before_apply` (may return `false` to skip/veto that file), `after_apply`,
+`before_write`, `after_write` — all fire once per file. A hook error is caught
+and warned, never aborts the apply.
+
 ### Picker Keymaps
 
 All keys except `<CR>` (apply) are configurable via `keymaps` in `setup()` —
@@ -328,6 +355,7 @@ ______________________________________________________________________
 | code_only       | boolean | Skip matches inside strings/comments, Tree-sitter best-effort (default: false) |
 | confirm_per_file | boolean | ALL-mode: ask All/Skip/Only-some/Quit per file, supersedes confirm_all (default: false) |
 | checkpoint      | boolean | ALL-mode: snapshot touched files first for `:ReplaceUndo` (default: false) |
+| hooks           | table?  | Before/after callbacks around the apply pipeline: `{ before_apply, after_apply, before_write, after_write }`, each a function or list of functions |
 | safe_mode       | boolean | Skip read-only/oversized/binary files instead of touching them (default: false) |
 | max_file_size   | integer | Bytes; only enforced when safe_mode is true (default: 5 MiB) |
 | skip_binary     | boolean | Only enforced when safe_mode is true (default: true) |

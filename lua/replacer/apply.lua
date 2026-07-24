@@ -198,6 +198,13 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
       end
     end
 
+    local proceed = require("replacer.hooks").run("before_apply",
+      { path = path, matches = list, new_text = new_text }, cfg)
+    if not proceed then
+      skipped_total = skipped_total + #list
+      goto next_path
+    end
+
     -- Resolve & load the buffer defensively.
     local ok_add, bufnr = pcall(vim.fn.bufadd, path)
     if not ok_add or type(bufnr) ~= "number" or not vim.api.nvim_buf_is_valid(bufnr) then
@@ -216,7 +223,7 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
       return a.col0 > b.col0
     end)
 
-    local skipped = 0
+    local skipped, file_spots = 0, 0
     for i = 1, #list do
       local it = list[i]
       local row = it.lnum - 1
@@ -233,6 +240,7 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
         local ok_set = pcall(vim.api.nvim_buf_set_text, bufnr, row, s, row, e, { repl })
         if ok_set then
           spots = spots + 1
+          file_spots = file_spots + 1
         else
           skipped = skipped + 1
         end
@@ -248,12 +256,16 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
         vim.fn.fnamemodify(path, ":."), skipped, #list))
     end
 
+    require("replacer.hooks").run("after_apply", { path = path, spots = file_spots, skipped = skipped }, cfg)
+
     -- Write or count modified files.
     if vim.bo[bufnr].modified then
       if write_changes then
+        require("replacer.hooks").run("before_write", { path = path, bufnr = bufnr }, cfg)
         local ok_write = pcall(function()
           vim.api.nvim_buf_call(bufnr, function() vim.cmd("silent noautocmd write") end)
         end)
+        require("replacer.hooks").run("after_write", { path = path, bufnr = bufnr, ok = ok_write }, cfg)
         if ok_write then
           files = files + 1
         else

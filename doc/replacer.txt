@@ -649,6 +649,33 @@ elsewhere in the same repository, which this plugin has no business doing.
 <Tab>-completable) as a byte-exact write-back, reloading any buffer that
 has that file open. See lua/replacer/checkpoint.lua.
 
+                                                         *replacer-hooks*
+Hooks~
+
+Lua before/after callbacks around the apply pipeline — run a linter/
+formatter, invalidate a cache, log every change, etc. Two ways to
+register: >lua
+    require("replacer").setup({
+      hooks = {
+        before_apply = function(ctx) -- { path, matches, new_text }
+          if ctx.path:match("%.generated%.lua$") then return false end -- veto
+        end,
+        after_write = function(ctx) -- { path, bufnr, ok }
+          if ctx.ok then vim.system({ "stylua", ctx.path }) end
+        end,
+      },
+    })
+
+    -- or programmatically, in addition to config.hooks:
+    require("replacer.hooks").on("after_apply", function(ctx) -- { path, spots, skipped }
+      print(string.format("%s: %d spot(s)", ctx.path, ctx.spots))
+    end)
+<
+Events: before_apply (may return false to skip/veto that file), after_apply,
+before_write, after_write — all fire once per file. A hook error is caught
+and warned via notify.warn(), never aborts the apply. See
+lua/replacer/hooks.lua.
+
                                                 *replacer-root-detection*
 Monorepo / Project-Root Detection~
 

@@ -157,6 +157,10 @@ local function validate(cfg)
   out.max_file_size      = as_pos_int(cfg.max_file_size)      or out.max_file_size
   out.confirm_per_file   = pick_bool(cfg.confirm_per_file,   out.confirm_per_file)
   out.checkpoint         = pick_bool(cfg.checkpoint,         out.checkpoint)
+  -- hooks holds function values -- assign the merged table directly rather
+  -- than deep-copying (vim.deepcopy of function leaves is unnecessary and
+  -- functions are inherently reference values).
+  out.hooks              = tbl(cfg.hooks)
 
   if type(cfg.default_scope) == "string" and cfg.default_scope ~= "" then
     out.default_scope = cfg.default_scope
