@@ -15,6 +15,7 @@
 ---@field toggle_select_prev? string -- multi-select + move to previous (default "<S-Tab>")
 ---@field apply_all?          string -- replace ALL matches, respects confirm_all (default "<C-a>")
 ---@field quit?                string -- close the picker (default "<Esc>")
+---@field replace_and_reopen?  string -- apply entry under cursor, reopen with the rest (default "<C-r>")
 
 ---Lua before/after callbacks around the apply pipeline. Each key takes a
 ---single function or a list of functions; a before_apply hook may return

@@ -3,6 +3,8 @@
 ---   - <CR>: apply multi if present, else single (fixed, Telescope's own default key)
 ---   - cfg.keymaps.toggle_select / toggle_select_prev: toggle + move (default <Tab>/<S-Tab>)
 ---   - cfg.keymaps.apply_all: apply ALL (respects cfg.confirm_all; default <C-a>)
+---   - cfg.keymaps.replace_and_reopen: apply entry under cursor, reopen with
+---     the rest (default <C-r>)
 ---   - cfg.keymaps.quit: close the picker (default <Esc>)
 --- Preview:
 ---   - Uses common.preview_lines_with_pos to compute exact (row,col)
@@ -174,6 +176,32 @@ local function run(items, new_text, cfg, apply_func)
       local key_all = keys.apply_all or "<C-a>"
       map("i", key_all, do_all); map("n", key_all, do_all)
 
+      -- replace_and_reopen: apply the entry under cursor, reopen the picker
+      -- with the rest. A modifier key by design (see config default) so it
+      -- never swallows a character typed into the live query line.
+      local function do_reopen()
+        local sel = action_state.get_selected_entry()
+        if not sel or not sel.value then return end
+        local it = sel.value ---@type RP_Match
+
+        actions.close(prompt_bufnr)
+
+        local files, spots = apply_func({ it }, new_text, cfg.write_changes)
+        common.notify_result(files, spots, cfg)
+
+        local remaining = {} ---@type RP_Match[]
+        for _, other in ipairs(items) do
+          if other.id ~= it.id then remaining[#remaining + 1] = other end
+        end
+        if #remaining == 0 then
+          notify.info("no more matches")
+          return
+        end
+        vim.schedule(function() run(remaining, new_text, cfg, apply_func) end)
+      end
+      local key_reopen = keys.replace_and_reopen or "<C-r>"
+      map("i", key_reopen, do_reopen); map("n", key_reopen, do_reopen)
+
       -- Double-escape: 1st <Esc> leaves insert -> Telescope normal mode,
       -- 2nd (normal mode, "quit" key) closes the picker.
       local key_quit = keys.quit or "<Esc>"
@@ -184,6 +212,7 @@ local function run(items, new_text, cfg, apply_func)
         { lhs = key_next, desc = "replacer: toggle select + next", modes = { "n", "i" } },
         { lhs = key_prev, desc = "replacer: toggle select + previous", modes = { "n", "i" } },
         { lhs = key_all, desc = "replacer: apply to ALL matches", modes = { "n", "i" } },
+        { lhs = key_reopen, desc = "replacer: apply under cursor, reopen with the rest", modes = { "n", "i" } },
         { lhs = key_quit, desc = "replacer: close picker", modes = { "n" } },
       })
 

@@ -583,10 +583,11 @@ lualine / vanilla-statusline snippets.
 8. PICKER MAPPINGS                                      *replacer-mappings*
 
 All keys below except <CR> are configurable: `require("replacer").setup({
-keymaps = { toggle_select=..., toggle_select_prev=..., apply_all=..., quit=... } })`.
-Defaults shown match the previous hardcoded behavior exactly. which-key.nvim
-(if installed) shows labels for these — see docs/BINDINGS.md for exactly
-which keys are visible to which-key per backend.
+keymaps = { toggle_select=..., toggle_select_prev=..., apply_all=...,
+replace_and_reopen=..., quit=... } })`. Defaults shown match the previous
+hardcoded behavior exactly. which-key.nvim (if installed) shows labels for
+these — see docs/BINDINGS.md for exactly which keys are visible to
+which-key per backend.
 
                                               *replacer-mappings-telescope*
 Telescope mappings:~
@@ -594,6 +595,7 @@ Telescope mappings:~
     <Tab>     Toggle selection (multi-select mode)         [keymaps.toggle_select]
     <S-Tab>   Toggle selection, move backward              [keymaps.toggle_select_prev]
     <C-a>     Replace all matches at once (with confirmation) [keymaps.apply_all]
+    <C-r>     Apply entry under cursor, reopen with the rest [keymaps.replace_and_reopen]
     <Esc>     1st: switch to normal mode · 2nd (in normal mode): close [keymaps.quit]
 
                                                   *replacer-mappings-fzf*
@@ -602,6 +604,7 @@ fzf-lua mappings:~
     <Tab>     Toggle selection                             [keymaps.toggle_select]
     <S-Tab>   Toggle selection, move backward               [keymaps.toggle_select_prev]
     <C-a>     Replace all matches at once (with confirmation) [keymaps.apply_all]
+    <C-r>     Apply entry under cursor, reopen with the rest [keymaps.replace_and_reopen]
     <Esc>     1st: leave terminal-insert (fixed) · 2nd: close [keymaps.quit]
 
 ==============================================================================

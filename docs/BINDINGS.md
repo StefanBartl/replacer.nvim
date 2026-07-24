@@ -39,21 +39,20 @@ via `require("replacer").setup({ keymaps = { ... } })`, see
 | Toggle select + move to next | `keymaps.toggle_select` | `<Tab>` | ✅ (fzf's native multi-select toggle) | ✅ real Neovim keymap |
 | Toggle select + move to previous | `keymaps.toggle_select_prev` | `<S-Tab>` | ✅ (fzf's native multi-select toggle) | ✅ real Neovim keymap |
 | Apply to ALL matches (respects `confirm_all`) | `keymaps.apply_all` | `<C-a>` | ✅ via fzf action/`--bind` | ✅ real Neovim keymap |
+| Apply entry under cursor, reopen with the rest | `keymaps.replace_and_reopen` | `<C-r>` | ✅ via fzf action/`--bind` | ✅ real Neovim keymap |
 | Close the picker | `keymaps.quit` | `<Esc>` | ✅ (2nd `<Esc>`; 1st leaves terminal-insert, fixed) | ✅ (2nd `<Esc>`; 1st leaves insert mode, fixed) |
+
+`replace_and_reopen` defaults to a modifier key (`<C-r>`), not a bare letter
+like `r`: both pickers' query line is live text input, so a bare letter
+would swallow that character instead of reaching the search box.
 
 **which-key:** if [which-key.nvim](https://github.com/folke/which-key.nvim) is
 installed, its popup shows labels for these keys — with one caveat: fzf-lua's
-`toggle_select`/`apply_all` are fzf's own terminal-native bindings (consumed
-by the fzf binary itself, never passing through Neovim's keymap layer), so
-which-key cannot see or label those two for the fzf backend. Telescope's keys
-are real `vim.keymap.set` calls and are fully labeled. `quit` is labeled for
-both backends.
-
-**Not yet implemented** (documented as a future item, see
-[`docs/ROADMAP.md`](ROADMAP.md)): a `r` key to replace the single entry under
-the cursor and reopen the picker with the remaining matches. Earlier
-README/vimdoc revisions listed this as if it already existed — it did not;
-this file reflects only keys that are actually wired up.
+`toggle_select`/`apply_all`/`replace_and_reopen` are fzf's own terminal-native
+bindings (consumed by the fzf binary itself, never passing through Neovim's
+keymap layer), so which-key cannot see or label those for the fzf backend.
+Telescope's keys are real `vim.keymap.set` calls and are fully labeled.
+`quit` is labeled for both backends.
 
 ---
 

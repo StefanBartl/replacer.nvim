@@ -441,7 +441,13 @@ do
   }
   history.add(req, { files = 2, spots = 5 })
   local loaded = history.load()
-  check("history: add() grows the stored list", #loaded == before + 1, #loaded)
+  -- The stored file is a real, shared stdpath("data") location capped at 50
+  -- entries: once already saturated (e.g. from repeated local test runs),
+  -- adding one more keeps the list at 50 (oldest evicted) instead of
+  -- growing it further -- assert "grew, or already at the cap" rather than
+  -- an exact size delta.
+  check("history: add() grows the stored list (or is already at the 50-entry cap)",
+    #loaded == before + 1 or (#loaded == 50 and before >= 50), #loaded)
   check("history: newest entry is first", loaded[1].old == "__hist_test_old__", loaded[1].old)
   check("history: files/spots recorded", loaded[1].files == 2 and loaded[1].spots == 5)
 
@@ -562,6 +568,22 @@ do
   messages.info(nil, "should also show")
   require("replacer.util.notify").info = orig_notify_info
   check("messages: quiet=true suppresses info()", #infos == 2 and infos[1] == "should show", vim.inspect(infos))
+end
+
+--------------------------------------------------------------------------------
+-- 2o) config: replace_and_reopen keymap default + override
+--------------------------------------------------------------------------------
+do
+  replacer.setup({}) -- reset to defaults after earlier setup() calls in this file
+  local cfg1 = require("replacer.config").get()
+  check("config: replace_and_reopen defaults to <C-r>", cfg1.keymaps.replace_and_reopen == "<C-r>",
+    cfg1.keymaps.replace_and_reopen)
+
+  replacer.setup({ keymaps = { replace_and_reopen = "<leader>r" } })
+  local cfg2 = require("replacer.config").get()
+  check("config: replace_and_reopen is overridable", cfg2.keymaps.replace_and_reopen == "<leader>r",
+    cfg2.keymaps.replace_and_reopen)
+  replacer.setup({ keymaps = { replace_and_reopen = "<C-r>" } }) -- restore default for later tests
 end
 
 --------------------------------------------------------------------------------

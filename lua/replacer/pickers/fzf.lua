@@ -7,6 +7,8 @@
 ---  - cfg.keymaps.toggle_select / toggle_select_prev: multi-select (default <Tab>/<S-Tab>, marker "*")
 ---  - cfg.keymaps.apply_all       apply ALL (respects cfg.confirm_all; default <C-a>)
 ---  - cfg.keymaps.quit            close the picker (default <Esc>, after leaving terminal-insert)
+---  - cfg.keymaps.replace_and_reopen  apply the entry under cursor, reopen with the
+---                                    rest (default <C-r>)
 
 local common = require("replacer.pickers.common")
 local notify = require("replacer.util.notify")
@@ -78,6 +80,7 @@ local function run(old, items, new_text, cfg, apply_func)
   local key_all = to_fzf_key(keys.apply_all or "<C-a>")
   local key_next = to_fzf_key(keys.toggle_select or "<Tab>")
   local key_prev = to_fzf_key(keys.toggle_select_prev or "<S-Tab>")
+  local key_reopen = to_fzf_key(keys.replace_and_reopen or "r")
 
   local actions = {
     ["default"] = function(selected)
@@ -120,6 +123,27 @@ local function run(old, items, new_text, cfg, apply_func)
       end
       local files, spots = apply_func(all, new_text, cfg.write_changes)
       common.notify_result(files, spots, cfg)
+    end,
+    [key_reopen] = function(selected)
+      if not selected or #selected == 0 then return end
+      local s = type(selected[1]) == "table" and selected[1][1] or selected[1]
+      local id = (type(s) == "string") and s:match("\t(ID%d+)$") or nil
+      local it = id and idmap[id] or nil
+      if not it then return end
+
+      local files, spots = apply_func({ it }, new_text, cfg.write_changes)
+      common.notify_result(files, spots, cfg)
+
+      local remaining = {} ---@type RP_Match[]
+      for _, other in ipairs(items) do
+        if other.id ~= it.id then remaining[#remaining + 1] = other end
+      end
+      if #remaining == 0 then
+        notify.info("no more matches")
+        return
+      end
+      -- Reopen after this picker instance finishes closing.
+      vim.schedule(function() run(old, remaining, new_text, cfg, apply_func) end)
     end,
   }
 

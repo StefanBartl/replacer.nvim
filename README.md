@@ -244,6 +244,7 @@ defaults match the behavior below exactly:
 - `<Tab>` / `<S-Tab>`: toggle selection, move next/previous (`keymaps.toggle_select` / `toggle_select_prev`)
 - `<CR>`: apply to the selected entry/entries (fixed — the picker's own default key)
 - `<C-a>`: replace ALL matches at once, respects `confirm_all` (`keymaps.apply_all`)
+- `<C-r>`: apply the entry under cursor, reopen the picker with the remaining matches (`keymaps.replace_and_reopen`)
 - `<Esc>`: 1st press leaves terminal-insert/insert mode (fixed); 2nd press (normal mode) closes the picker (`keymaps.quit`)
 
 Full reference (incl. which-key support per backend, usrcmds, and the
@@ -356,6 +357,7 @@ ______________________________________________________________________
       toggle_select = "<Tab>",
       toggle_select_prev = "<S-Tab>",
       apply_all = "<C-a>",
+      replace_and_reopen = "<C-r>",
       quit = "<Esc>",
     },
 

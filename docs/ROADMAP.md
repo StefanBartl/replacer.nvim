@@ -20,11 +20,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
 
 ## Planned
 
-- **Replace-and-reopen key** — a picker key (working name: `r`) that applies
-  the single entry under the cursor and reopens the picker with the
-  remaining matches. Was documented in an earlier README/vimdoc revision as
-  if it already existed; it did not — this is the actual place it's tracked
-  now, see `docs/BINDINGS.md`.
 - **`.github` workflows** — CI (headless test runs, luacheck/stylua) on push/PR.
 - **`:ReplaceFNames` (or similar)** — extend replace to file/directory names,
   not just file contents:

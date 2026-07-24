@@ -75,5 +75,10 @@ return {
     toggle_select_prev = "<S-Tab>", -- multi-select + move to previous
     apply_all = "<C-a>",          -- replace ALL matches (respects confirm_all)
     quit = "<Esc>",               -- close the picker (double-<Esc> in fzf's terminal)
+    -- Apply the entry under cursor, reopen with the rest. A modifier key by
+    -- design (not a bare letter): both pickers' query line is live text
+    -- input, so a bare letter would swallow that character instead of
+    -- reaching the search box.
+    replace_and_reopen = "<C-r>",
   },
 }
