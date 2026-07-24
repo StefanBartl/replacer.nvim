@@ -34,8 +34,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
     statements across the project.
 - **Batch replaces** — multiple `{old → new}` pairs in one run, importable
   from a file/quickfix/clipboard.
-- **Case-preserving replace** — match the replacement's casing to the
-  original (`foo→bar`, `Foo→Bar`).
 - **Word-boundary / token mode** — "whole word", or identifiers-only,
   optionally Tree-sitter-aware (skip matches inside strings/comments).
 - **Regex helpers** — an escaping helper and a small pattern test panel;

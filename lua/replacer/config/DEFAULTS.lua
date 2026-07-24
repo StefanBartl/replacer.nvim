@@ -25,6 +25,9 @@ return {
   -- patterns like `\s*foo\s*`) is preserved around the replacement instead of
   -- being clobbered by it.
   preserve_whitespace = false,
+  -- When true, re-case the replacement to match each match's own case style:
+  -- foo->bar, Foo->Bar, FOO->BAR, fooBar->bazQux, FooBar->BazQux.
+  case_preserve = false,
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }

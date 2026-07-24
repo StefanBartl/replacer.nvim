@@ -57,6 +57,7 @@
 ---@field engine? "fzf"|"telescope"
 ---@field preview_context? integer
 ---@field preserve_whitespace? boolean
+---@field case_preserve? boolean
 
 --- Filters produced by command flags (merged over config filter lists).
 ---@class RP_Filters

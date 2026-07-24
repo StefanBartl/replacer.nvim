@@ -132,6 +132,8 @@ local BOOL_FLAGS = {
   ["no-ignore"]     = function(r) r.overrides.git_ignore = false end,
   ["preserve-ws"]    = function(r) r.overrides.preserve_whitespace = true end,
   ["no-preserve-ws"] = function(r) r.overrides.preserve_whitespace = false end,
+  ["case-preserve"]    = function(r) r.overrides.case_preserve = true end,
+  ["no-case-preserve"] = function(r) r.overrides.case_preserve = false end,
 }
 
 -- Value flags: name -> true. Applied via apply_value_flag below.
@@ -369,6 +371,8 @@ M.FLAGS = {
   { name = "no-ignore", bool = true },
   { name = "preserve-ws", bool = true },
   { name = "no-preserve-ws", bool = true },
+  { name = "case-preserve", bool = true },
+  { name = "no-case-preserve", bool = true },
   { name = "type", type = "STRING", repeatable = true },
   { name = "glob", type = "STRING", repeatable = true },
   { name = "exclude", type = "STRING", repeatable = true },

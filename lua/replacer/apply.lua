@@ -35,14 +35,23 @@ end
 
 --- Resolve the effective replacement text for one match, applying optional
 --- cfg-driven transforms on top of the plain `new_text`. Currently:
+---   - case_preserve: re-case new_text to match old_text's case style
+---     (foo->bar, Foo->Bar, FOO->BAR, fooBar->bazQux, FooBar->BazQux).
 ---   - preserve_whitespace: re-wrap new_text in old_text's leading/trailing ws.
---- A nil/plain cfg (or every transform disabled) returns `new_text` unchanged,
---- so existing callers that don't pass cfg keep their exact prior behavior.
+--- Case detection runs on the "core" of old_text (trimmed of whitespace) so
+--- the two transforms compose correctly when both are enabled. A nil/plain
+--- cfg (or every transform disabled) returns `new_text` unchanged, so
+--- existing callers that don't pass cfg keep their exact prior behavior.
 ---@param old_text string
 ---@param new_text string
 ---@param cfg RP_Config|nil
 ---@return string
 local function effective_new_text(old_text, new_text, cfg)
+  if cfg and cfg.case_preserve then
+    local casing = require("replacer.casing")
+    local core = old_text:match("^%s*(.-)%s*$")
+    new_text = casing.apply(new_text, casing.detect(core))
+  end
   if cfg and cfg.preserve_whitespace then
     new_text = wrap_with_original_whitespace(old_text, new_text)
   end

@@ -149,6 +149,7 @@ local function validate(cfg)
   out.smart_case         = pick_bool(cfg.smart_case,         out.smart_case)
   out.git_ignore         = pick_bool(cfg.git_ignore,        out.git_ignore)
   out.preserve_whitespace = pick_bool(cfg.preserve_whitespace, out.preserve_whitespace)
+  out.case_preserve      = pick_bool(cfg.case_preserve,      out.case_preserve)
 
   if type(cfg.default_scope) == "string" and cfg.default_scope ~= "" then
     out.default_scope = cfg.default_scope

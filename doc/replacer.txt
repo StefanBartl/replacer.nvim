@@ -130,6 +130,8 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
         --ignore | --no-ignore               respect/ignore .gitignore
         --preserve-ws | --no-preserve-ws     keep a match's own leading/trailing
                                              whitespace around the replacement
+        --case-preserve | --no-case-preserve re-case the replacement to match
+                                             each match's own case style
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
         --glob=<pat>     (repeatable)        include glob pattern
         --exclude=<pat>  (repeatable)        exclude path/glob pattern
@@ -235,6 +237,7 @@ Default configuration: >lua
       literal = true,                    -- fixed-strings by default
       smart_case = true,                 -- ripgrep -S
       preserve_whitespace = false,       -- keep a match's own leading/trailing ws
+      case_preserve = false,             -- re-case replacement to match each match
       default_scope = "%",               -- scope when none is given
 
       -- Default filters (also overridable per-run via flags)
@@ -341,6 +344,15 @@ preserve_whitespace~
     regex patterns like `\s*foo\s*`) is preserved around the replacement
     instead of being clobbered by it: `:Replace "\s*foo\s*" bar % --regex
     --preserve-ws` turns "  foo  " into "  bar  ", not "bar".
+
+                                            *replacer-config-case_preserve*
+case_preserve~
+    Type: boolean
+    Default: false
+
+    When true, the replacement is re-cased to match each match's own case
+    style before being applied: foo->bar, Foo->Bar, FOO->BAR,
+    fooBar->bazQux, FooBar->BazQux. See lua/replacer/casing.lua.
 
                                           *replacer-config-preview_context*
 preview_context~

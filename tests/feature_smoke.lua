@@ -12,6 +12,7 @@ local command = require("replacer.command")
 local rg = require("replacer.rg")
 local apply = require("replacer.apply")
 local export = require("replacer.export")
+local casing = require("replacer.casing")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -121,6 +122,33 @@ do
   local new_lines2 = apply.compute_file_edits({ "___  foo  ___" }, matches, "bar", nil)
   check("preserve_whitespace: off by default (cfg=nil) -> plain replace",
     new_lines2[1] == "___bar___", new_lines2[1])
+end
+
+--------------------------------------------------------------------------------
+-- 3c) case_preserve: casing.lua detection + application, and apply.lua wiring
+--------------------------------------------------------------------------------
+do
+  check("casing: detect lower", casing.detect("foo") == "lower")
+  check("casing: detect upper", casing.detect("FOO") == "upper")
+  check("casing: detect title", casing.detect("Foo") == "title")
+  check("casing: detect camel", casing.detect("fooBar") == "camel")
+  check("casing: detect pascal", casing.detect("FooBar") == "pascal")
+  check("casing: detect nil for non-letters", casing.detect("123") == nil)
+
+  check("casing: apply lower", casing.apply("BAZ", "lower") == "baz")
+  check("casing: apply upper", casing.apply("baz", "upper") == "BAZ")
+  check("casing: apply title", casing.apply("baz qux", "title") == "Baz qux")
+  check("casing: apply camel", casing.apply("baz_qux", "camel") == "bazQux")
+  check("casing: apply pascal", casing.apply("baz_qux", "pascal") == "BazQux")
+
+  ---@diagnostic disable: missing-fields
+  local m_lower = { id = 1, path = "x", lnum = 1, col0 = 0, old = "foo", line = "foo foo" }
+  local m_upper = { id = 2, path = "x", lnum = 1, col0 = 4, old = "FOO", line = "foo FOO" }
+  ---@diagnostic enable: missing-fields
+  local nl = apply.compute_file_edits({ "foo FOO" }, { m_lower }, "bar", { case_preserve = true })
+  check("case_preserve: lower match -> lower replacement", nl[1] == "bar FOO", nl[1])
+  local nl2 = apply.compute_file_edits({ "foo FOO" }, { m_upper }, "bar", { case_preserve = true })
+  check("case_preserve: upper match -> upper replacement", nl2[1] == "foo BAR", nl2[1])
 end
 
 --------------------------------------------------------------------------------
