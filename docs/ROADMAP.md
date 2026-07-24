@@ -21,7 +21,5 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
 ## Planned
 
 - **`.github` workflows** — CI (headless test runs, luacheck/stylua) on push/PR.
-- **Soft LSP integration** — offer LSP rename when a symbol is matched
-  exactly, falling back to plain text replace otherwise.
 - **Streaming picker fill** — populate the picker as ripgrep results stream
   in, so you can start selecting before the search finishes.

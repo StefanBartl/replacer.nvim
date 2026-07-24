@@ -137,7 +137,23 @@ local function dispatch(request, cfg, single_file, items)
   -- quickfix, which don't reach here); a history-write failure must never
   -- affect the apply itself, hence the pcall.
   local function apply_func(chosen, replacement, write_changes)
-    local files, spots = apply.apply_matches(chosen, request.old, replacement, write_changes, cfg)
+    -- Soft LSP integration: try an LSP-driven rename first for eligible
+    -- (identifier-shaped) matches; only whatever falls back goes through
+    -- the normal plain-text apply below. Guarded so any failure here just
+    -- means nothing was LSP-renamed, never a lost edit.
+    local lsp_count = 0
+    local to_apply = chosen
+    if cfg.lsp then
+      local ok_lsp, lsp_renamed, fallback = pcall(
+        require("replacer.lsp_rename").try_rename_batch, chosen, replacement)
+      if ok_lsp and lsp_renamed and fallback then
+        lsp_count = #lsp_renamed
+        to_apply = fallback
+      end
+    end
+
+    local files, spots = apply.apply_matches(to_apply, request.old, replacement, write_changes, cfg)
+    spots = spots + lsp_count
     pcall(function()
       require("replacer.history").add(request, { files = files, spots = spots })
     end)

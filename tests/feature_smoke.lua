@@ -25,6 +25,7 @@ local presets = require("replacer.presets")
 local batch = require("replacer.batch")
 local messages = require("replacer.messages")
 local fnames = require("replacer.fnames")
+local lsp_rename = require("replacer.lsp_rename")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -674,6 +675,53 @@ do
     vim.fn.filereadable(ra_dir .. "/bar_target.txt") == 1 and vim.fn.filereadable(content_file) == 0)
   local final_content = assert(io.open(ra_dir .. "/bar_target.txt", "r")):read("*a")
   check("rename_assist: content also replaced", final_content:match("bar body") ~= nil, final_content)
+end
+
+--------------------------------------------------------------------------------
+-- 2r) lsp_rename: identifier-shape guard + fallback when no client is attached
+--------------------------------------------------------------------------------
+do
+  check("lsp_rename: plain identifier", lsp_rename.looks_like_identifier("foo_bar1") == true)
+  check("lsp_rename: rejects whitespace", lsp_rename.looks_like_identifier("foo bar") == false)
+  check("lsp_rename: rejects punctuation", lsp_rename.looks_like_identifier("foo.bar") == false)
+  check("lsp_rename: rejects empty", lsp_rename.looks_like_identifier("") == false)
+  check("lsp_rename: rejects nil", lsp_rename.looks_like_identifier(nil) == false)
+
+  local file_lsp = tmp .. "/lsp.txt"
+  do local fh = assert(io.open(file_lsp, "w")); fh:write("foo\n"); fh:close() end
+
+  ---@diagnostic disable: missing-fields
+  local litem = { id = 1, path = file_lsp, lnum = 1, col0 = 0, old = "foo" }
+  ---@diagnostic enable: missing-fields
+
+  -- No LSP client is attached to this scratch file in the test sandbox, so
+  -- try_rename must fall back cleanly (no hang, no error) rather than
+  -- assume a client is present -- this is the single most important
+  -- guarantee for a "soft" feature: normal operation must never regress
+  -- when no LSP server is available.
+  local done, ok_result = false, nil
+  lsp_rename.try_rename(litem, "bar", function(ok) done = true; ok_result = ok end)
+  vim.wait(500, function() return done end, 10)
+  check("lsp_rename: falls back (on_done(false)) with no attached client", done and ok_result == false)
+
+  local lsp_renamed, fallback = lsp_rename.try_rename_batch({ litem }, "bar", 500)
+  check("lsp_rename: try_rename_batch routes to fallback with no client",
+    #lsp_renamed == 0 and #fallback == 1)
+
+  -- End-to-end: cfg.lsp = true but no client attached -> normal plain-text
+  -- apply still happens (the fallback path must never lose the edit).
+  replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true, lsp = true })
+  ---@type RP_Request
+  local lreq = {
+    old = "foo", new = "bar", scope = file_lsp, all = true, dry = false, export = nil,
+    line_range = nil, overrides = { lsp = true }, filters = { file_types = {}, globs = {}, exclude = {} },
+  }
+  replacer.run(lreq)
+  vim.wait(500)
+  local lcontent = assert(io.open(file_lsp, "r")):read("*a")
+  check("lsp_rename: --lsp with no client still applies the plain-text replace",
+    lcontent:match("bar") ~= nil, lcontent)
+  replacer.setup({ lsp = false }) -- restore default for later tests
 end
 
 --------------------------------------------------------------------------------

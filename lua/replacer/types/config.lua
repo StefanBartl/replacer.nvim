@@ -61,6 +61,7 @@
 ---@field hooks?                RP_Hooks    -- before/after callbacks around the apply pipeline
 ---@field messages?             table<string, string>  -- string.format template overrides, see replacer.messages
 ---@field quiet?                boolean     -- suppress routine info-level notifications (warnings/errors still show)
+---@field lsp?                  boolean     -- soft LSP rename for identifier-shaped matches, see replacer.lsp_rename
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

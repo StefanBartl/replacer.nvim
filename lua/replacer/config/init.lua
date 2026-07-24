@@ -165,6 +165,7 @@ local function validate(cfg)
   -- string values) -- a shallow merge over defaults, same rationale as hooks.
   out.messages           = tbl(cfg.messages)
   out.quiet              = pick_bool(cfg.quiet, out.quiet)
+  out.lsp                = pick_bool(cfg.lsp, out.lsp)
 
   if type(cfg.default_scope) == "string" and cfg.default_scope ~= "" then
     out.default_scope = cfg.default_scope

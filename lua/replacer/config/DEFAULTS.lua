@@ -58,6 +58,11 @@ return {
   -- (warnings/errors always show).
   messages = {},
   quiet = false,
+  -- Soft LSP integration: when a match's old/new text both look like plain
+  -- identifiers and its buffer has an LSP client that supports rename, use
+  -- an LSP-driven rename for that match instead of a plain text edit.
+  -- Always falls back to plain text otherwise. See lua/replacer/lsp_rename.lua.
+  lsp = false,
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }
