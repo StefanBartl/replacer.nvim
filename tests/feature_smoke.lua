@@ -15,6 +15,7 @@ local export = require("replacer.export")
 local casing = require("replacer.casing")
 local regex = require("replacer.regex")
 local encoding = require("replacer.encoding")
+local root = require("replacer.root")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -178,6 +179,36 @@ do
     if it.line:find("\r", 1, true) then has_cr = true end
   end
   check("encoding: no stray \\r left in collected line text", not has_cr)
+end
+
+--------------------------------------------------------------------------------
+-- 2f) root: marker-based project root detection
+--------------------------------------------------------------------------------
+do
+  -- tmp/mono/{.git, pkg/{package.json, src/deep/}}
+  local mono = tmp .. "/mono"
+  vim.fn.mkdir(mono .. "/.git", "p")
+  vim.fn.mkdir(mono .. "/pkg/src/deep", "p")
+  do
+    local fh = assert(io.open(mono .. "/pkg/package.json", "w"))
+    fh:write("{}")
+    fh:close()
+  end
+
+  local candidates = root.detect(mono .. "/pkg/src/deep")
+  check("root: finds both the package.json dir and the git root",
+    #candidates == 2, #candidates)
+  check("root: nearest-first ordering", candidates[1] == mono .. "/pkg", candidates[1])
+  check("root: farthest is the git root", candidates[2] == mono, candidates[2])
+
+  local best = root.detect_best(mono .. "/pkg/src/deep")
+  check("root: detect_best prefers the outermost .git root", best == mono, best)
+
+  local no_markers = tmp .. "/no_markers_here"
+  vim.fn.mkdir(no_markers, "p")
+  local empty_best, empty_candidates = root.detect_best(no_markers)
+  check("root: no markers found -> nil, empty list",
+    empty_best == nil and #empty_candidates == 0)
 end
 
 --------------------------------------------------------------------------------

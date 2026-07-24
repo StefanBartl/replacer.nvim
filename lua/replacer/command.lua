@@ -359,6 +359,29 @@ local function resolve_scope(scope)
     return { cwd }, false
   end
 
+  if scope_lc == "root" then
+    local buf_name = vim.api.nvim_buf_get_name(0)
+    local start_dir
+    if buf_name ~= "" then
+      start_dir = vim.fn.fnamemodify(buf_name, ":h")
+    else
+      local ok, cwd = pcall(function() return uv.cwd() end)
+      start_dir = ok and cwd or nil
+    end
+    if not start_dir then
+      notify.warn("failed to determine a starting directory for root detection")
+      return {}, false
+    end
+    local best = require("replacer.root").detect_best(start_dir)
+    if not best then
+      notify.warn("no project root markers found (.git, package.json, go.mod, …) — falling back to cwd")
+      local ok, cwd = pcall(function() return uv.cwd() end)
+      if not ok or not cwd then return {}, false end
+      return { cwd }, false
+    end
+    return { best }, false
+  end
+
   local p = vim.fn.fnamemodify(scope, ":p")
   local is_dir = vim.fn.isdirectory(p) ~= 0
   return { p }, not is_dir
@@ -444,7 +467,7 @@ function M.register(run_fun)
         args = {
           { name = "old", type = "STRING" },
           { name = "new", type = "STRING" },
-          { name = "scope", type = "STRING", optional = true, values = { "%", "cwd", "." } },
+          { name = "scope", type = "STRING", optional = true, values = { "%", "cwd", ".", "root" } },
         },
         flags = M.FLAGS,
         range = true,

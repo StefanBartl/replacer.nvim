@@ -34,9 +34,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
     statements across the project.
 - **Batch replaces** — multiple `{old → new}` pairs in one run, importable
   from a file/quickfix/clipboard.
-- **Monorepo/root detection** — auto-detect the project root (git,
-  `package.json`, `go.mod`, …), with a picker when there are multiple
-  candidates.
 - **Changed-files-only mode** — restrict to git changed/staged/unstaged/untracked files.
 - **History & presets** — recent searches/replacements, named presets,
   re-run from a picker.

@@ -115,6 +115,8 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                    buf     - alias for %
                    cwd     - current working directory
                    .       - alias for cwd
+                   root    - auto-detected project root, see |:ReplaceRoot|
+                             and *replacer-root-detection*
                    <path>  - explicit file or directory
         [range]  A line range (e.g. :'<,'>Replace) restricts matching to the
                  selected lines of the current buffer.
@@ -166,6 +168,13 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                                                                  *:Replacer*
 :Replacer {args}
     Alias for |:Replace|
+
+                                                               *:ReplaceRoot*
+:ReplaceRoot[!] {old} {new} [--flags]
+    Like |:Replace|, but the scope is always an auto-detected project root
+    instead of a positional argument (see *replacer-root-detection*).
+    Prompts with |vim.ui.select()| when detection finds more than one
+    candidate directory. The bang form is shorthand for --all.
 
                                                              *:ReplaceEscape*
 :ReplaceEscape {text}
@@ -577,6 +586,22 @@ never writes: >vim
 <
 Useful for a `:cfdo %s/old/new/g | update`-style workflow, or just to review
 matches in a familiar list UI instead of the picker.
+
+                                                *replacer-root-detection*
+Monorepo / Project-Root Detection~
+
+The "root" scope token walks up from the current buffer's directory (or
+cwd) looking for markers (.git, package.json, go.mod, Cargo.toml,
+pyproject.toml, …). With several candidates (e.g. a monorepo package with
+its own package.json nested inside a git repo), it deterministically
+prefers the outermost one with .git, without prompting: >vim
+    :Replace old new root
+<
+For an interactive prompt when there is more than one candidate, use
+|:ReplaceRoot| instead: >vim
+    :ReplaceRoot old new --dry
+<
+See lua/replacer/root.lua.
 
                                                           *replacer-scopes*
 Scope Examples~

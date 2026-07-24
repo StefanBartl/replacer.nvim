@@ -15,6 +15,7 @@
 ---| "buf"    # alias for "%"
 ---| "cwd"    # current working directory
 ---| "."      # alias for "cwd"
+---| "root"   # auto-detected project root (see replacer.root); falls back to cwd
 ---| string   # absolute/relative file or directory path
 
 

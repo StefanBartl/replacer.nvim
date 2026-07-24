@@ -44,7 +44,7 @@ ______________________________________________________________________
 
 - `old` **required** — literal (or regex with `--regex`) text to search for
 - `new` **required** — replacement text; empty string `""` deletes matches
-- `scope` **optional** — `%` (current buffer) · `cwd` / `.` (working dir) · `<path>` (file/dir). Default: `default_scope` (`%`)
+- `scope` **optional** — `%` (current buffer) · `cwd` / `.` (working dir) · `root` (auto-detected project root, see below) · `<path>` (file/dir). Default: `default_scope` (`%`)
 - `[range]` **optional** — e.g. `:'<,'>Replace` restricts matching to the selected lines
 - `!` **optional** — bang is shorthand for `--all` (non-interactive)
 
@@ -122,6 +122,27 @@ is an alias. Search is always **literal** (regex would need per-match capture).
 - `:ReplaceEscape {text}` — escape `{text}` for use as a Vim regex pattern; echoes the result and copies it to the unnamed register.
 - `:ReplaceTest [pattern] [sample]` — a small floating live pattern-test panel: edit the pattern (line 1) and sample text (line 2), matches highlight as you type. Close with `<Esc>` or `q`.
 - Backreferences — in regex mode (`--regex`), `{new}` may use `\0`-`\9` to reference `\(...\)` capture groups from `{old}`: `:Replace "\(\w\+\)=\(\w\+\)" "\2_\1" % --regex` turns `foo=bar` into `bar_foo`.
+
+### Monorepo / project-root detection
+
+The `root` scope token auto-detects a project root by walking up from the
+current buffer's directory (or cwd) looking for markers (`.git`, `package.json`,
+`go.mod`, `Cargo.toml`, `pyproject.toml`, …). When several candidates are found
+(e.g. a monorepo package with its own `package.json` nested inside a git repo),
+this deterministically prefers the outermost one with `.git`, without prompting:
+
+```sh
+:Replace old new root       # e.g. resolves to the git root even from a nested package
+```
+
+For an interactive prompt when there's more than one candidate, use
+`:ReplaceRoot` instead — same grammar as `:Replace` minus the scope
+positional (scope is always the detected root):
+
+```sh
+:ReplaceRoot old new --dry
+:ReplaceRoot! old new       # bang = --all
+```
 
 ### Picker Keymaps
 

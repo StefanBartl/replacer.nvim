@@ -277,7 +277,7 @@ function M.register(run_fun)
         args = {
           { name = "pattern", type = "STRING" },
           { name = "delim", type = "STRING", optional = true, values = DELIM_VALUES },
-          { name = "scope", type = "STRING", optional = true, values = { "%", "cwd", "." } },
+          { name = "scope", type = "STRING", optional = true, values = { "%", "cwd", ".", "root" } },
         },
         flags = FLAGS,
         range = true,

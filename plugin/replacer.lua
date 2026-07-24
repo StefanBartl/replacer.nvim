@@ -13,6 +13,8 @@ if not vim.g.__replacer_cmd_registered then
     if ok_sur then sur.register(core.run) end
     local ok_rx, rx = pcall(require, "replacer.regex")
     if ok_rx then rx.register() end
+    local ok_root, root = pcall(require, "replacer.root")
+    if ok_root then root.register(core.run) end
     vim.g.__replacer_cmd_registered = true
   end
 end
