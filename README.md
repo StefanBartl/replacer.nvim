@@ -150,6 +150,7 @@ ______________________________________________________________________
 - **`:Surround` / `:Wrap`** — wrap every match with a delimiter (backticks, quotes, `**`, brackets, …)
 - Guarded, bottom-up in-buffer edits to avoid offset shift bugs
 - Optional write-to-disk on apply (or keep changes unsaved)
+- BOM/CRLF-aware raw file reads (native vimgrep backend + dry-run/export), matching what a Neovim buffer would show for the same file
 - Strong EmmyLua annotations and type hints for LuaLS
 - Clean, modular code layout (search, apply, export, pickers, command, config)
 

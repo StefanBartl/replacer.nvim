@@ -7,6 +7,8 @@
 ---
 --- Reused by :Replace --dry and :Replace --export=<path>.
 
+local encoding = require("replacer.encoding")
+
 local M = {}
 
 --------------------------------------------------------------------------------
@@ -14,7 +16,9 @@ local M = {}
 --------------------------------------------------------------------------------
 
 --- Read a file's lines, preferring a loaded buffer's content when available
---- (so a dry-run reflects unsaved edits just like the real apply path).
+--- (so a dry-run reflects unsaved edits just like the real apply path). The
+--- raw io.open fallback strips a leading BOM and trailing \r so the plan
+--- matches what the buffer-backed apply path would actually see/write.
 ---@param path string
 ---@return string[] lines, boolean ok
 local function read_lines(path)
@@ -28,7 +32,8 @@ local function read_lines(path)
   local n = 0
   for line in fh:lines() do
     n = n + 1
-    lines[n] = line
+    if n == 1 then line = encoding.strip_bom(line) end
+    lines[n] = encoding.strip_cr(line)
   end
   fh:close()
   return lines, true

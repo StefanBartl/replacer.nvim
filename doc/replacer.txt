@@ -639,6 +639,17 @@ Solution:
     :w
 <
 
+                                             *replacer-encoding-awareness*
+BOM / CRLF~
+
+The real apply always goes through a Neovim buffer, which already strips a
+UTF-8 BOM and normalizes CRLF -> LF on its own ('bomb'/'fileformat'), so
+applies are unaffected by encoding. The native vimgrep backend's raw file
+reads and the --dry/--export plan's fallback read (used when no buffer is
+loaded) replicate the same normalization, so match offsets and previewed
+content stay consistent with what the buffer-backed apply will actually do.
+See lua/replacer/encoding.lua.
+
                                       *replacer-troubleshooting-parse-errors*
 Problem: "Replace: ..." parse error~
 

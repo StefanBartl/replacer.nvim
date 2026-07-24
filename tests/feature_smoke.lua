@@ -14,6 +14,7 @@ local apply = require("replacer.apply")
 local export = require("replacer.export")
 local casing = require("replacer.casing")
 local regex = require("replacer.regex")
+local encoding = require("replacer.encoding")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -148,6 +149,35 @@ do
     literal = true, search_engine = "vimgrep", hidden = true, safe_mode = false,
     file_types = {}, globs = {}, exclude = {} })
   check("safe_mode: off by default finds matches in both files", #unsafe_items > 0, #unsafe_items)
+end
+
+--------------------------------------------------------------------------------
+-- 2e) encoding: BOM/CRLF-aware raw reads (vimgrep backend + export)
+--------------------------------------------------------------------------------
+do
+  check("encoding: strip_bom removes leading BOM", encoding.strip_bom("\239\187\191foo") == "foo")
+  check("encoding: strip_bom no-op without BOM", encoding.strip_bom("foo") == "foo")
+  check("encoding: strip_cr removes trailing CR", encoding.strip_cr("foo\r") == "foo")
+  check("encoding: strip_cr no-op without CR", encoding.strip_cr("foo") == "foo")
+  check("encoding: detect_eol crlf", encoding.detect_eol("a\r\nb") == "crlf")
+  check("encoding: detect_eol lf", encoding.detect_eol("a\nb") == "lf")
+
+  local file_crlf = tmp .. "/crlf.txt"
+  do
+    local fh = assert(io.open(file_crlf, "wb"))
+    fh:write("\239\187\191foo bar\r\nfoo baz\r\n")
+    fh:close()
+  end
+  local crlf_items = rg.collect("foo", { file_crlf }, {
+    literal = true, search_engine = "vimgrep", hidden = true,
+    file_types = {}, globs = {}, exclude = {} })
+  check("encoding: BOM stripped -> match on line 1 starts at col0 0",
+    crlf_items[1] and crlf_items[1].col0 == 0, crlf_items[1] and crlf_items[1].col0)
+  local has_cr = false
+  for _, it in ipairs(crlf_items) do
+    if it.line:find("\r", 1, true) then has_cr = true end
+  end
+  check("encoding: no stray \\r left in collected line text", not has_cr)
 end
 
 --------------------------------------------------------------------------------

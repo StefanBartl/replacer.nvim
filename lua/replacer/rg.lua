@@ -17,6 +17,7 @@
 --- stale coordinates against the on-disk file.
 
 local notify = require("replacer.util.notify")
+local encoding = require("replacer.encoding")
 
 local M = {}
 
@@ -422,6 +423,8 @@ local function scan_file(old, path, cfg, id_start, acc)
   local lnum = 0
   for line in fh:lines() do
     lnum = lnum + 1
+    if lnum == 1 then line = encoding.strip_bom(line) end
+    line = encoding.strip_cr(line)
     local occs = find_all_occurrences(line, old, cfg.literal)
     for _, occ in ipairs(occs) do
       id = id + 1

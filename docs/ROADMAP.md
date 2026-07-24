@@ -48,8 +48,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
   checkpoint before a large apply, with one-click rollback.
 - **Soft LSP integration** — offer LSP rename when a symbol is matched
   exactly, falling back to plain text replace otherwise.
-- **Encoding/line-ending awareness** — detect/normalize BOM/CRLF/LF, with an
-  option to preserve existing line endings.
 - **Streaming picker fill** — populate the picker as ripgrep results stream
   in, so you can start selecting before the search finishes.
 - **Hook system** — Lua before/after callbacks (per file or global) to run a

@@ -13,6 +13,7 @@
 ---     inside the preview buffer. Pickers decide how to highlight (buf HL vs ANSI).
 
 local notify = require("replacer.util.notify")
+local encoding = require("replacer.encoding")
 
 local M = {}
 
@@ -50,7 +51,10 @@ function M.preview_lines_with_pos(it, ctx)
   end
   ---@type string[]
   local file = {}
-  for s in fh:lines() do file[#file + 1] = s end
+  for s in fh:lines() do
+    if #file == 0 then s = encoding.strip_bom(s) end
+    file[#file + 1] = encoding.strip_cr(s)
+  end
   fh:close()
 
   -- Clamp window to available lines
