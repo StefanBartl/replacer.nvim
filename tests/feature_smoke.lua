@@ -16,6 +16,7 @@ local casing = require("replacer.casing")
 local regex = require("replacer.regex")
 local encoding = require("replacer.encoding")
 local root = require("replacer.root")
+local gitfiles = require("replacer.gitfiles")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -64,6 +65,24 @@ do
 
   local ok8, req8 = command.parse_request("foo bar baz", { bang = true })
   check("parse: bang -> all", ok8 and req8.all == true and req8.scope == "baz")
+
+  local okc1, reqc1 = command.parse_request("foo bar --changed")
+  check("parse: bare --changed -> all three kinds", okc1
+    and #reqc1.overrides.changed_only == 3, reqc1 and reqc1.overrides.changed_only)
+
+  local okc2, reqc2 = command.parse_request("foo bar --changed=modified,staged")
+  check("parse: --changed=kinds -> specific subset", okc2
+    and #reqc2.overrides.changed_only == 2
+    and reqc2.overrides.changed_only[1] == "modified"
+    and reqc2.overrides.changed_only[2] == "staged")
+
+  local okc3, _, errc3 = command.parse_request("foo bar --changed=bogus")
+  check("parse: --changed invalid kind -> error",
+    (not okc3) and errc3:match("invalid %-%-changed kind"), errc3)
+
+  local okc4, reqc4 = command.parse_request("foo bar --changed cwd")
+  check("parse: --changed never swallows the next token", okc4
+    and reqc4.scope == "cwd" and #reqc4.overrides.changed_only == 3)
 
   local ok9, _, err9 = command.parse_request('"foo bar')
   check("parse: unterminated quote -> specific error", (not ok9) and err9:match("unterminated quote"), err9)
@@ -209,6 +228,63 @@ do
   local empty_best, empty_candidates = root.detect_best(no_markers)
   check("root: no markers found -> nil, empty list",
     empty_best == nil and #empty_candidates == 0)
+end
+
+--------------------------------------------------------------------------------
+-- 2g) gitfiles / --changed: restrict roots to git changed/staged/untracked
+--------------------------------------------------------------------------------
+if vim.fn.executable("git") == 1 then
+  local repo = tmp .. "/gitrepo"
+  vim.fn.mkdir(repo, "p")
+  local function git(args)
+    local cmd = { "git", "-C", repo }
+    vim.list_extend(cmd, args)
+    vim.system(cmd, { text = true }):wait()
+  end
+  git({ "init", "-q" })
+  git({ "config", "user.email", "test@test.com" })
+  git({ "config", "user.name", "test" })
+
+  local f1 = repo .. "/tracked.txt"
+  do local fh = assert(io.open(f1, "w")); fh:write("foo one\n"); fh:close() end
+  git({ "add", "tracked.txt" })
+  git({ "commit", "-q", "-m", "init" })
+
+  -- Modify the tracked file (unstaged "modified") and add an untracked file.
+  do local fh = assert(io.open(f1, "w")); fh:write("foo one changed\n"); fh:close() end
+  local f2 = repo .. "/untracked.txt"
+  do local fh = assert(io.open(f2, "w")); fh:write("foo two\n"); fh:close() end
+
+  local modified_only = gitfiles.list(repo, { "modified" })
+  check("gitfiles: modified-only lists the tracked file", #modified_only == 1
+    and modified_only[1]:find("tracked.txt", 1, true) ~= nil, vim.inspect(modified_only))
+
+  local untracked_only = gitfiles.list(repo, { "untracked" })
+  check("gitfiles: untracked-only lists the new file", #untracked_only == 1
+    and untracked_only[1]:find("untracked.txt", 1, true) ~= nil, vim.inspect(untracked_only))
+
+  local both = gitfiles.list(repo, { "modified", "untracked" })
+  check("gitfiles: combined kinds lists both files", #both == 2, #both)
+
+  local not_repo, no_top = gitfiles.list(tmp, { "modified" })
+  check("gitfiles: outside a repo -> nil top, empty list", no_top == nil and #not_repo == 0)
+
+  -- End-to-end via replacer.run: --changed restricts to only the modified
+  -- file, leaving untracked.txt's "foo" untouched.
+  replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
+  local req = {
+    old = "foo", new = "XXX", scope = repo, all = true, dry = false, export = nil,
+    line_range = nil, overrides = { changed_only = { "modified" } },
+    filters = { file_types = {}, globs = {}, exclude = {} },
+  }
+  replacer.run(req)
+  vim.wait(200)
+  local c1 = assert(io.open(f1, "r")):read("*a")
+  local c2 = assert(io.open(f2, "r")):read("*a")
+  check("changed: modified file was updated", c1:match("XXX") ~= nil, c1)
+  check("changed: untracked file left alone (not in 'modified' kind)", c2:match("foo") ~= nil, c2)
+else
+  print("SKIP  gitfiles/--changed tests (git not on PATH)")
 end
 
 --------------------------------------------------------------------------------

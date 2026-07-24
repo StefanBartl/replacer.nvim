@@ -145,6 +145,10 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                                              list and open it (never writes)
         --to-loclist                         send matches to the location
                                              list and open it (never writes)
+        --changed | --changed=<kinds>        restrict to git changed files;
+                                             bare = modified+staged+untracked,
+                                             or a comma-list subset (e.g.
+                                             --changed=modified,staged)
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
         --glob=<pat>     (repeatable)        include glob pattern
         --exclude=<pat>  (repeatable)        exclude path/glob pattern
@@ -586,6 +590,19 @@ never writes: >vim
 <
 Useful for a `:cfdo %s/old/new/g | update`-style workflow, or just to review
 matches in a familiar list UI instead of the picker.
+
+                                              *replacer-changed-files-only*
+Changed-Files-Only Mode~
+
+Restrict matching to git changed/staged/untracked files, intersected with
+the resolved scope (a specific dir/file still narrows the git file list, it
+never widens it): >vim
+    :Replace foo bar cwd --changed          " modified + staged + untracked
+    :Replace foo bar cwd --changed=staged   " staged files only
+    :Replace foo bar cwd --changed=modified,untracked
+<
+Requires the scope to be inside a git repository; otherwise a warning is
+shown and nothing runs. See lua/replacer/gitfiles.lua.
 
                                                 *replacer-root-detection*
 Monorepo / Project-Root Detection~

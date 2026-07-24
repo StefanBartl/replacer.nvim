@@ -63,6 +63,7 @@
 ---@field code_only? boolean
 ---@field safe_mode? boolean
 ---@field max_file_size? integer
+---@field changed_only? string[]  # subset of {"modified","staged","untracked"}
 
 --- Filters produced by command flags (merged over config filter lists).
 ---@class RP_Filters

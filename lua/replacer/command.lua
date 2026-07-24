@@ -219,7 +219,24 @@ local function apply_tokens(tokens, req)
       local key = eq and body:sub(1, eq - 1) or body
       local inline_val = eq and body:sub(eq + 1) or nil
 
-      if BOOL_FLAGS[key] and not inline_val then
+      if key == "changed" then
+        -- Deliberately NOT a generic VALUE_FLAGS entry: bare --changed means
+        -- "all kinds" and must never swallow the next token as its value
+        -- (unlike --type/--export, a scope positional could legitimately
+        -- follow it). Only the --changed=<kinds> inline form specifies a
+        -- subset; the value is never space-separated.
+        local kinds = { "modified", "staged", "untracked" }
+        if inline_val and inline_val ~= "" then
+          kinds = vim.split(inline_val, ",", { trimempty = true })
+          for _, kind in ipairs(kinds) do
+            if kind ~= "modified" and kind ~= "staged" and kind ~= "untracked" then
+              return nil, string.format(
+                "Replace: invalid --changed kind '%s' (expected modified|staged|untracked)", kind)
+            end
+          end
+        end
+        req.overrides.changed_only = kinds
+      elseif BOOL_FLAGS[key] and not inline_val then
         BOOL_FLAGS[key](req)
       elseif BOOL_FLAGS[key] and inline_val then
         return nil, string.format(
@@ -420,6 +437,7 @@ M.FLAGS = {
   { name = "max-filesize", type = "INT" },
   { name = "to-quickfix", bool = true },
   { name = "to-loclist", bool = true },
+  { name = "changed", type = "STRING" },
   { name = "type", type = "STRING", repeatable = true },
   { name = "glob", type = "STRING", repeatable = true },
   { name = "exclude", type = "STRING", repeatable = true },

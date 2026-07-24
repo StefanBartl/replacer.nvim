@@ -28,6 +28,7 @@
 ---@field exclude_git_dir?      boolean
 ---@field literal?              boolean     -- default search mode (flags may override per-run)
 ---@field _old_len? 	           number
+---@field _changed_only?       string[]    -- internal: set by --changed, see replacer.gitfiles
 ---@field smart_case?           boolean
 ---@field default_scope?        string      -- "%", "cwd", ".", or explicit path
 ---@field file_types?           string[]    -- ripgrep --type values (e.g. { "lua" })

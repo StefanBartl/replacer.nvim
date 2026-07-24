@@ -66,6 +66,7 @@ local function effective_cfg(request)
   extend(cfg.exclude, request.filters and request.filters.exclude)
   cfg._line_range = request.line_range
   cfg._old_len = cfg.literal and #request.old or 0
+  cfg._changed_only = request.overrides and request.overrides.changed_only
   return cfg
 end
 
@@ -207,9 +208,38 @@ function M.run(request, new_text, scope, all)
   if not roots or #roots == 0 then
     return -- resolve_scope already notified on edge cases
   end
-
-  -- 2) Collect matches via the configured backend.
   ---@cast roots string[]
+
+  -- 1b) --changed: restrict roots to git changed/staged/untracked files,
+  -- intersected with the resolved scope (a specific dir/file still narrows
+  -- the git file list, it doesn't widen it).
+  if cfg._changed_only then
+    local gitfiles = require("replacer.gitfiles")
+    local start_dir = single_file and vim.fn.fnamemodify(roots[1], ":h") or roots[1]
+    local files, top = gitfiles.list(start_dir, cfg._changed_only)
+    if not top then
+      notify.warn("--changed: not inside a git repository")
+      return
+    end
+    -- git always reports forward-slash paths regardless of OS; normalize
+    -- the scope prefix the same way before comparing (fnamemodify keeps
+    -- native backslashes on Windows).
+    local prefix = vim.fn.fnamemodify(roots[1], ":p"):gsub("\\", "/"):gsub("/+$", "")
+    local filtered = {}
+    for _, f in ipairs(files) do
+      if single_file then
+        if f == prefix then filtered[#filtered + 1] = f end
+      elseif f == prefix or f:sub(1, #prefix + 1) == prefix .. "/" then
+        filtered[#filtered + 1] = f
+      end
+    end
+    if #filtered == 0 then
+      notify.info("--changed: no changed files match the current scope")
+      return
+    end
+    roots = filtered
+    single_file = false
+  end
 
   -- 2) Collect matches asynchronously (ripgrep is non-blocking; vimgrep is sync),
   --    then 3) dispatch to plan / ALL / picker inside the callback.
