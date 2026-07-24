@@ -2,6 +2,7 @@
 
 ![version](https://img.shields.io/badge/version-0.2-blue.svg)
 ![State](https://img.shields.io/badge/status-beta-orange.svg)
+[![CI](https://github.com/StefanBartl/replacer.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/StefanBartl/replacer.nvim/actions/workflows/ci.yml)
 ![Lazy.nvim compatible](https://img.shields.io/badge/lazy.nvim-supported-success)
 ![Neovim](https://img.shields.io/badge/Neovim-0.9+-success.svg)
 ![Lua](https://img.shields.io/badge/language-Lua-yellow.svg)
@@ -605,6 +606,24 @@ ______________________________________________________________________
   - In picker, inspect preview; Tab to select specific hits; Enter to apply
   - Ctrl-A to replace all with confirmation
   - Set `write_changes=false` to review changes before writing
+
+**Running checks locally** (same checks CI runs on every push/PR, see
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+
+```sh
+make lint       # luacheck lua/
+make fmt-check  # stylua --check lua/
+make test       # headless test suite (requires lib.nvim on the runtimepath)
+make check      # all three
+```
+
+The test suite requires [`lib.nvim`](https://github.com/StefanBartl/lib.nvim)
+on the runtimepath (the plugin's hard dependency), e.g.:
+
+```sh
+nvim --headless -u NONE -c "set rtp+=." -c "set rtp+=/path/to/lib.nvim" \
+  -c "luafile tests/feature_smoke.lua" -c "qa"
+```
 
 ______________________________________________________________________
 

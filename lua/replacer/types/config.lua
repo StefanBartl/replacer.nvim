@@ -28,8 +28,8 @@
 
 ---@class RP_Config
 ---@field engine?               "fzf"|"telescope"|"auto"  -- picker UI; "auto" -> fzf-lua if present, else telescope
----@field search_engine?        "ripgrep"|"vimgrep"|"auto" -- match collector; "auto" -> ripgrep if present, else vimgrep
----@field progress_style?       "auto"|"notify"|"statusline"|"fidget"|"float"|"kit" -- lib.nvim.progress style (requires lib.nvim; skipped otherwise). "float"/"kit" open a small window; focus it + <Esc> asks to cancel the search ("kit" is themed via lib.nvim.ui.kit)
+---@field search_engine?        "ripgrep"|"vimgrep"|"auto" -- match collector; "auto" -> rg if present, else vimgrep
+---@field progress_style?       "auto"|"notify"|"statusline"|"fidget"|"float"|"kit"
 ---@field write_changes?        boolean
 ---@field confirm_all?          boolean
 ---@field confirm_wide_scope?   boolean
@@ -62,7 +62,7 @@
 ---@field messages?             table<string, string>  -- string.format template overrides, see replacer.messages
 ---@field quiet?                boolean     -- suppress routine info-level notifications (warnings/errors still show)
 ---@field lsp?                  boolean     -- soft LSP rename for identifier-shaped matches, see replacer.lsp_rename
----@field stream?               boolean     -- incremental ripgrep parsing for smoother progress, see rg.collect_streaming
+---@field stream?               boolean     -- incremental rg parsing for smoother progress, see rg.collect_streaming
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

@@ -116,7 +116,8 @@ end
 --------------------------------------------------------------------------------
 
 local USAGE =
-  "Usage: :[range]Surround[!] {pattern} [delim] [scope] [--flags]   (delim aliases: b ` , q \", s ', star, bold, paren …)"
+  "Usage: :[range]Surround[!] {pattern} [delim] [scope] [--flags]   " ..
+  "(delim aliases: b ` , q \", s ', star, bold, paren …)"
 
 --- Build the RP_Request for wrapping `pattern` with the resolved delimiter,
 --- carrying over scope/flags and range. Search is forced to literal mode.

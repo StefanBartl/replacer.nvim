@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  lint:
+    name: luacheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: leafo/gh-actions-lua@v10
+        with:
+          luaVersion: "5.1"
+      - uses: leafo/gh-actions-luarocks@v4
+
+      - name: Install luacheck
+        run: luarocks install luacheck
+
+      - name: Run luacheck
+        run: find lua plugin -name '*.lua' | xargs luacheck
+
+  fmt:
+    name: stylua --check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: JohnnyMorganz/stylua-action@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check lua/
+
+  test:
+    name: headless test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Tests require lib.nvim on the runtimepath (the plugin's own hard
+      # dependency for the command layer, notifications, confirm dialog,
+      # and export) -- checked out as a subdirectory of the workspace so it
+      # can be added via `set rtp+=./lib.nvim` below.
+      - uses: actions/checkout@v4
+        with:
+          repository: StefanBartl/lib.nvim
+          path: lib.nvim
+
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: feature_smoke.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim"
+          -c "luafile tests/feature_smoke.lua" -c "qa"
+
+      - name: surround_smoke.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim"
+          -c "luafile tests/surround_smoke.lua" -c "qa"
+
+      - name: async_utf8.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim"
+          -c "luafile tests/async_utf8.lua" -c "qa"

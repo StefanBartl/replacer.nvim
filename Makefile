@@ -6,11 +6,15 @@
 # Run the headless test suites.
 test:
 	nvim -l tests/feature_smoke.lua
+	nvim -l tests/surround_smoke.lua
 	nvim -l tests/async_utf8.lua
 
-# Static analysis.
+# Static analysis. Explicit file list (not a bare `luacheck lua/`): some
+# luacheck/OS combinations (observed with a Windows/mingw install) fail
+# directory-argument traversal with a permission error; globbing files
+# ourselves sidesteps that and works identically everywhere.
 lint:
-	luacheck lua/
+	find lua plugin -name '*.lua' | xargs luacheck
 
 # Format in place.
 fmt:

@@ -418,15 +418,13 @@ local function list_files(root, cfg, acc)
   if not ok or not iter then return end
   local n = #acc
   for name, typ in iter do
-    if typ == "file" then
-      if cfg.exclude_git_dir and name:find("%.git[/\\]") then
-        -- skip .git subtree
-      else
-        local full = root .. "/" .. name
-        if passes_filters(full, cfg) then
-          n = n + 1
-          acc[n] = full
-        end
+    -- skip .git subtree
+    local in_git_dir = cfg.exclude_git_dir and name:find("%.git[/\\]")
+    if typ == "file" and not in_git_dir then
+      local full = root .. "/" .. name
+      if passes_filters(full, cfg) then
+        n = n + 1
+        acc[n] = full
       end
     end
   end
