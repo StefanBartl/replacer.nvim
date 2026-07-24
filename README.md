@@ -182,6 +182,33 @@ leading `[`):
 :ReplaceBatch pairs.json .            # every pair applies non-interactively (no picker — the ! is implied and optional)
 ```
 
+### i18n / Messages
+
+Override any of the following message templates via `messages` in `setup()`
+(each is a `string.format` template; a malformed override is shown verbatim
+rather than erroring), and/or suppress routine info-level notifications
+entirely with `quiet = true` (warnings/errors always show):
+
+| Key | Default | Args |
+| --- | --- | --- |
+| `confirm_all` | `Apply ALL %d spot(s) across %d file(s)?` | spots, files |
+| `confirm_all_short` | `Apply replacement to ALL %d spot(s)?` | spots |
+| `cancelled` | `cancelled` | — |
+| `result` | `%d spot(s) in %d file(s)` | spots, files |
+| `no_matches` | `no matches found` | — |
+| `surround_prompt` | `Surround with: ` | — |
+| `surround_cancelled` | `Surround: cancelled (no delimiter)` | — |
+
+```lua
+require("replacer").setup({
+  quiet = false,
+  messages = {
+    no_matches = "keine Treffer",
+    result = "%d Fundstelle(n) in %d Datei(en)",
+  },
+})
+```
+
 ### Hooks
 
 Lua before/after callbacks around the apply pipeline — run a linter/formatter,
@@ -389,6 +416,8 @@ ______________________________________________________________________
 | confirm_per_file | boolean | ALL-mode: ask All/Skip/Only-some/Quit per file, supersedes confirm_all (default: false) |
 | checkpoint      | boolean | ALL-mode: snapshot touched files first for `:ReplaceUndo` (default: false) |
 | hooks           | table?  | Before/after callbacks around the apply pipeline: `{ before_apply, after_apply, before_write, after_write }`, each a function or list of functions |
+| messages        | table?  | Override any [message template](#i18n--messages) by key (`string.format` templates) |
+| quiet           | boolean | Suppress routine info-level notifications; warnings/errors still show (default: false) |
 | safe_mode       | boolean | Skip read-only/oversized/binary files instead of touching them (default: false) |
 | max_file_size   | integer | Bytes; only enforced when safe_mode is true (default: 5 MiB) |
 | skip_binary     | boolean | Only enforced when safe_mode is true (default: true) |

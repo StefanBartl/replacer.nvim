@@ -52,6 +52,12 @@ return {
   -- single function or a list of functions: { before_apply = fn, ... }.
   -- See lua/replacer/hooks.lua.
   hooks = {},
+  -- i18n / message customization: override any key in
+  -- lua/replacer/messages.lua's DEFAULTS (string.format templates), and/or
+  -- suppress routine info-level notifications entirely with quiet = true
+  -- (warnings/errors always show).
+  messages = {},
+  quiet = false,
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }

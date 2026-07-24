@@ -173,7 +173,7 @@ local function dispatch(request, cfg, single_file, items)
     if cfg.confirm_per_file then
       local perfile = require("replacer.perfile")
       local files, spots = perfile.run(items, request.new, cfg.write_changes, apply_func, open_picker)
-      common.notify_result(files, spots)
+      common.notify_result(files, spots, cfg)
       return
     end
 
@@ -184,23 +184,24 @@ local function dispatch(request, cfg, single_file, items)
 
     local wide = (not single_file) and cfg.confirm_wide_scope
     if cfg.confirm_all or wide then
-      local msg = string.format("Apply ALL %d spot(s) across %d file(s)?", #items, filecount)
+      local messages = require("replacer.messages")
+      local msg = messages.fmt(cfg, "confirm_all", #items, filecount)
       confirm.open({
         question = msg,
         on_answer = function(yes)
           if not yes then
-            notify.info("cancelled")
+            messages.info(cfg, messages.fmt(cfg, "cancelled"))
             return
           end
           local files, spots = apply_func(items, request.new, cfg.write_changes)
-          common.notify_result(files, spots)
+          common.notify_result(files, spots, cfg)
         end,
       })
       return
     end
 
     local files, spots = apply_func(items, request.new, cfg.write_changes)
-    common.notify_result(files, spots)
+    common.notify_result(files, spots, cfg)
     return
   end
 
@@ -278,7 +279,8 @@ function M.run(request, new_text, scope, all)
       return
     end
     if not items or #items == 0 then
-      notify.info("no matches found")
+      local messages = require("replacer.messages")
+      messages.info(cfg, messages.fmt(cfg, "no_matches"))
       return
     end
     -- Optional post-collection filter (e.g. :Surround skipping already-wrapped

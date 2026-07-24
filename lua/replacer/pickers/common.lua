@@ -12,7 +12,6 @@
 ---   - `preview_lines_with_pos` returns the 0-based row/col where the match starts
 ---     inside the preview buffer. Pickers decide how to highlight (buf HL vs ANSI).
 
-local notify = require("replacer.util.notify")
 local encoding = require("replacer.encoding")
 
 local M = {}
@@ -103,11 +102,13 @@ end
 -- Notifications
 --------------------------------------------------------------------------------
 
---- Uniform success notification.
+--- Uniform success notification. Honors cfg.messages.result / cfg.quiet.
 --- @param files integer
 --- @param spots integer
-function M.notify_result(files, spots)
-  notify.info(string.format("%d spot(s) in %d file(s)", spots, files))
+--- @param cfg RP_Config|nil
+function M.notify_result(files, spots, cfg)
+  local messages = require("replacer.messages")
+  messages.info(cfg, messages.fmt(cfg, "result", spots, files))
 end
 
 --------------------------------------------------------------------------------

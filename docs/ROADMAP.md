@@ -38,5 +38,3 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
   in, so you can start selecting before the search finishes.
 - **Rename-assist** — pair a content replace with an optional file rename
   (e.g. class name ↔ file name), previewed together.
-- **i18n / message customization** — configurable prompt/confirmation text,
-  quiet vs. verbose modes.

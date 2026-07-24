@@ -116,13 +116,13 @@ local function run(items, new_text, cfg, apply_func)
             if e and e.value then chosen[#chosen + 1] = e.value end
           end
           local files, spots = apply_func(chosen, new_text, cfg.write_changes)
-          common.notify_result(files, spots)
+          common.notify_result(files, spots, cfg)
           actions.close(prompt_bufnr)
         else
           if not sel.value then return end
           ---@cast sel { value: RP_Match }
           local files, spots = apply_func({ sel.value }, new_text, cfg.write_changes)
-          common.notify_result(files, spots)
+          common.notify_result(files, spots, cfg)
           actions.close(prompt_bufnr)
         end
       end
@@ -150,7 +150,8 @@ local function run(items, new_text, cfg, apply_func)
       -- apply_all: replace ALL matches with optional confirmation
       local function do_all()
         if cfg.confirm_all then
-          local msg = string.format("Apply replacement to ALL %d spot(s)?", #items)
+          local messages = require("replacer.messages")
+          local msg = messages.fmt(cfg, "confirm_all_short", #items)
           -- Close the picker before opening the confirm float: leaving it open
           -- underneath a second focus-stealing float corrupts Telescope's
           -- internal picker registry, so closing it afterward (from
@@ -161,13 +162,13 @@ local function run(items, new_text, cfg, apply_func)
             on_answer = function(yes)
               if not yes then return end
               local files, spots = apply_func(items, new_text, cfg.write_changes)
-              common.notify_result(files, spots)
+              common.notify_result(files, spots, cfg)
             end,
           })
           return
         end
         local files, spots = apply_func(items, new_text, cfg.write_changes)
-        common.notify_result(files, spots)
+        common.notify_result(files, spots, cfg)
         actions.close(prompt_bufnr)
       end
       local key_all = keys.apply_all or "<C-a>"

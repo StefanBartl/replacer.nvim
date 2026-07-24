@@ -57,6 +57,8 @@
 ---@field confirm_per_file?     boolean     -- ALL-mode: ask All/Skip/Only-some/Quit per file
 ---@field checkpoint?           boolean     -- ALL-mode: snapshot files before applying (:ReplaceUndo)
 ---@field hooks?                RP_Hooks    -- before/after callbacks around the apply pipeline
+---@field messages?             table<string, string>  -- string.format template overrides, see replacer.messages
+---@field quiet?                boolean     -- suppress routine info-level notifications (warnings/errors still show)
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

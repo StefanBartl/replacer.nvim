@@ -161,6 +161,10 @@ local function validate(cfg)
   -- than deep-copying (vim.deepcopy of function leaves is unnecessary and
   -- functions are inherently reference values).
   out.hooks              = tbl(cfg.hooks)
+  -- messages holds string.format templates keyed by message id (plain
+  -- string values) -- a shallow merge over defaults, same rationale as hooks.
+  out.messages           = tbl(cfg.messages)
+  out.quiet              = pick_bool(cfg.quiet, out.quiet)
 
   if type(cfg.default_scope) == "string" and cfg.default_scope ~= "" then
     out.default_scope = cfg.default_scope

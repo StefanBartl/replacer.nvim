@@ -91,7 +91,7 @@ local function run(old, items, new_text, cfg, apply_func)
       end
       if #chosen == 0 then return end
       local files, spots = apply_func(chosen, new_text, cfg.write_changes)
-      common.notify_result(files, spots)
+      common.notify_result(files, spots, cfg)
     end,
     [key_all] = function()
       local all = {} ---@type RP_Match[]
@@ -102,23 +102,24 @@ local function run(old, items, new_text, cfg, apply_func)
       end
       if #all == 0 then return end
       if cfg.confirm_all then
+        local messages = require("replacer.messages")
         local fileset = {}; for _, it in ipairs(all) do fileset[it.path] = true end
         local fc = 0; for _ in pairs(fileset) do fc = fc + 1 end
         confirm.open({
-          question = string.format("Apply replacement to ALL %d spot(s) across %d file(s)?", #all, fc),
+          question = messages.fmt(cfg, "confirm_all", #all, fc),
           on_answer = function(yes)
             if not yes then
-              notify.info("cancelled")
+              messages.info(cfg, messages.fmt(cfg, "cancelled"))
               return
             end
             local files, spots = apply_func(all, new_text, cfg.write_changes)
-            common.notify_result(files, spots)
+            common.notify_result(files, spots, cfg)
           end,
         })
         return
       end
       local files, spots = apply_func(all, new_text, cfg.write_changes)
-      common.notify_result(files, spots)
+      common.notify_result(files, spots, cfg)
     end,
   }
 

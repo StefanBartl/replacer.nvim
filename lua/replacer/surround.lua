@@ -227,9 +227,12 @@ local function handle(run_fun, opts)
     if scope == "" then scope = "%" end
   end
 
+  local messages = require("replacer.messages")
+  local cfg = require("replacer.config").get()
+
   local function finish(d)
     if not d or d == "" then
-      notify.info("Surround: cancelled (no delimiter)")
+      messages.info(cfg, messages.fmt(cfg, "surround_cancelled"))
       return
     end
     run_fun(build_request(pattern, d, scope, req, line_range, nested))
@@ -237,7 +240,7 @@ local function handle(run_fun, opts)
 
   if delim == nil then
     -- Prompt asynchronously; :Surround word  → ask what to wrap with.
-    vim.ui.input({ prompt = "Surround with: " }, function(input)
+    vim.ui.input({ prompt = messages.fmt(cfg, "surround_prompt") }, function(input)
       finish(input and vim.trim(input) or nil)
     end)
   else

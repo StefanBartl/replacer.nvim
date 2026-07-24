@@ -333,6 +333,8 @@ Default configuration: >lua
       case_preserve = false,             -- re-case replacement to match each match
       word_boundary = false,             -- keep only whole-word matches
       code_only = false,                 -- skip matches in strings/comments (best-effort)
+      quiet = false,                     -- suppress routine info notifications
+      messages = {},                     -- string.format template overrides
       safe_mode = false,                 -- skip read-only/oversized/binary files
       max_file_size = 5 * 1024 * 1024,   -- bytes; only enforced when safe_mode is true
       skip_binary = true,                -- only enforced when safe_mode is true
@@ -718,6 +720,32 @@ Events: before_apply (may return false to skip/veto that file), after_apply,
 before_write, after_write — all fire once per file. A hook error is caught
 and warned via notify.warn(), never aborts the apply. See
 lua/replacer/hooks.lua.
+
+                                                   *replacer-i18n-messages*
+i18n / Messages~
+
+Override any message template via config.messages (each a string.format
+template; a malformed override is shown verbatim rather than erroring),
+and/or suppress routine info-level notifications entirely with
+config.quiet = true (warnings/errors always show): >lua
+    require("replacer").setup({
+      quiet = false,
+      messages = {
+        no_matches = "keine Treffer",
+        result = "%d Fundstelle(n) in %d Datei(en)",
+      },
+    })
+<
+    Key                   Default                                    Args~
+    confirm_all           "Apply ALL %d spot(s) across %d file(s)?"   spots, files
+    confirm_all_short     "Apply replacement to ALL %d spot(s)?"      spots
+    cancelled             "cancelled"                                -
+    result                "%d spot(s) in %d file(s)"                 spots, files
+    no_matches            "no matches found"                         -
+    surround_prompt       "Surround with: "                          -
+    surround_cancelled    "Surround: cancelled (no delimiter)"       -
+
+See lua/replacer/messages.lua.
 
                                                 *replacer-root-detection*
 Monorepo / Project-Root Detection~

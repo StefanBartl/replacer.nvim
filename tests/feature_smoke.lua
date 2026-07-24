@@ -23,6 +23,7 @@ local hooks = require("replacer.hooks")
 local history = require("replacer.history")
 local presets = require("replacer.presets")
 local batch = require("replacer.batch")
+local messages = require("replacer.messages")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -531,6 +532,36 @@ do
   local bc2 = assert(io.open(file_b2, "r")):read("*a")
   check("batch: pair 1 applied across the batch scope", bc1:match("ALPHA") ~= nil, bc1)
   check("batch: pair 2 applied across the batch scope", bc2:match("BETA") ~= nil, bc2)
+end
+
+--------------------------------------------------------------------------------
+-- 2n) messages: i18n / template overrides + quiet mode
+--------------------------------------------------------------------------------
+do
+  check("messages: default template", messages.fmt(nil, "no_matches") == "no matches found")
+  check("messages: default with args", messages.fmt(nil, "result", 3, 2) == "3 spot(s) in 2 file(s)")
+
+  local overridden = messages.fmt({ messages = { no_matches = "keine Treffer" } }, "no_matches")
+  check("messages: cfg.messages overrides the template", overridden == "keine Treffer", overridden)
+
+  local overridden2 = messages.fmt({ messages = { result = "%d/%d" } }, "result", 3, 2)
+  check("messages: overridden template applies args", overridden2 == "3/2", overridden2)
+
+  local malformed = messages.fmt({ messages = { result = "%s %s %s (too many specifiers)" } }, "result", 3, 2)
+  check("messages: malformed override falls back to itself instead of erroring",
+    malformed == "%s %s %s (too many specifiers)", malformed)
+
+  local unknown = messages.fmt(nil, "not_a_real_key")
+  check("messages: unknown key falls back to the key itself", unknown == "not_a_real_key")
+
+  local infos = {}
+  local orig_notify_info = require("replacer.util.notify").info
+  require("replacer.util.notify").info = function(msg) infos[#infos + 1] = msg end
+  messages.info({ quiet = true }, "should be suppressed")
+  messages.info({ quiet = false }, "should show")
+  messages.info(nil, "should also show")
+  require("replacer.util.notify").info = orig_notify_info
+  check("messages: quiet=true suppresses info()", #infos == 2 and infos[1] == "should show", vim.inspect(infos))
 end
 
 --------------------------------------------------------------------------------
