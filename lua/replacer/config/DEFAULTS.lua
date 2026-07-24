@@ -63,6 +63,15 @@ return {
   -- an LSP-driven rename for that match instead of a plain text edit.
   -- Always falls back to plain text otherwise. See lua/replacer/lsp_rename.lua.
   lsp = false,
+  -- Use the incremental ripgrep --json parser (collect_streaming) instead
+  -- of parsing the full stdout blob at the end. Ripgrep backend only
+  -- (other paths already deliver everything at once); gives smoother,
+  -- filter-aware progress updates as matches are found. NOTE: the picker
+  -- itself still opens once collection finishes -- true live picker fill
+  -- (select matches while the search is still running) is not implemented
+  -- yet, see docs/ROADMAP.md history / lua/replacer/rg.lua's
+  -- collect_streaming docstring.
+  stream = false,
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }

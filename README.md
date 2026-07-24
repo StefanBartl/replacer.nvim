@@ -70,6 +70,7 @@ Each occurrence on a line becomes its own selectable entry (multiple hits per li
 | `--confirm-per-file` / `--no-confirm-per-file` | ALL-mode: ask All/Skip/Only-some/Quit per file instead of one global confirmation |
 | `--also-rename-file` / `--no-also-rename-file` | single-file scope only: after a successful content replace, offer to also rename the file itself the same way |
 | `--lsp` / `--no-lsp` | soft LSP integration: identifier-shaped matches try an LSP-driven rename first, falling back to plain text (see below) |
+| `--stream` / `--no-stream` | incremental ripgrep `--json` parsing for smoother, filter-aware progress while a search is in flight (see below) |
 | `--checkpoint` / `--no-checkpoint` | ALL-mode: snapshot every about-to-be-touched file first; `:ReplaceUndo` restores them |
 | `--type=<ft>` *(repeatable)* | restrict to a filetype (ripgrep `--type`) |
 | `--glob=<pat>` *(repeatable)* | include glob pattern |
@@ -235,6 +236,22 @@ moves your cursor or window even when triggered from a picker.
 
 This is genuinely best-effort: mixed results (some matches LSP-renamed,
 others plain-text) are normal and expected in one run.
+
+### Streaming Collection
+
+`--stream` switches ripgrep collection to an incremental `--json` parser
+(`rg.collect_streaming`) instead of parsing the whole output at the end,
+giving smoother, filter-aware progress updates while a large search is
+still running.
+
+**Scope note:** the picker itself still only opens once collection
+finishes — true live picker fill (select matches while ripgrep is still
+running) is not implemented yet. This flag ships the collection-layer
+infrastructure for it (proven equivalent to the non-streaming collector by
+test, see `tests/feature_smoke.lua`); wiring it into the pickers themselves
+is a follow-up, deliberately deferred given the integration risk of
+terminal-UI live-population code that can't be verified by an automated
+test suite. See `lua/replacer/rg.lua`'s `collect_streaming` docstring.
 
 ### i18n / Messages
 

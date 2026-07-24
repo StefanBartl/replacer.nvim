@@ -21,5 +21,3 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
 ## Planned
 
 - **`.github` workflows** — CI (headless test runs, luacheck/stylua) on push/PR.
-- **Streaming picker fill** — populate the picker as ripgrep results stream
-  in, so you can start selecting before the search finishes.

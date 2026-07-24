@@ -725,6 +725,76 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 2s) rg.collect_streaming: incremental batches, same final result as collect_async
+--------------------------------------------------------------------------------
+if vim.fn.executable("rg") == 1 then
+  local stream_dir = tmp .. "/stream"
+  vim.fn.mkdir(stream_dir, "p")
+  for i = 1, 5 do
+    local fh = assert(io.open(string.format("%s/f%d.txt", stream_dir, i), "w"))
+    fh:write(string.format("needle line %d\nsecond needle here\n", i))
+    fh:close()
+  end
+
+  local rcfg = { literal = true, search_engine = "ripgrep", hidden = true, smart_case = true,
+    file_types = {}, globs = {}, exclude = {} }
+
+  local batches, batch_calls = {}, 0
+  local streamed_items, streamed_err, streamed_done = nil, nil, false
+  rg.collect_streaming("needle", { stream_dir }, rcfg,
+    function(new_batch)
+      batch_calls = batch_calls + 1
+      for _, m in ipairs(new_batch) do batches[#batches + 1] = m end
+    end,
+    function(items, err)
+      streamed_items, streamed_err, streamed_done = items, err, true
+    end)
+  vim.wait(2000, function() return streamed_done end, 10)
+
+  check("streaming: on_done eventually fires", streamed_done, streamed_done)
+  check("streaming: no error", streamed_err == nil, streamed_err and require("replacer.error").format(streamed_err))
+  check("streaming: at least one batch delivered", batch_calls >= 1, batch_calls)
+  check("streaming: batches sum to the same count as on_done's final list",
+    #batches == (streamed_items and #streamed_items or -1), #batches)
+
+  -- Cross-check against the non-streaming async collector: same search must
+  -- produce the same match set (streaming's incremental parser must be
+  -- semantically equivalent to the batch parser it was factored out of).
+  local async_items, async_done = nil, false
+  rg.collect_async("needle", { stream_dir }, rcfg, function(items) async_items = items; async_done = true end)
+  vim.wait(2000, function() return async_done end, 10)
+
+  check("streaming: same match count as the non-streaming collector",
+    streamed_items and async_items and #streamed_items == #async_items,
+    streamed_items and #streamed_items, async_items and #async_items)
+
+  local function fingerprint(items)
+    local keys = {}
+    for _, it in ipairs(items) do
+      keys[#keys + 1] = string.format("%s:%d:%d:%s", it.path, it.lnum, it.col0, it.old)
+    end
+    table.sort(keys)
+    return table.concat(keys, "|")
+  end
+  check("streaming: identical match set (path/line/col/text) as the non-streaming collector",
+    streamed_items and async_items and fingerprint(streamed_items) == fingerprint(async_items))
+
+  -- End-to-end through the real pipeline: :Replace ... --stream --all must
+  -- apply correctly, exercising init.lua's cfg.stream branch.
+  replacer.setup({ search_engine = "ripgrep", confirm_all = false, write_changes = true })
+  local ok9, sreq = command.parse_request("needle NEEDLE --stream")
+  check("streaming: --stream flag parses", ok9 and sreq.overrides.stream == true)
+  sreq.scope, sreq.all = stream_dir, true
+  replacer.run(sreq)
+  vim.wait(2000)
+  local sc1 = assert(io.open(stream_dir .. "/f1.txt", "r")):read("*a")
+  check("streaming: end-to-end :Replace --stream --all applies correctly",
+    sc1:match("NEEDLE") ~= nil and not sc1:match("needle"), sc1)
+else
+  print("SKIP  rg.collect_streaming tests (ripgrep not on PATH)")
+end
+
+--------------------------------------------------------------------------------
 -- 3) Pure edit computation
 --------------------------------------------------------------------------------
 do

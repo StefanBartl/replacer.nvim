@@ -160,6 +160,9 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
         --lsp | --no-lsp                     identifier-shaped matches try an
                                              LSP-driven rename first, falling
                                              back to plain text
+        --stream | --no-stream               incremental ripgrep --json
+                                             parsing for smoother progress
+                                             (see *replacer-streaming*)
         --checkpoint | --no-checkpoint       ALL-mode: snapshot touched files
                                              first; |:ReplaceUndo| restores them
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
@@ -778,6 +781,23 @@ it never moves your cursor or window even when triggered from a picker.
 Genuinely best-effort: mixed results (some matches LSP-renamed, others
 plain-text) are normal and expected in one run. See
 lua/replacer/lsp_rename.lua.
+
+                                                       *replacer-streaming*
+Streaming Collection~
+
+--stream switches ripgrep collection to an incremental --json parser
+(rg.collect_streaming) instead of parsing the whole output at the end,
+giving smoother, filter-aware progress updates while a large search is
+still running.
+
+Scope note: the picker itself still only opens once collection finishes —
+true live picker fill (select matches while ripgrep is still running) is
+not implemented yet. This flag ships the collection-layer infrastructure
+for it (proven equivalent to the non-streaming collector by test); wiring
+it into the pickers themselves is a follow-up, deliberately deferred given
+the integration risk of terminal-UI live-population code that can't be
+verified by an automated test suite. See lua/replacer/rg.lua's
+collect_streaming docstring.
 
                                                    *replacer-i18n-messages*
 i18n / Messages~

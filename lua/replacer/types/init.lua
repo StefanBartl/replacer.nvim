@@ -68,6 +68,7 @@
 ---@field checkpoint? boolean
 ---@field also_rename_file? boolean
 ---@field lsp? boolean
+---@field stream? boolean
 
 --- Filters produced by command flags (merged over config filter lists).
 ---@class RP_Filters

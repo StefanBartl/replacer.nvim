@@ -150,6 +150,8 @@ local BOOL_FLAGS = {
   ["no-checkpoint"] = function(r) r.overrides.checkpoint = false end,
   ["lsp"]    = function(r) r.overrides.lsp = true end,
   ["no-lsp"] = function(r) r.overrides.lsp = false end,
+  ["stream"]    = function(r) r.overrides.stream = true end,
+  ["no-stream"] = function(r) r.overrides.stream = false end,
 }
 
 -- Value flags: name -> true. Applied via apply_value_flag below.
@@ -449,6 +451,8 @@ M.FLAGS = {
   { name = "no-also-rename-file", bool = true },
   { name = "lsp", bool = true },
   { name = "no-lsp", bool = true },
+  { name = "stream", bool = true },
+  { name = "no-stream", bool = true },
   { name = "changed", type = "STRING" },
   { name = "confirm-per-file", bool = true },
   { name = "no-confirm-per-file", bool = true },

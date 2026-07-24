@@ -62,6 +62,7 @@
 ---@field messages?             table<string, string>  -- string.format template overrides, see replacer.messages
 ---@field quiet?                boolean     -- suppress routine info-level notifications (warnings/errors still show)
 ---@field lsp?                  boolean     -- soft LSP rename for identifier-shaped matches, see replacer.lsp_rename
+---@field stream?               boolean     -- incremental ripgrep parsing for smoother progress, see rg.collect_streaming
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

@@ -166,6 +166,7 @@ local function validate(cfg)
   out.messages           = tbl(cfg.messages)
   out.quiet              = pick_bool(cfg.quiet, out.quiet)
   out.lsp                = pick_bool(cfg.lsp, out.lsp)
+  out.stream             = pick_bool(cfg.stream, out.stream)
 
   if type(cfg.default_scope) == "string" and cfg.default_scope ~= "" then
     out.default_scope = cfg.default_scope

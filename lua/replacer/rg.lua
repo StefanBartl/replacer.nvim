@@ -159,6 +159,79 @@ local function build_rg_args(old, roots, cfg)
   return args
 end
 
+--- Parse one line of ripgrep `--json` stdout (a single event, no trailing
+--- newline) into the matches it produces, continuing id numbering from
+--- `id_start`. Non-match events (begin/end/summary) and malformed JSON
+--- produce no matches. Factored out of parse_rg_json so the streaming
+--- collector (collect_streaming) can reuse the exact same per-event logic
+--- incrementally instead of only at the end of a full stdout blob.
+---@param line string
+---@param old string
+---@param cfg RP_RG_Config
+---@param id_start integer
+---@return RP_Match[] matches, integer next_id
+local function parse_rg_json_line(line, old, cfg, id_start)
+  ---@type RP_Match[]
+  local matches = {}
+  local id = id_start
+
+  local okj, ev = pcall(vim.json.decode, line)
+  if okj and ev and ev.type == "match" and ev.data then
+    local d = ev.data
+    local path = (d.path and d.path.text) or ""
+    local lnum = d.line_number or 0
+    local text = (d.lines and d.lines.text) or ""
+    local submatches = d.submatches
+
+    if path ~= "" and lnum > 0 then
+      local line_text = tostring(text):gsub("\r?\n$", "")
+
+      if submatches and #submatches > 0 then
+        if #submatches == 1 then
+          -- Defensive: rg may report one submatch where the line holds several.
+          local local_occ = find_all_occurrences(line_text, old, cfg.literal)
+          if #local_occ > 1 then
+            for _, occ in ipairs(local_occ) do
+              id = id + 1
+              matches[#matches + 1] = {
+                id = id, path = path, lnum = lnum, col0 = occ.start0, old = occ.text, line = line_text,
+              }
+            end
+          else
+            local sm = submatches[1]
+            if type(sm.start) == "number" then
+              id = id + 1
+              matches[#matches + 1] = {
+                id = id, path = path, lnum = lnum, col0 = sm.start,
+                old = (sm.match and sm.match.text) or old or "", line = line_text,
+              }
+            end
+          end
+        else
+          for _, sm in ipairs(submatches) do
+            if type(sm.start) == "number" then
+              id = id + 1
+              matches[#matches + 1] = {
+                id = id, path = path, lnum = lnum, col0 = sm.start,
+                old = (sm.match and sm.match.text) or old or "", line = line_text,
+              }
+            end
+          end
+        end
+      else
+        for _, occ in ipairs(find_all_occurrences(line_text, old, cfg.literal)) do
+          id = id + 1
+          matches[#matches + 1] = {
+            id = id, path = path, lnum = lnum, col0 = occ.start0, old = occ.text, line = line_text,
+          }
+        end
+      end
+    end
+  end
+
+  return matches, id
+end
+
 --- Parse ripgrep `--json` stdout into a flat list of matches.
 ---@param stdout string
 ---@param old string
@@ -170,59 +243,9 @@ local function parse_rg_json(stdout, old, cfg)
   local id = 0
 
   for line in string.gmatch((stdout or ""), "([^\n]+)\n?") do
-    local okj, ev = pcall(vim.json.decode, line)
-    if okj and ev and ev.type == "match" and ev.data then
-      local d = ev.data
-      local path = (d.path and d.path.text) or ""
-      local lnum = d.line_number or 0
-      local text = (d.lines and d.lines.text) or ""
-      local submatches = d.submatches
-
-      if path ~= "" and lnum > 0 then
-        local line_text = tostring(text):gsub("\r?\n$", "")
-
-        if submatches and #submatches > 0 then
-          if #submatches == 1 then
-            -- Defensive: rg may report one submatch where the line holds several.
-            local local_occ = find_all_occurrences(line_text, old, cfg.literal)
-            if #local_occ > 1 then
-              for _, occ in ipairs(local_occ) do
-                id = id + 1
-                matches[id] = {
-                  id = id, path = path, lnum = lnum, col0 = occ.start0, old = occ.text, line = line_text,
-                }
-              end
-            else
-              local sm = submatches[1]
-              if type(sm.start) == "number" then
-                id = id + 1
-                matches[id] = {
-                  id = id, path = path, lnum = lnum, col0 = sm.start,
-                  old = (sm.match and sm.match.text) or old or "", line = line_text,
-                }
-              end
-            end
-          else
-            for _, sm in ipairs(submatches) do
-              if type(sm.start) == "number" then
-                id = id + 1
-                matches[id] = {
-                  id = id, path = path, lnum = lnum, col0 = sm.start,
-                  old = (sm.match and sm.match.text) or old or "", line = line_text,
-                }
-              end
-            end
-          end
-        else
-          for _, occ in ipairs(find_all_occurrences(line_text, old, cfg.literal)) do
-            id = id + 1
-            matches[id] = {
-              id = id, path = path, lnum = lnum, col0 = occ.start0, old = occ.text, line = line_text,
-            }
-          end
-        end
-      end
-    end
+    local line_matches, next_id = parse_rg_json_line(line, old, cfg, id)
+    id = next_id
+    for _, m in ipairs(line_matches) do matches[#matches + 1] = m end
   end
 
   return matches
@@ -700,6 +723,120 @@ function M.collect_async(old, roots, cfg, on_done)
       else
         on_done(post_filter(items, cfg), nil)
       end
+    end)
+  end
+end
+
+--- Collect matches, invoking `on_batch(new_items)` incrementally as
+--- complete ripgrep --json lines arrive (already post_filter'd, so a batch
+--- is exactly what a caller would show immediately) and `on_done(items,
+--- err)` once at the end with everything collected. Backs --stream.
+---
+--- Only the ripgrep backend streams incrementally; the modified-buffer
+--- fast path and the vimgrep backend (no incremental JSON to parse) fall
+--- back to a single on_batch call with everything at once, so callers can
+--- rely on a consistent on_batch/on_done contract regardless of backend.
+---@param old string
+---@param roots string[]
+---@param cfg RP_RG_Config
+---@param on_batch fun(new_items: RP_Match[])
+---@param on_done fun(items: RP_Match[]|nil, err: RP_Error|nil)
+---@return nil
+function M.collect_streaming(old, roots, cfg, on_batch, on_done)
+  if #roots == 1 then
+    local modified, bufnr = is_buffer_modified(roots[1])
+    if modified and bufnr then
+      notify.info("scanning modified buffer instead of disk")
+      local items = post_filter(collect_from_buffer(old, bufnr, cfg), cfg)
+      if #items > 0 then on_batch(items) end
+      on_done(items, nil)
+      return
+    end
+  end
+
+  if pick_backend(cfg) ~= "ripgrep" or not vim.system then
+    M.collect_async(old, roots, cfg, function(items, err)
+      if items and #items > 0 then on_batch(items) end
+      on_done(items, err)
+    end)
+    return
+  end
+
+  local args = build_rg_args(old, roots, cfg)
+  local h = new_progress(cfg)
+
+  ---@type RP_Match[]
+  local all_items = {}
+  local id, buf_tail = 0, ""
+
+  --- Feed one stdout chunk: extract every complete line (a chunk boundary
+  --- can land mid-line), parse+filter them into one batch, and hand that
+  --- batch to on_batch. Any trailing partial line is kept for the next call.
+  ---@param chunk string
+  local function feed(chunk)
+    local data = buf_tail .. chunk
+    local last_nl = data:match(".*\n()") -- byte index just past the last \n, or nil
+    local complete, rest
+    if last_nl then
+      complete, rest = data:sub(1, last_nl - 1), data:sub(last_nl)
+    else
+      complete, rest = "", data
+    end
+    buf_tail = rest
+    if complete == "" then return end
+
+    ---@type RP_Match[]
+    local raw_batch = {}
+    for line in complete:gmatch("([^\n]+)") do
+      local line_matches, next_id = parse_rg_json_line(line, old, cfg, id)
+      id = next_id
+      for _, m in ipairs(line_matches) do raw_batch[#raw_batch + 1] = m end
+    end
+    if #raw_batch == 0 then return end
+
+    local batch = post_filter(raw_batch, cfg)
+    if #batch == 0 then return end
+    for _, m in ipairs(batch) do all_items[#all_items + 1] = m end
+    on_batch(batch)
+  end
+
+  local proc = vim.system(args, {
+    text = true,
+    stdout = function(_, data)
+      if not data then return end
+      vim.schedule(function()
+        feed(data)
+        if h then h:update({ text = string.format("%d match(es) found…", #all_items) }) end
+      end)
+    end,
+  }, function(obj)
+    vim.schedule(function()
+      if buf_tail ~= "" then feed("\n") end -- flush a trailing line with no final newline
+
+      local code = obj and obj.code or 1
+      if code ~= 0 and code ~= 1 then
+        local err = (h and h.cancelled)
+          and require("replacer.error").search_error("search cancelled")
+          or require("replacer.error").search_error("ripgrep failed", obj and obj.stderr or nil)
+        if h then h:cancel("search failed") end
+        on_done(nil, err)
+        return
+      end
+
+      if h then
+        local files, n_files = {}, 0
+        for _, it in ipairs(all_items) do
+          if not files[it.path] then files[it.path] = true; n_files = n_files + 1 end
+        end
+        h:finish(string.format("%d match(es) in %d file(s)", #all_items, n_files))
+      end
+      on_done(all_items, nil)
+    end)
+  end)
+
+  if h then
+    h:on_cancel(function()
+      pcall(function() proc:kill(15) end)
     end)
   end
 end

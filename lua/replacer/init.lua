@@ -298,7 +298,7 @@ function M.run(request, new_text, scope, all)
 
   -- 2) Collect matches asynchronously (ripgrep is non-blocking; vimgrep is sync),
   --    then 3) dispatch to plan / ALL / picker inside the callback.
-  rg.collect_async(request.old, roots, cfg, function(items, err)
+  local function on_collected(items, err)
     if err then
       notify.error(require("replacer.error").format(err))
       return
@@ -319,7 +319,17 @@ function M.run(request, new_text, scope, all)
       items = kept
     end
     dispatch(request, cfg, single_file, items)
-  end)
+  end
+
+  if cfg.stream then
+    -- --stream: incremental ripgrep parsing for smoother, filter-aware
+    -- progress as matches are found. The picker itself still only opens
+    -- once collection finishes (on_batch is reserved for future live
+    -- picker fill) -- see rg.collect_streaming's docstring.
+    rg.collect_streaming(request.old, roots, cfg, function(_new_batch) end, on_collected)
+  else
+    rg.collect_async(request.old, roots, cfg, on_collected)
+  end
 end
 
 return M
