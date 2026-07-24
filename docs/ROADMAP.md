@@ -26,9 +26,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
   if it already existed; it did not — this is the actual place it's tracked
   now, see `docs/BINDINGS.md`.
 - **`.github` workflows** — CI (headless test runs, luacheck/stylua) on push/PR.
-- **Better argument-error messages** — when a `:Replace`/`:Surround` call has
-  the wrong number/shape of arguments, explain specifically what was
-  expected instead of a generic parse error.
 - **`:ReplaceFNames` (or similar)** — extend replace to file/directory names,
   not just file contents:
   - a dedicated picker for filenames/directories, or a combined picker that

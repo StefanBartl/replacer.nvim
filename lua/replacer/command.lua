@@ -43,20 +43,25 @@ local M = {}
 
 --- Split a raw argument string into tokens, honoring single/double quotes and
 --- backslash escapes (inside and outside quotes).
+--- The second return value is true when a quote was opened but never closed
+--- (e.g. `:Replace "foo bar`) — callers that need a friendly diagnostic for
+--- that case (parse_request) check it; plain tokenizer consumers (M.tokenize)
+--- may ignore it, same as before this was added.
 ---@param s string|nil
----@return string[] tokens
+---@return string[] tokens, boolean unterminated_quote
 local function parse_args(s)
-  if s == nil then return {} end
+  if s == nil then return {}, false end
   if type(s) ~= "string" then
     if type(s) == "table" then
       s = table.concat(s, " ")
     else
-      return {}
+      return {}, false
     end
   end
-  if s == "" then return {} end
+  if s == "" then return {}, false end
 
   local out = {} ---@type string[]
+  local unterminated = false
   local i, n = 1, #s
   while i <= n do
     while i <= n and s:sub(i, i):match("%s") do i = i + 1 end
@@ -66,6 +71,7 @@ local function parse_args(s)
     if c == '"' or c == "'" then
       local q = c
       i = i + 1
+      local closed = false
       local buf = {} ---@type string[]
       while i <= n do
         local ch = s:sub(i, i)
@@ -75,12 +81,14 @@ local function parse_args(s)
           i = i + 2
         elseif ch == q then
           i = i + 1
+          closed = true
           break
         else
           buf[#buf + 1] = ch
           i = i + 1
         end
       end
+      if not closed then unterminated = true end
       out[#out + 1] = table.concat(buf)
     else
       local j = i
@@ -101,7 +109,7 @@ local function parse_args(s)
     end
   end
 
-  return out
+  return out, unterminated
 end
 
 --------------------------------------------------------------------------------
@@ -194,6 +202,10 @@ local function apply_tokens(tokens, req)
 
       if BOOL_FLAGS[key] and not inline_val then
         BOOL_FLAGS[key](req)
+      elseif BOOL_FLAGS[key] and inline_val then
+        return nil, string.format(
+          "Replace: option '--%s' does not take a value (got '%s'). Use '--%s' on its own.",
+          key, t, key)
       elseif VALUE_FLAGS[key] then
         local val = inline_val
         if val == nil then
@@ -234,7 +246,13 @@ end
 ---@return string|nil err          # human-readable error when ok=false
 function M.parse_request(raw, cmd_opts)
   cmd_opts = cmd_opts or {}
-  local tokens = parse_args(raw)
+  local tokens, unterminated = parse_args(raw)
+  if unterminated then
+    return false, nil, string.format(
+      "Replace: unterminated quote in argument list — every \" or ' must be closed " ..
+      "(escape a literal quote with \\\" or \\', or use the other quote style around it).\n%s",
+      USAGE)
+  end
 
   ---@type RP_Request
   local req = {

@@ -60,6 +60,13 @@ do
 
   local ok8, req8 = command.parse_request("foo bar baz", { bang = true })
   check("parse: bang -> all", ok8 and req8.all == true and req8.scope == "baz")
+
+  local ok9, _, err9 = command.parse_request('"foo bar')
+  check("parse: unterminated quote -> specific error", (not ok9) and err9:match("unterminated quote"), err9)
+
+  local ok10, _, err10 = command.parse_request("foo bar --dry=1")
+  check("parse: bool flag with value -> specific error",
+    (not ok10) and err10:match("does not take a value"), err10)
 end
 
 --------------------------------------------------------------------------------

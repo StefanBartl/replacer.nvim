@@ -535,6 +535,19 @@ Solution:
     :w
 <
 
+                                      *replacer-troubleshooting-parse-errors*
+Problem: "Replace: ..." parse error~
+
+:Replace/:Surround report specific, actionable errors instead of a generic
+parse failure:
+    - Missing/too many positional arguments name exactly what's missing or
+      extra.
+    - An unterminated quote (e.g. :Replace "foo bar) is reported explicitly —
+      close every quote, or escape a literal quote with \" / \'.
+    - A boolean flag given a value (e.g. --dry=1) is rejected with a message
+      naming the flag; boolean flags take no value, use --dry on its own.
+    - An unknown option names the exact token that was not recognized.
+
                                          *replacer-troubleshooting-no-matches*
 Problem: No matches found~
 

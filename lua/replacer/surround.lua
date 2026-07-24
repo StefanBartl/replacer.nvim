@@ -156,7 +156,16 @@ end
 ---@param opts table              # nvim user-command opts
 local function handle(run_fun, opts)
   local raw = (type(opts.args) == "string") and opts.args or ""
-  local tokens = command.tokenize(raw)
+  local tokens, unterminated = command.tokenize(raw)
+  if unterminated then
+    vim.schedule(function()
+      notify.error(
+        "Surround: unterminated quote in argument list — every \" or ' must be closed " ..
+        "(escape a literal quote with \\\" or \\', or use the other quote style around it).\n" ..
+        USAGE)
+    end)
+    return
+  end
 
   -- Pull the Surround-only --nested / --allow-nested flag out before handing the
   -- rest to the shared :Replace token parser (which would reject it as unknown).
