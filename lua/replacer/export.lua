@@ -71,8 +71,9 @@ end
 --- Only files with at least one applied spot are included in `results`.
 ---@param items RP_Match[]
 ---@param new_text string
+---@param cfg RP_Config|nil   # optional; enables preserve_whitespace when set
 ---@return RP_FileResult[] results, RP_PlanTotals totals
-function M.build_results(items, new_text)
+function M.build_results(items, new_text, cfg)
   local apply = require("replacer.apply")
   local by_path = group_by_path(items)
 
@@ -82,7 +83,7 @@ function M.build_results(items, new_text)
 
   for path, list in pairs(by_path) do
     local old_lines = read_lines(path)
-    local new_lines, spots, skipped = apply.compute_file_edits(old_lines, list, new_text)
+    local new_lines, spots, skipped = apply.compute_file_edits(old_lines, list, new_text, cfg)
     totals.spots = totals.spots + spots
     totals.skipped = totals.skipped + skipped
     if spots > 0 then

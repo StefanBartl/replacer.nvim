@@ -56,6 +56,7 @@
 ---@field git_ignore? boolean
 ---@field engine? "fzf"|"telescope"
 ---@field preview_context? integer
+---@field preserve_whitespace? boolean
 
 --- Filters produced by command flags (merged over config filter lists).
 ---@class RP_Filters

@@ -16,6 +16,40 @@ local notify = require("replacer.util.notify")
 local M = {}
 
 --------------------------------------------------------------------------------
+-- Per-match replacement text (cfg-driven transforms)
+--------------------------------------------------------------------------------
+
+--- When `old_text` has leading/trailing whitespace (e.g. matched via a regex
+--- like `\s*foo\s*`), sandwich `new_text` between that same whitespace instead
+--- of letting it clobber the surrounding formatting. A no-op when `old_text`
+--- is empty or pure whitespace (no "core" token to preserve around).
+---@param old_text string
+---@param new_text string
+---@return string
+local function wrap_with_original_whitespace(old_text, new_text)
+  if old_text == "" or not old_text:match("%S") then return new_text end
+  local leading = old_text:match("^%s*") or ""
+  local trailing = old_text:match("%s*$") or ""
+  return leading .. new_text .. trailing
+end
+
+--- Resolve the effective replacement text for one match, applying optional
+--- cfg-driven transforms on top of the plain `new_text`. Currently:
+---   - preserve_whitespace: re-wrap new_text in old_text's leading/trailing ws.
+--- A nil/plain cfg (or every transform disabled) returns `new_text` unchanged,
+--- so existing callers that don't pass cfg keep their exact prior behavior.
+---@param old_text string
+---@param new_text string
+---@param cfg RP_Config|nil
+---@return string
+local function effective_new_text(old_text, new_text, cfg)
+  if cfg and cfg.preserve_whitespace then
+    new_text = wrap_with_original_whitespace(old_text, new_text)
+  end
+  return new_text
+end
+
+--------------------------------------------------------------------------------
 -- Pure edit computation
 --------------------------------------------------------------------------------
 
@@ -25,8 +59,9 @@ local M = {}
 ---@param lines string[]            # 1-based file content
 ---@param matches RP_Match[]        # matches belonging to this file
 ---@param new_text string
+---@param cfg RP_Config|nil         # optional; enables preserve_whitespace when set
 ---@return string[] new_lines, integer spots, integer skipped
-function M.compute_file_edits(lines, matches, new_text)
+function M.compute_file_edits(lines, matches, new_text, cfg)
   -- Group matches per line (parallel count map avoids recomputing #t per push).
   ---@type table<integer, RP_Match[]>
   local by_lnum = {}
@@ -54,7 +89,7 @@ function M.compute_file_edits(lines, matches, new_text)
         local s, e = it.col0, it.col0 + #old_text
         local seg = line:sub(s + 1, e)
         if seg == old_text then
-          line = line:sub(1, s) .. new_text .. line:sub(e + 1)
+          line = line:sub(1, s) .. effective_new_text(old_text, new_text, cfg) .. line:sub(e + 1)
           spots = spots + 1
         else
           skipped = skipped + 1
@@ -137,7 +172,8 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
       local seg = line:sub(s + 1, e)
 
       if seg == old_text then
-        local ok_set = pcall(vim.api.nvim_buf_set_text, bufnr, row, s, row, e, { new_text })
+        local repl = effective_new_text(old_text, new_text, cfg)
+        local ok_set = pcall(vim.api.nvim_buf_set_text, bufnr, row, s, row, e, { repl })
         if ok_set then
           spots = spots + 1
         else

@@ -58,6 +58,7 @@ Each occurrence on a line becomes its own selectable entry (multiple hits per li
 | `--smart-case` / `--no-smart-case` | toggle ripgrep smart-case |
 | `--hidden` / `--no-hidden` | include/exclude dotfiles |
 | `--ignore` / `--no-ignore` | respect/ignore `.gitignore` |
+| `--preserve-ws` / `--no-preserve-ws` | keep the match's own leading/trailing whitespace around the replacement (useful with regex patterns like `\s*foo\s*`) |
 | `--type=<ft>` *(repeatable)* | restrict to a filetype (ripgrep `--type`) |
 | `--glob=<pat>` *(repeatable)* | include glob pattern |
 | `--exclude=<pat>` *(repeatable)* | exclude path/glob pattern |
@@ -208,6 +209,7 @@ ______________________________________________________________________
     exclude_git_dir = true,    -- skip .git/ explicitly
     literal = true,            -- fixed-strings by default
     smart_case = true,         -- ripgrep -S
+    preserve_whitespace = false, -- keep a match's own leading/trailing ws around the replacement
 
     default_scope = "%",          -- "%", "cwd", ".", or <path>
     confirm_wide_scope = false,   -- ask once for permission if scope ≠ "%"
@@ -273,6 +275,7 @@ ______________________________________________________________________
 | file_types      | string[] | Default filetype filters (ripgrep `--type`)                   |
 | globs           | string[] | Default include glob patterns                                 |
 | exclude         | string[] | Default exclude path/glob patterns                            |
+| preserve_whitespace | boolean | Keep a match's own leading/trailing whitespace around the replacement (default: false) |
 | fzf             | table?  | Extra options for `fzf-lua` (merged into picker opts)          |
 | telescope       | table?  | Extra options for Telescope picker (theme/layout)              |
 
@@ -292,6 +295,7 @@ require("replacer").setup({
   exclude_git_dir = true,
   literal = true,
   smart_case = true,
+  preserve_whitespace = false,
   file_types = {},           -- e.g. { "lua" }
   globs = {},                -- e.g. { "*.lua" }
   exclude = {},              -- e.g. { "node_modules" }

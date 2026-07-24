@@ -89,9 +89,10 @@ end
 --- Dry-run / export path: compute the plan, report stats, optionally export, preview.
 ---@param request RP_Request
 ---@param items RP_Match[]
+---@param cfg RP_Config
 ---@return nil
-local function plan(request, items)
-  local results, totals = export.build_results(items, request.new)
+local function plan(request, items, cfg)
+  local results, totals = export.build_results(items, request.new, cfg)
   notify.info(string.format(
     "dry-run: %d spot(s) in %d file(s)%s — no changes written",
     totals.spots, totals.files,
@@ -118,7 +119,7 @@ end
 local function dispatch(request, cfg, single_file, items)
   -- Plan-only path (dry-run / export). Never writes.
   if request.dry or (request.export and request.export ~= "") then
-    return plan(request, items)
+    return plan(request, items, cfg)
   end
 
   -- Applier closure shared by ALL mode and the pickers.

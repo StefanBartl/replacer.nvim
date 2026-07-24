@@ -107,6 +107,23 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 3b) preserve_whitespace: replacement is sandwiched in the match's own ws
+--------------------------------------------------------------------------------
+do
+  ---@diagnostic disable: missing-fields
+  local matches = { { id = 1, path = "x", lnum = 1, col0 = 3, old = "  foo  ", line = "___  foo  ___" } }
+  ---@diagnostic enable: missing-fields
+  local new_lines, spots = apply.compute_file_edits(
+    { "___  foo  ___" }, matches, "bar", { preserve_whitespace = true })
+  check("preserve_whitespace: sandwiches replacement in original ws",
+    spots == 1 and new_lines[1] == "___  bar  ___", new_lines[1])
+
+  local new_lines2 = apply.compute_file_edits({ "___  foo  ___" }, matches, "bar", nil)
+  check("preserve_whitespace: off by default (cfg=nil) -> plain replace",
+    new_lines2[1] == "___bar___", new_lines2[1])
+end
+
+--------------------------------------------------------------------------------
 -- 4) Dry-run plan + patch + JSON export
 --------------------------------------------------------------------------------
 do

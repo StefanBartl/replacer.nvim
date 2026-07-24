@@ -130,6 +130,8 @@ local BOOL_FLAGS = {
   ["no-hidden"]     = function(r) r.overrides.hidden = false end,
   ["ignore"]        = function(r) r.overrides.git_ignore = true end,
   ["no-ignore"]     = function(r) r.overrides.git_ignore = false end,
+  ["preserve-ws"]    = function(r) r.overrides.preserve_whitespace = true end,
+  ["no-preserve-ws"] = function(r) r.overrides.preserve_whitespace = false end,
 }
 
 -- Value flags: name -> true. Applied via apply_value_flag below.
@@ -365,6 +367,8 @@ M.FLAGS = {
   { name = "no-hidden", bool = true },
   { name = "ignore", bool = true },
   { name = "no-ignore", bool = true },
+  { name = "preserve-ws", bool = true },
+  { name = "no-preserve-ws", bool = true },
   { name = "type", type = "STRING", repeatable = true },
   { name = "glob", type = "STRING", repeatable = true },
   { name = "exclude", type = "STRING", repeatable = true },

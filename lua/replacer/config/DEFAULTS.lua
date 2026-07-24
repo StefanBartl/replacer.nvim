@@ -21,6 +21,10 @@ return {
   literal = true,
   smart_case = true,
   default_scope = "%",
+  -- When true, a match's own leading/trailing whitespace (relevant with regex
+  -- patterns like `\s*foo\s*`) is preserved around the replacement instead of
+  -- being clobbered by it.
+  preserve_whitespace = false,
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }

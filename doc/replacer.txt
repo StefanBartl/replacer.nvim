@@ -128,6 +128,8 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
         --smart-case | --no-smart-case       toggle ripgrep smart-case
         --hidden | --no-hidden               include/exclude dotfiles
         --ignore | --no-ignore               respect/ignore .gitignore
+        --preserve-ws | --no-preserve-ws     keep a match's own leading/trailing
+                                             whitespace around the replacement
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
         --glob=<pat>     (repeatable)        include glob pattern
         --exclude=<pat>  (repeatable)        exclude path/glob pattern
@@ -232,6 +234,7 @@ Default configuration: >lua
       exclude_git_dir = true,            -- skip .git/ explicitly
       literal = true,                    -- fixed-strings by default
       smart_case = true,                 -- ripgrep -S
+      preserve_whitespace = false,       -- keep a match's own leading/trailing ws
       default_scope = "%",               -- scope when none is given
 
       -- Default filters (also overridable per-run via flags)
@@ -328,6 +331,16 @@ smart_case~
     Default: true
 
     Enable smart-case search (ripgrep -S).
+
+                                        *replacer-config-preserve_whitespace*
+preserve_whitespace~
+    Type: boolean
+    Default: false
+
+    When true, a match's own leading/trailing whitespace (relevant with
+    regex patterns like `\s*foo\s*`) is preserved around the replacement
+    instead of being clobbered by it: `:Replace "\s*foo\s*" bar % --regex
+    --preserve-ws` turns "  foo  " into "  bar  ", not "bar".
 
                                           *replacer-config-preview_context*
 preview_context~

@@ -37,6 +37,7 @@
 ---@field telescope?            RP_PickerTelescope|nil
 ---@field git_ignore?           boolean
 ---@field keymaps?              RP_Keymaps
+---@field preserve_whitespace?  boolean     -- keep old_text's leading/trailing ws around new_text
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil
