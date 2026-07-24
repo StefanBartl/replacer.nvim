@@ -92,7 +92,7 @@ end
 ---@param cfg RP_Config
 ---@return nil
 local function plan(request, items, cfg)
-  local results, totals = export.build_results(items, request.new, cfg)
+  local results, totals = export.build_results(items, request.new, cfg, request.old)
   notify.info(string.format(
     "dry-run: %d spot(s) in %d file(s)%s — no changes written",
     totals.spots, totals.files,

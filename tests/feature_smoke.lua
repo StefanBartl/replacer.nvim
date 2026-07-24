@@ -13,6 +13,7 @@ local rg = require("replacer.rg")
 local apply = require("replacer.apply")
 local export = require("replacer.export")
 local casing = require("replacer.casing")
+local regex = require("replacer.regex")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -178,6 +179,30 @@ do
   check("case_preserve: lower match -> lower replacement", nl[1] == "bar FOO", nl[1])
   local nl2 = apply.compute_file_edits({ "foo FOO" }, { m_upper }, "bar", { case_preserve = true })
   check("case_preserve: upper match -> upper replacement", nl2[1] == "foo BAR", nl2[1])
+end
+
+--------------------------------------------------------------------------------
+-- 3d) regex helpers: escape + backreference expansion
+--------------------------------------------------------------------------------
+do
+  local escaped = regex.escape("a.b*c[d]")
+  check("regex: escape special chars", escaped == "a\\.b\\*c\\[d\\]", escaped)
+  check("regex: has_backrefs true", regex.has_backrefs("\\1-\\2") == true)
+  check("regex: has_backrefs false", regex.has_backrefs("plain") == false)
+
+  local capture_pattern = "\\(\\w\\+\\)=\\(\\w\\+\\)"
+  local expanded = regex.expand_backrefs("\\2_\\1", "foo=bar", capture_pattern)
+  check("regex: backrefs expand from vim regex capture groups", expanded == "bar_foo", expanded)
+
+  local unchanged = regex.expand_backrefs("plain", "foo=bar", capture_pattern)
+  check("regex: no backrefs -> untouched fast path", unchanged == "plain")
+
+  ---@diagnostic disable: missing-fields
+  local m = { id = 1, path = "x", lnum = 1, col0 = 0, old = "foo=bar", line = "foo=bar" }
+  ---@diagnostic enable: missing-fields
+  local nl = apply.compute_file_edits(
+    { "foo=bar" }, { m }, "\\2_\\1", { literal = false }, capture_pattern)
+  check("regex: backrefs wired through compute_file_edits", nl[1] == "bar_foo", nl[1])
 end
 
 --------------------------------------------------------------------------------

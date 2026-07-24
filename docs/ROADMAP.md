@@ -34,8 +34,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
     statements across the project.
 - **Batch replaces** — multiple `{old → new}` pairs in one run, importable
   from a file/quickfix/clipboard.
-- **Regex helpers** — an escaping helper and a small pattern test panel;
-  backreferences in the replacement text.
 - **Monorepo/root detection** — auto-detect the project root (git,
   `package.json`, `go.mod`, …), with a picker when there are multiple
   candidates.

@@ -159,6 +159,19 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
 :Replacer {args}
     Alias for |:Replace|
 
+                                                             *:ReplaceEscape*
+:ReplaceEscape {text}
+    Escape {text} for use as a Vim regex pattern (\, ., *, [, ], $, ^, ~,
+    /). Echoes the escaped result and copies it to the unnamed register "
+    for immediate pasting into a :Replace/:Surround invocation.
+
+                                                               *:ReplaceTest*
+:ReplaceTest [pattern] [sample]
+    Open a small floating pattern-test panel: line 1 is the pattern, line 2
+    the sample text. Every match of line 1 against line 2 is highlighted
+    live as either line changes (hl_group "ReplacerTarget"). Close with
+    <Esc> or q.
+
                                                                  *:Surround*
                                                                      *:Wrap*
 :[range]Surround[!] {pattern} [delim] [scope] [--flags]
@@ -547,6 +560,17 @@ The preview window highlights the matched span on the target line
 your colorscheme if desired: >lua
     vim.api.nvim_set_hl(0, "ReplacerTarget", { bg = "#FF7A29", fg = "#1e1e1e" })
 <
+
+                                                *replacer-regex-backrefs*
+Regex Backreferences~
+
+In regex mode (--regex), {new} may reference \(...\) capture groups from
+{old} using \0 (whole match) through \9: >vim
+    :Replace "\(\w\+\)=\(\w\+\)" "\2_\1" % --regex
+<
+turns "foo=bar" into "bar_foo". A reference beyond what the pattern actually
+captured expands to "". See also |:ReplaceEscape| and |:ReplaceTest| for
+building/testing the pattern itself.
 
                                                     *replacer-quoted-args*
 Quoted Arguments~

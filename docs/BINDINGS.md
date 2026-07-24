@@ -13,6 +13,8 @@ place.
 | `:Replacer` | [command.lua](../lua/replacer/command.lua) | Alias for `:Replace` |
 | `:Surround` | [surround.lua](../lua/replacer/surround.lua) | Wrap every match of a pattern with a delimiter; see `:help :Surround` |
 | `:Wrap` | [surround.lua](../lua/replacer/surround.lua) | Alias for `:Surround` |
+| `:ReplaceEscape {text}` | [regex.lua](../lua/replacer/regex.lua) | Escape `{text}` for use as a Vim regex pattern; echoes it and copies it to the unnamed register |
+| `:ReplaceTest [pattern] [sample]` | [regex.lua](../lua/replacer/regex.lua) | Small floating live pattern-test panel: line 1 is the pattern, line 2 the sample text, matches highlight as you type; `<Esc>`/`q` closes |
 | `:ReplaceDebug` | [debug.lua](../lua/replacer/debug.lua) | Developer utility: `on`/`off`/`status`/`test`/`inspect`/`analyze <line> <pattern>` |
 
 All support `[range]` and the bang form (`!`) where documented in `:help replacer-commands`.

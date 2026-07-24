@@ -34,19 +34,29 @@ local function wrap_with_original_whitespace(old_text, new_text)
 end
 
 --- Resolve the effective replacement text for one match, applying optional
---- cfg-driven transforms on top of the plain `new_text`. Currently:
----   - case_preserve: re-case new_text to match old_text's case style
----     (foo->bar, Foo->Bar, FOO->BAR, fooBar->bazQux, FooBar->BazQux).
----   - preserve_whitespace: re-wrap new_text in old_text's leading/trailing ws.
+--- cfg-driven transforms on top of the plain `new_text`, in order:
+---   1. backreferences: in regex mode, expand \0-\9 against `old_pattern`
+---      matched on the match's own source `line`.
+---   2. case_preserve: re-case the (possibly backref-expanded) new_text to
+---      match old_text's case style (foo->bar, Foo->Bar, FOO->BAR, …).
+---   3. preserve_whitespace: re-wrap new_text in old_text's leading/trailing ws.
 --- Case detection runs on the "core" of old_text (trimmed of whitespace) so
---- the two transforms compose correctly when both are enabled. A nil/plain
---- cfg (or every transform disabled) returns `new_text` unchanged, so
---- existing callers that don't pass cfg keep their exact prior behavior.
+--- the transforms compose correctly when several are enabled together. A
+--- nil/plain cfg (or every transform disabled/inapplicable) returns
+--- `new_text` unchanged, so existing callers keep their exact prior behavior.
 ---@param old_text string
 ---@param new_text string
 ---@param cfg RP_Config|nil
+---@param old_pattern string|nil    # the searched pattern; needed for \0-\9 in regex mode
+---@param line string|nil           # the match's own source line; needed for \0-\9
 ---@return string
-local function effective_new_text(old_text, new_text, cfg)
+local function effective_new_text(old_text, new_text, cfg, old_pattern, line)
+  if cfg and cfg.literal == false and old_pattern and line then
+    local regex = require("replacer.regex")
+    if regex.has_backrefs(new_text) then
+      new_text = regex.expand_backrefs(new_text, line, old_pattern)
+    end
+  end
   if cfg and cfg.case_preserve then
     local casing = require("replacer.casing")
     local core = old_text:match("^%s*(.-)%s*$")
@@ -68,9 +78,10 @@ end
 ---@param lines string[]            # 1-based file content
 ---@param matches RP_Match[]        # matches belonging to this file
 ---@param new_text string
----@param cfg RP_Config|nil         # optional; enables preserve_whitespace when set
+---@param cfg RP_Config|nil         # optional; enables preserve_whitespace/case_preserve/backrefs
+---@param old_pattern string|nil    # the searched pattern; needed for \0-\9 in regex mode
 ---@return string[] new_lines, integer spots, integer skipped
-function M.compute_file_edits(lines, matches, new_text, cfg)
+function M.compute_file_edits(lines, matches, new_text, cfg, old_pattern)
   -- Group matches per line (parallel count map avoids recomputing #t per push).
   ---@type table<integer, RP_Match[]>
   local by_lnum = {}
@@ -98,7 +109,8 @@ function M.compute_file_edits(lines, matches, new_text, cfg)
         local s, e = it.col0, it.col0 + #old_text
         local seg = line:sub(s + 1, e)
         if seg == old_text then
-          line = line:sub(1, s) .. effective_new_text(old_text, new_text, cfg) .. line:sub(e + 1)
+          local repl = effective_new_text(old_text, new_text, cfg, old_pattern, it.line)
+          line = line:sub(1, s) .. repl .. line:sub(e + 1)
           spots = spots + 1
         else
           skipped = skipped + 1
@@ -136,12 +148,11 @@ end
 
 --- Apply replacements to the matched buffers, bottom-up, with guards.
 ---@param items RP_Match[]
----@param old string                # unused; kept for signature stability
+---@param old string                # the searched pattern; used for \0-\9 backrefs in regex mode
 ---@param new_text string
 ---@param write_changes boolean
 ---@param cfg RP_Config|nil
 ---@return integer files, integer spots, RP_Error[] errors
----@diagnostic disable-next-line: unused-local
 function M.apply_matches(items, old, new_text, write_changes, cfg)
   local by_path = group_by_path(items)
 
@@ -181,7 +192,7 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
       local seg = line:sub(s + 1, e)
 
       if seg == old_text then
-        local repl = effective_new_text(old_text, new_text, cfg)
+        local repl = effective_new_text(old_text, new_text, cfg, old, line)
         local ok_set = pcall(vim.api.nvim_buf_set_text, bufnr, row, s, row, e, { repl })
         if ok_set then
           spots = spots + 1

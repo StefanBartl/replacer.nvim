@@ -112,6 +112,12 @@ is an alias. Search is always **literal** (regex would need per-match capture).
 :Surround word ** --nested       # wrap even already-**bold** matches
 ```
 
+### Regex helpers
+
+- `:ReplaceEscape {text}` — escape `{text}` for use as a Vim regex pattern; echoes the result and copies it to the unnamed register.
+- `:ReplaceTest [pattern] [sample]` — a small floating live pattern-test panel: edit the pattern (line 1) and sample text (line 2), matches highlight as you type. Close with `<Esc>` or `q`.
+- Backreferences — in regex mode (`--regex`), `{new}` may use `\0`-`\9` to reference `\(...\)` capture groups from `{old}`: `:Replace "\(\w\+\)=\(\w\+\)" "\2_\1" % --regex` turns `foo=bar` into `bar_foo`.
+
 ### Picker Keymaps
 
 All keys except `<CR>` (apply) are configurable via `keymaps` in `setup()` —
