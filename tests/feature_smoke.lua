@@ -24,6 +24,7 @@ local history = require("replacer.history")
 local presets = require("replacer.presets")
 local batch = require("replacer.batch")
 local messages = require("replacer.messages")
+local fnames = require("replacer.fnames")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -584,6 +585,41 @@ do
   check("config: replace_and_reopen is overridable", cfg2.keymaps.replace_and_reopen == "<leader>r",
     cfg2.keymaps.replace_and_reopen)
   replacer.setup({ keymaps = { replace_and_reopen = "<C-r>" } }) -- restore default for later tests
+end
+
+--------------------------------------------------------------------------------
+-- 2p) fnames: filename/directory rename (collect, nested filter, apply)
+--------------------------------------------------------------------------------
+do
+  local fn_root = tmp .. "/fn"
+  vim.fn.mkdir(fn_root .. "/foo_dir", "p")
+  do local fh = assert(io.open(fn_root .. "/foo_dir/foo_inner.txt", "w")); fh:write("inner\n"); fh:close() end
+  do local fh = assert(io.open(fn_root .. "/foo_dir/plain.txt", "w")); fh:write("plain\n"); fh:close() end
+  do local fh = assert(io.open(fn_root .. "/foo_file.txt", "w")); fh:write("top\n"); fh:close() end
+  do local fh = assert(io.open(fn_root .. "/other.txt", "w")); fh:write("other\n"); fh:close() end
+
+  local matches = fnames.collect("foo", "bar", fn_root, { hidden = true, exclude_git_dir = true })
+  check("fnames: collect finds dir + nested file + top-level file", #matches == 3, #matches)
+
+  local kept, skipped = fnames.filter_nested(matches)
+  check("fnames: nested match is filtered out", #kept == 2 and skipped == 1, #kept .. "/" .. skipped)
+
+  local preview = fnames.build_preview(kept)
+  check("fnames: preview mentions both kept renames",
+    preview:find("foo_dir", 1, true) ~= nil and preview:find("foo_file.txt", 1, true) ~= nil, preview)
+
+  local renamed, errors = fnames.apply(kept)
+  check("fnames: apply renamed both kept entries", renamed == 2 and #errors == 0, vim.inspect(errors))
+
+  check("fnames: old dir gone", vim.fn.isdirectory(fn_root .. "/foo_dir") == 0)
+  check("fnames: new dir exists", vim.fn.isdirectory(fn_root .. "/bar_dir") == 1)
+  check("fnames: nested file moved along, basename untouched (not renamed this run)",
+    vim.fn.filereadable(fn_root .. "/bar_dir/foo_inner.txt") == 1)
+  check("fnames: sibling file inside the renamed dir also moved along",
+    vim.fn.filereadable(fn_root .. "/bar_dir/plain.txt") == 1)
+  check("fnames: old top-level file gone", vim.fn.filereadable(fn_root .. "/foo_file.txt") == 0)
+  check("fnames: new top-level file exists", vim.fn.filereadable(fn_root .. "/bar_file.txt") == 1)
+  check("fnames: unrelated file untouched", vim.fn.filereadable(fn_root .. "/other.txt") == 1)
 end
 
 --------------------------------------------------------------------------------

@@ -21,6 +21,7 @@ place.
 | `:ReplaceSavePreset {name} {old} {new} [scope] [--flags]` | [presets.lua](../lua/replacer/presets.lua) | Save a named, reusable replace request |
 | `:ReplacePreset {name}` | [presets.lua](../lua/replacer/presets.lua) | Run a saved preset exactly as saved; `<Tab>` completes names |
 | `:ReplaceBatch[!] {source} [scope] [--flags]` | [batch.lua](../lua/replacer/batch.lua) | Run multiple `{old → new}` pairs from a file/clipboard/quickfix, one full `:Replace` dispatch per pair |
+| `:ReplaceFNames[!] {old} {new} [scope] [--dry]` | [fnames.lua](../lua/replacer/fnames.lua) | Rename every file/directory under scope whose basename contains `{old}`; a nested match is skipped in favor of its renamed ancestor |
 | `:ReplaceDebug` | [debug.lua](../lua/replacer/debug.lua) | Developer utility: `on`/`off`/`status`/`test`/`inspect`/`analyze <line> <pattern>` |
 
 All support `[range]` and the bang form (`!`) where documented in `:help replacer-commands`.

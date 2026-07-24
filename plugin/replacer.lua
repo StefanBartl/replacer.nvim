@@ -23,6 +23,8 @@ if not vim.g.__replacer_cmd_registered then
     if ok_presets then presets.register(core.run) end
     local ok_batch, batch = pcall(require, "replacer.batch")
     if ok_batch then batch.register(core.run) end
+    local ok_fnames, fnames = pcall(require, "replacer.fnames")
+    if ok_fnames then fnames.register() end
     vim.g.__replacer_cmd_registered = true
   end
 end

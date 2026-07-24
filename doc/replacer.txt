@@ -236,6 +236,22 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
         :ReplaceBatch clipboard cwd --dry
         :ReplaceBatch pairs.json .
 
+                                                            *:ReplaceFNames*
+:ReplaceFNames[!] {old} {new} [scope] [--dry]
+    Rename every file/directory under [scope] whose basename contains
+    {old} (literal substring) — renaming NAMES, not file contents.
+    Renames are computed from one snapshot of the tree taken before
+    anything is touched; when a match is nested inside another match, only
+    the outer one is renamed this run (the inner one moves along for
+    free) — re-run to catch it on its own if its name still matches
+    afterward, the same idempotent shape as |:Surround|'s --nested
+    handling. --dry opens a read-only preview split instead of renaming.
+    The bang form applies non-interactively; otherwise a single confirm
+    asks for the whole batch. Does NOT follow the rename through source
+    references (imports/requires) across the project. See
+    lua/replacer/fnames.lua and *replacer-rename-assist* for the narrower,
+    single-file case.
+
                                                              *:ReplaceEscape*
 :ReplaceEscape {text}
     Escape {text} for use as a Vim regex pattern (\, ., *, [, ], $, ^, ~,

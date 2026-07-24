@@ -182,6 +182,24 @@ leading `[`):
 :ReplaceBatch pairs.json .            # every pair applies non-interactively (no picker — the ! is implied and optional)
 ```
 
+### Renaming Files & Directories
+
+`:ReplaceFNames[!] {old} {new} [scope] [--dry]` renames every file/directory
+under `scope` whose *basename* contains `{old}` (literal substring) — this is
+about names, not file contents. Renames are computed from one snapshot of
+the tree; when a match is nested inside another match, only the outer one is
+renamed this run (the inner one moves along for free) — re-run to catch it
+on its own if its name still matches afterward.
+
+```sh
+:ReplaceFNames old_prefix new_prefix src/ --dry   # preview first
+:ReplaceFNames! old_prefix new_prefix src/         # bang = non-interactive
+```
+
+Does not follow the rename through source references (imports/requires)
+across the project — see [Rename-Assist](#rename-assist) for the narrower,
+single-file case that pairs a content replace with renaming that same file.
+
 ### i18n / Messages
 
 Override any of the following message templates via `messages` in `setup()`
