@@ -122,6 +122,14 @@ local function dispatch(request, cfg, single_file, items)
     return plan(request, items, cfg)
   end
 
+  -- Quickfix/loclist export: send the raw match list and open it. Never writes.
+  if request.to_quickfix or request.to_loclist then
+    export.send_to_quickfix(items, request.to_loclist == true)
+    notify.info(string.format(
+      "%d match(es) sent to %s", #items, request.to_loclist and "the location list" or "quickfix"))
+    return
+  end
+
   -- Applier closure shared by ALL mode and the pickers.
   local function apply_func(chosen, replacement, write_changes)
     return apply.apply_matches(chosen, request.old, replacement, write_changes, cfg)

@@ -64,6 +64,8 @@ Each occurrence on a line becomes its own selectable entry (multiple hits per li
 | `--code-only` / `--no-code-only` | skip matches inside strings/comments (Tree-sitter, best-effort — falls back to keeping everything when no parser is available) |
 | `--safe` / `--no-safe` | safe-mode: skip read-only/oversized/binary files instead of touching them |
 | `--max-filesize=<bytes>` | override the safe-mode size threshold for this run (default 5 MiB) |
+| `--to-quickfix` | send matches to the quickfix list and open it (never writes) |
+| `--to-loclist` | send matches to the current window's location list and open it (never writes) |
 | `--type=<ft>` *(repeatable)* | restrict to a filetype (ripgrep `--type`) |
 | `--glob=<pat>` *(repeatable)* | include glob pattern |
 | `--exclude=<pat>` *(repeatable)* | exclude path/glob pattern |
@@ -86,6 +88,7 @@ Examples:
 :Replace foo bar cwd --dry                   # preview diff + stats, no writes
 :Replace foo bar cwd --export=changes.patch  # write a git-applyable patch
 :Replace foo bar cwd --export=plan.json      # write a JSON change plan
+:Replace foo bar cwd --to-quickfix           # send matches to the quickfix list, never writes
 ```
 
 ### Surround — wrap every match

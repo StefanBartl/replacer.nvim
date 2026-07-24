@@ -307,5 +307,40 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 6) Quickfix/loclist export
+--------------------------------------------------------------------------------
+do
+  local file_qf = tmp .. "/qf.txt"
+  do
+    local fh = assert(io.open(file_qf, "w"))
+    fh:write("foo one\nfoo two\n")
+    fh:close()
+  end
+
+  local items = rg.collect("foo", { file_qf }, cfg)
+  local entries = export.to_qf_entries(items)
+  check("qf: entry count matches items", #entries == #items, #entries)
+  check("qf: entry has filename/lnum/col/text", entries[1].filename == file_qf
+    and type(entries[1].lnum) == "number" and type(entries[1].col) == "number"
+    and type(entries[1].text) == "string")
+
+  vim.fn.setqflist({}, "r")
+  replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
+  local request = {
+    old = "foo", new = "XXX", scope = file_qf, all = false, dry = false, export = nil,
+    to_quickfix = true, line_range = nil, overrides = {},
+    filters = { file_types = {}, globs = {}, exclude = {} },
+  }
+  replacer.run(request)
+  vim.wait(200)
+  local qf = vim.fn.getqflist()
+  check("qf: :Replace --to-quickfix populates the quickfix list", #qf > 0, #qf)
+
+  local fh2 = assert(io.open(file_qf, "r"))
+  local content_after_qf = fh2:read("*a"); fh2:close()
+  check("qf: --to-quickfix never writes", content_after_qf:match("foo") ~= nil, content_after_qf)
+end
+
+--------------------------------------------------------------------------------
 print(string.format("\n=== %d passed, %d failed ===", pass, fail))
 if fail > 0 then vim.cmd("cquit 1") end

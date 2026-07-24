@@ -77,6 +77,8 @@
 ---@field all boolean              # non-interactive: apply to every match
 ---@field dry boolean              # plan only; compute edits, no writes
 ---@field export string|nil        # export path for the planned diff/JSON
+---@field to_quickfix boolean|nil  # send matches to the quickfix list instead of applying
+---@field to_loclist boolean|nil   # send matches to the (current-window) location list instead
 ---@field line_range integer[]|nil # {line1, line2} when a [range] was given
 ---@field overrides RP_Overrides
 ---@field filters RP_Filters

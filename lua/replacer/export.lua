@@ -155,6 +155,44 @@ function M.build_json(results, new_text)
 end
 
 --------------------------------------------------------------------------------
+-- Quickfix / location list export
+--------------------------------------------------------------------------------
+
+--- Build quickfix/loclist entries directly from matches — this exports the
+--- search results themselves, not a replacement plan, so no new_text/apply
+--- machinery is involved.
+---@param items RP_Match[]
+---@return table[]
+function M.to_qf_entries(items)
+  local entries = {}
+  for i, it in ipairs(items) do
+    entries[i] = {
+      filename = it.path,
+      lnum = it.lnum,
+      col = it.col0 + 1,
+      text = it.line,
+      type = "I",
+    }
+  end
+  return entries
+end
+
+--- Send `items` to the quickfix or (current-window) location list and open it.
+---@param items RP_Match[]
+---@param use_loclist boolean
+---@return nil
+function M.send_to_quickfix(items, use_loclist)
+  local entries = M.to_qf_entries(items)
+  if use_loclist then
+    vim.fn.setloclist(0, {}, "r", { title = "[replacer]", items = entries })
+    vim.cmd("lopen")
+  else
+    vim.fn.setqflist({}, "r", { title = "[replacer]", items = entries })
+    vim.cmd("copen")
+  end
+end
+
+--------------------------------------------------------------------------------
 -- Export sink
 --------------------------------------------------------------------------------
 

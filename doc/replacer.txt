@@ -139,6 +139,10 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                                              oversized/binary files
         --max-filesize=<bytes>                override the safe-mode size
                                              threshold for this run
+        --to-quickfix                        send matches to the quickfix
+                                             list and open it (never writes)
+        --to-loclist                         send matches to the location
+                                             list and open it (never writes)
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
         --glob=<pat>     (repeatable)        include glob pattern
         --exclude=<pat>  (repeatable)        exclude path/glob pattern
@@ -562,6 +566,17 @@ Export the planned change to a file (implies --dry): >vim
 
 A ".json" target produces JSON; any other extension produces a unified diff
 that can be applied later with `git apply changes.patch`.
+
+                                                *replacer-quickfix-export*
+Quickfix / Location List Export~
+
+Send the match list to the quickfix or location list instead of applying —
+never writes: >vim
+    :Replace foo bar cwd --to-quickfix   " :copen shows every match
+    :Replace foo bar cwd --to-loclist    " :lopen, current-window loclist
+<
+Useful for a `:cfdo %s/old/new/g | update`-style workflow, or just to review
+matches in a familiar list UI instead of the picker.
 
                                                           *replacer-scopes*
 Scope Examples~

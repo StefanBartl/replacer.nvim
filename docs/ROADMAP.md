@@ -40,8 +40,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
 - **Changed-files-only mode** — restrict to git changed/staged/unstaged/untracked files.
 - **History & presets** — recent searches/replacements, named presets,
   re-run from a picker.
-- **Quickfix/loclist export** — send the match list to the quickfix or
-  location list for `:cfdo`-style workflows.
 - **Per-file confirmation step** — an intermediate "All in this file / Skip
   file / Only some hunks" prompt instead of one global ALL confirmation.
 - **Undo checkpoint** — an automatic `:write`/git-stash/temp-branch

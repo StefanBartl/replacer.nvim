@@ -140,6 +140,8 @@ local BOOL_FLAGS = {
   ["no-code-only"] = function(r) r.overrides.code_only = false end,
   ["safe"]    = function(r) r.overrides.safe_mode = true end,
   ["no-safe"] = function(r) r.overrides.safe_mode = false end,
+  ["to-quickfix"] = function(r) r.to_quickfix = true end,
+  ["to-loclist"]  = function(r) r.to_loclist = true end,
 }
 
 -- Value flags: name -> true. Applied via apply_value_flag below.
@@ -393,6 +395,8 @@ M.FLAGS = {
   { name = "safe", bool = true },
   { name = "no-safe", bool = true },
   { name = "max-filesize", type = "INT" },
+  { name = "to-quickfix", bool = true },
+  { name = "to-loclist", bool = true },
   { name = "type", type = "STRING", repeatable = true },
   { name = "glob", type = "STRING", repeatable = true },
   { name = "exclude", type = "STRING", repeatable = true },
