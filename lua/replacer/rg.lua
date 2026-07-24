@@ -132,6 +132,9 @@ local function build_rg_args(old, roots, cfg)
   if cfg.exclude_git_dir then
     args[#args + 1] = "--glob"; args[#args + 1] = "!.git"
   end
+  if cfg.safe_mode and cfg.max_file_size and cfg.max_file_size > 0 then
+    args[#args + 1] = "--max-filesize"; args[#args + 1] = tostring(cfg.max_file_size)
+  end
 
   -- Filters
   for _, ft in ipairs(cfg.file_types or {}) do
@@ -326,6 +329,18 @@ end
 -- vimgrep (native) backend
 --------------------------------------------------------------------------------
 
+--- Sniff the first 512 bytes of `path` for a NUL byte (the classic
+--- binary-file heuristic used by grep/git/etc).
+---@param path string
+---@return boolean
+local function is_binary_file(path)
+  local ok, fh = pcall(io.open, path, "rb")
+  if not ok or not fh then return false end
+  local chunk = fh:read(512)
+  fh:close()
+  return chunk ~= nil and chunk:find("\0", 1, true) ~= nil
+end
+
 --- Decide whether a file path passes the configured filters.
 ---@param path string
 ---@param cfg RP_RG_Config
@@ -334,6 +349,14 @@ local function passes_filters(path, cfg)
   local name = vim.fn.fnamemodify(path, ":t")
 
   if cfg.hidden == false and name:sub(1, 1) == "." then return false end
+
+  if cfg.safe_mode then
+    if cfg.max_file_size and cfg.max_file_size > 0 then
+      local size = vim.fn.getfsize(path)
+      if size < 0 or size > cfg.max_file_size then return false end
+    end
+    if cfg.skip_binary ~= false and is_binary_file(path) then return false end
+  end
 
   -- file_types are interpreted as extensions in native mode
   local types = cfg.file_types or {}

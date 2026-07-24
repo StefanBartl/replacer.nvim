@@ -146,6 +146,34 @@ local function group_by_path(items)
   return by_path
 end
 
+--- Sniff the first 512 bytes of `path` for a NUL byte (the classic
+--- binary-file heuristic used by grep/git/etc).
+---@param path string
+---@return boolean
+local function is_binary_file(path)
+  local ok, fh = pcall(io.open, path, "rb")
+  if not ok or not fh then return false end
+  local chunk = fh:read(512)
+  fh:close()
+  return chunk ~= nil and chunk:find("\0", 1, true) ~= nil
+end
+
+--- When cfg.safe_mode is set, decide whether `path` should be skipped
+--- (read-only / oversized / binary) instead of edited. Returns nil to
+--- proceed, or a short human-readable reason to skip.
+---@param path string
+---@param cfg RP_Config
+---@return string|nil reason
+local function safe_mode_skip_reason(path, cfg)
+  if vim.fn.filewritable(path) == 0 then return "read-only" end
+  if cfg.max_file_size and cfg.max_file_size > 0 then
+    local size = vim.fn.getfsize(path)
+    if size > cfg.max_file_size then return "too large" end
+  end
+  if cfg.skip_binary ~= false and is_binary_file(path) then return "binary" end
+  return nil
+end
+
 --- Apply replacements to the matched buffers, bottom-up, with guards.
 ---@param items RP_Match[]
 ---@param old string                # the searched pattern; used for \0-\9 backrefs in regex mode
@@ -161,6 +189,15 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
   local errors = {}
 
   for path, list in pairs(by_path) do
+    if cfg and cfg.safe_mode then
+      local reason = safe_mode_skip_reason(path, cfg)
+      if reason then
+        notify.warn(string.format("safe_mode: skipping %s (%s)", vim.fn.fnamemodify(path, ":."), reason))
+        skipped_total = skipped_total + #list
+        goto next_path
+      end
+    end
+
     -- Resolve & load the buffer defensively.
     local ok_add, bufnr = pcall(vim.fn.bufadd, path)
     if not ok_add or type(bufnr) ~= "number" or not vim.api.nvim_buf_is_valid(bufnr) then

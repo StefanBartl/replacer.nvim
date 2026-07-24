@@ -62,6 +62,8 @@ Each occurrence on a line becomes its own selectable entry (multiple hits per li
 | `--case-preserve` / `--no-case-preserve` | re-case the replacement to match each match's own case style (`foo→bar`, `Foo→Bar`, `FOO→BAR`, `fooBar→bazQux`, `FooBar→BazQux`) |
 | `--word` / `--no-word` | keep only whole-word matches (byte before/after must not be a word byte) |
 | `--code-only` / `--no-code-only` | skip matches inside strings/comments (Tree-sitter, best-effort — falls back to keeping everything when no parser is available) |
+| `--safe` / `--no-safe` | safe-mode: skip read-only/oversized/binary files instead of touching them |
+| `--max-filesize=<bytes>` | override the safe-mode size threshold for this run (default 5 MiB) |
 | `--type=<ft>` *(repeatable)* | restrict to a filetype (ripgrep `--type`) |
 | `--glob=<pat>` *(repeatable)* | include glob pattern |
 | `--exclude=<pat>` *(repeatable)* | exclude path/glob pattern |
@@ -222,6 +224,9 @@ ______________________________________________________________________
     case_preserve = false,     -- re-case the replacement to match each match's case style
     word_boundary = false,     -- keep only whole-word matches
     code_only = false,         -- skip matches inside strings/comments (Tree-sitter, best-effort)
+    safe_mode = false,         -- skip read-only/oversized/binary files
+    max_file_size = 5 * 1024 * 1024, -- bytes; only enforced when safe_mode is true
+    skip_binary = true,        -- only enforced when safe_mode is true
 
     default_scope = "%",          -- "%", "cwd", ".", or <path>
     confirm_wide_scope = false,   -- ask once for permission if scope ≠ "%"
@@ -291,6 +296,9 @@ ______________________________________________________________________
 | case_preserve   | boolean | Re-case the replacement to match each match's own case style (default: false) |
 | word_boundary   | boolean | Keep only whole-word matches (default: false) |
 | code_only       | boolean | Skip matches inside strings/comments, Tree-sitter best-effort (default: false) |
+| safe_mode       | boolean | Skip read-only/oversized/binary files instead of touching them (default: false) |
+| max_file_size   | integer | Bytes; only enforced when safe_mode is true (default: 5 MiB) |
+| skip_binary     | boolean | Only enforced when safe_mode is true (default: true) |
 | fzf             | table?  | Extra options for `fzf-lua` (merged into picker opts)          |
 | telescope       | table?  | Extra options for Telescope picker (theme/layout)              |
 
@@ -314,6 +322,9 @@ require("replacer").setup({
   case_preserve = false,
   word_boundary = false,
   code_only = false,
+  safe_mode = false,
+  max_file_size = 5 * 1024 * 1024,
+  skip_binary = true,
   file_types = {},           -- e.g. { "lua" }
   globs = {},                -- e.g. { "*.lua" }
   exclude = {},              -- e.g. { "node_modules" }

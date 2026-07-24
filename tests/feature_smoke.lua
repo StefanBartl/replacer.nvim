@@ -123,6 +123,34 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 2d) safe_mode: oversized/binary files are excluded from vimgrep scanning
+--------------------------------------------------------------------------------
+do
+  local file_big = tmp .. "/big.txt"
+  do
+    local fh = assert(io.open(file_big, "w"))
+    fh:write(string.rep("foo ", 100))
+    fh:close()
+  end
+  local file_bin = tmp .. "/bin.dat"
+  do
+    local fh = assert(io.open(file_bin, "wb"))
+    fh:write("foo\0bar")
+    fh:close()
+  end
+
+  local safe_items = rg.collect("foo", { file_big, file_bin }, {
+    literal = true, search_engine = "vimgrep", hidden = true, safe_mode = true,
+    max_file_size = 50, skip_binary = true, file_types = {}, globs = {}, exclude = {} })
+  check("safe_mode: oversized + binary files excluded", #safe_items == 0, #safe_items)
+
+  local unsafe_items = rg.collect("foo", { file_big, file_bin }, {
+    literal = true, search_engine = "vimgrep", hidden = true, safe_mode = false,
+    file_types = {}, globs = {}, exclude = {} })
+  check("safe_mode: off by default finds matches in both files", #unsafe_items > 0, #unsafe_items)
+end
+
+--------------------------------------------------------------------------------
 -- 3) Pure edit computation
 --------------------------------------------------------------------------------
 do

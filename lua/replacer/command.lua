@@ -138,6 +138,8 @@ local BOOL_FLAGS = {
   ["no-word"]   = function(r) r.overrides.word_boundary = false end,
   ["code-only"]    = function(r) r.overrides.code_only = true end,
   ["no-code-only"] = function(r) r.overrides.code_only = false end,
+  ["safe"]    = function(r) r.overrides.safe_mode = true end,
+  ["no-safe"] = function(r) r.overrides.safe_mode = false end,
 }
 
 -- Value flags: name -> true. Applied via apply_value_flag below.
@@ -149,6 +151,7 @@ local VALUE_FLAGS = {
   ["engine"]  = true,
   ["context"] = true,
   ["export"]  = true,
+  ["max-filesize"] = true,
 }
 
 --- Apply a value flag to the request; returns nil on success or an error string.
@@ -180,6 +183,12 @@ local function apply_value_flag(req, key, val)
     req.overrides.preview_context = n
   elseif key == "export" then
     req.export = val
+  elseif key == "max-filesize" then
+    local n = tonumber(val)
+    if not n or n <= 0 or n ~= math.floor(n) then
+      return string.format("invalid --max-filesize '%s' (expected a positive integer, in bytes)", val)
+    end
+    req.overrides.max_file_size = n
   end
   return nil
 end
@@ -381,6 +390,9 @@ M.FLAGS = {
   { name = "no-word", bool = true },
   { name = "code-only", bool = true },
   { name = "no-code-only", bool = true },
+  { name = "safe", bool = true },
+  { name = "no-safe", bool = true },
+  { name = "max-filesize", type = "INT" },
   { name = "type", type = "STRING", repeatable = true },
   { name = "glob", type = "STRING", repeatable = true },
   { name = "exclude", type = "STRING", repeatable = true },

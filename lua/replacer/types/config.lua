@@ -41,6 +41,9 @@
 ---@field case_preserve?        boolean     -- re-case new_text to match each match's case style
 ---@field word_boundary?        boolean     -- keep only whole-word matches
 ---@field code_only?            boolean     -- skip matches inside strings/comments (Tree-sitter, best-effort)
+---@field safe_mode?            boolean     -- skip read-only/oversized/binary files instead of touching them
+---@field max_file_size?        integer     -- bytes; only enforced when safe_mode is true
+---@field skip_binary?          boolean     -- only enforced when safe_mode is true
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

@@ -60,6 +60,8 @@
 ---@field case_preserve? boolean
 ---@field word_boundary? boolean
 ---@field code_only? boolean
+---@field safe_mode? boolean
+---@field max_file_size? integer
 
 --- Filters produced by command flags (merged over config filter lists).
 ---@class RP_Filters

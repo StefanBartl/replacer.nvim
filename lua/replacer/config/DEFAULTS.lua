@@ -35,6 +35,12 @@ return {
   -- skipped (best-effort; falls back to keeping everything when no parser
   -- is available for the file's language). See lua/replacer/tscode.lua.
   code_only = false,
+  -- Safe-mode: skip read-only / oversized / binary files instead of
+  -- touching them. Off by default; max_file_size/skip_binary only take
+  -- effect once safe_mode is enabled.
+  safe_mode = false,
+  max_file_size = 5 * 1024 * 1024, -- 5 MiB
+  skip_binary = true,
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }

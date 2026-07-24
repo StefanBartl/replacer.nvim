@@ -54,8 +54,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
   in, so you can start selecting before the search finishes.
 - **Hook system** — Lua before/after callbacks (per file or global) to run a
   linter/formatter, invalidate a cache, etc.
-- **Safe-mode file limits** — skip binaries, oversized files, and
-  read-only paths, with configurable thresholds.
 - **Rename-assist** — pair a content replace with an optional file rename
   (e.g. class name ↔ file name), previewed together.
 - **i18n / message customization** — configurable prompt/confirmation text,

@@ -135,6 +135,10 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
         --word | --no-word                   whole-word matches only
         --code-only | --no-code-only         skip matches inside strings/
                                              comments (Tree-sitter, best-effort)
+        --safe | --no-safe                   safe-mode: skip read-only/
+                                             oversized/binary files
+        --max-filesize=<bytes>                override the safe-mode size
+                                             threshold for this run
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
         --glob=<pat>     (repeatable)        include glob pattern
         --exclude=<pat>  (repeatable)        exclude path/glob pattern
@@ -256,6 +260,9 @@ Default configuration: >lua
       case_preserve = false,             -- re-case replacement to match each match
       word_boundary = false,             -- keep only whole-word matches
       code_only = false,                 -- skip matches in strings/comments (best-effort)
+      safe_mode = false,                 -- skip read-only/oversized/binary files
+      max_file_size = 5 * 1024 * 1024,   -- bytes; only enforced when safe_mode is true
+      skip_binary = true,                -- only enforced when safe_mode is true
       default_scope = "%",               -- scope when none is given
 
       -- Default filters (also overridable per-run via flags)
@@ -389,6 +396,31 @@ code_only~
     skipped. Best-effort: fails open (keeps every match) for a file whose
     language has no available Tree-sitter parser, so this filter never
     silently drops matches it cannot classify. See lua/replacer/tscode.lua.
+
+                                                *replacer-config-safe_mode*
+safe_mode~
+    Type: boolean
+    Default: false
+
+    When true, read-only, oversized (see max_file_size), and binary (see
+    skip_binary) files are skipped instead of touched. A skipped file is
+    reported via a warning naming the reason.
+
+                                            *replacer-config-max_file_size*
+max_file_size~
+    Type: integer (bytes)
+    Default: 5242880 (5 MiB)
+
+    Only enforced when safe_mode is true. Also passed to ripgrep as
+    --max-filesize so oversized files are skipped before they're even read.
+
+                                              *replacer-config-skip_binary*
+skip_binary~
+    Type: boolean
+    Default: true
+
+    Only enforced when safe_mode is true. Detected via a NUL-byte sniff of
+    the file's first 512 bytes.
 
                                           *replacer-config-preview_context*
 preview_context~
