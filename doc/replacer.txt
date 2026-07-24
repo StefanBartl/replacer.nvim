@@ -193,6 +193,25 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
     path. Uses the most recent checkpoint when [id] is omitted; <Tab>
     completes known ids. See *replacer-checkpoint*.
 
+                                                             *:ReplaceHistory*
+:ReplaceHistory
+    Open |vim.ui.select()| over the last 50 real applies (never dry-run/
+    export/quickfix, which don't change anything). Picking an entry re-runs
+    it via the interactive picker, unless the original run was --all. See
+    lua/replacer/history.lua.
+
+                                                         *:ReplaceSavePreset*
+:ReplaceSavePreset {name} {old} {new} [scope] [--flags]
+    Save a named, reusable replace request — including any flags/filters
+    given — under {name}, overwriting any existing preset of that name.
+
+                                                             *:ReplacePreset*
+:ReplacePreset {name}
+    Run a saved preset exactly as it was saved. <Tab> completes known
+    preset names. Both commands persist to
+    stdpath("data")/replacer/{history,presets}.json. See
+    lua/replacer/presets.lua.
+
                                                              *:ReplaceEscape*
 :ReplaceEscape {text}
     Escape {text} for use as a Vim regex pattern (\, ., *, [, ], $, ^, ~,

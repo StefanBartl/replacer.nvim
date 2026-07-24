@@ -149,6 +149,20 @@ positional (scope is always the detected root):
 :ReplaceRoot! old new       # bang = --all
 ```
 
+### History & Presets
+
+- `:ReplaceHistory` — `vim.ui.select` over the last 50 real applies (never dry-run/export/quickfix); picking one re-runs it.
+- `:ReplaceSavePreset {name} {old} {new} [scope] [--flags]` — save a named, reusable replace request (including flags/filters).
+- `:ReplacePreset {name}` — run a saved preset exactly as saved; `<Tab>` completes names.
+
+```sh
+:ReplaceSavePreset fix-imports "import old" "import new" src/ --type=ts
+:ReplacePreset fix-imports
+```
+
+Both are stored as JSON under `stdpath("data")/replacer/` (`history.json`,
+`presets.json`).
+
 ### Hooks
 
 Lua before/after callbacks around the apply pipeline — run a linter/formatter,

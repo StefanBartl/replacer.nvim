@@ -34,8 +34,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
     statements across the project.
 - **Batch replaces** — multiple `{old → new}` pairs in one run, importable
   from a file/quickfix/clipboard.
-- **History & presets** — recent searches/replacements, named presets,
-  re-run from a picker.
 - **Soft LSP integration** — offer LSP rename when a symbol is matched
   exactly, falling back to plain text replace otherwise.
 - **Streaming picker fill** — populate the picker as ripgrep results stream

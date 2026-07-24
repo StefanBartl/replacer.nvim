@@ -20,6 +20,8 @@ local gitfiles = require("replacer.gitfiles")
 local perfile = require("replacer.perfile")
 local checkpoint = require("replacer.checkpoint")
 local hooks = require("replacer.hooks")
+local history = require("replacer.history")
+local presets = require("replacer.presets")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -423,6 +425,64 @@ do
   local hc2 = assert(io.open(file_h2, "r")):read("*a")
   check("hooks: non-vetoed file was updated", hc1:match("bar") ~= nil, hc1)
   check("hooks: vetoed file left untouched", hc2:match("foo") ~= nil, hc2)
+end
+
+--------------------------------------------------------------------------------
+-- 2k) history: records applies, re-runnable entries
+--------------------------------------------------------------------------------
+do
+  local before = #history.load()
+  local req = {
+    old = "__hist_test_old__", new = "__hist_test_new__", scope = "%",
+    all = false, dry = false, export = nil, line_range = nil,
+    overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+  }
+  history.add(req, { files = 2, spots = 5 })
+  local loaded = history.load()
+  check("history: add() grows the stored list", #loaded == before + 1, #loaded)
+  check("history: newest entry is first", loaded[1].old == "__hist_test_old__", loaded[1].old)
+  check("history: files/spots recorded", loaded[1].files == 2 and loaded[1].spots == 5)
+
+  local picked
+  local orig_select = vim.ui.select
+  vim.ui.select = function(items, _opts, on_choice) on_choice(items[1]) end
+  history.pick(function(r) picked = r end)
+  vim.ui.select = orig_select
+  check("history: pick() re-runs the newest entry", picked ~= nil
+    and picked.old == "__hist_test_old__" and picked.new == "__hist_test_new__")
+end
+
+--------------------------------------------------------------------------------
+-- 2l) presets: save/load/run/delete
+--------------------------------------------------------------------------------
+do
+  local name = "__test_preset_replacer_ci__"
+  presets.delete(name) -- clean slate in case a previous run left it behind
+
+  ---@type RP_Request
+  local req = {
+    old = "foo", new = "bar", scope = "cwd", all = true, dry = false, export = nil,
+    line_range = nil, overrides = { literal = false }, filters = { file_types = { "lua" }, globs = {}, exclude = {} },
+  }
+  presets.save(name, req)
+
+  local names = presets.names()
+  local found = false
+  for _, n in ipairs(names) do if n == name then found = true end end
+  check("presets: save() shows up in names()", found)
+
+  local loaded_req = presets.as_request(name)
+  check("presets: as_request() round-trips old/new/scope/all",
+    loaded_req and loaded_req.old == "foo" and loaded_req.new == "bar"
+    and loaded_req.scope == "cwd" and loaded_req.all == true)
+  check("presets: as_request() round-trips overrides/filters",
+    loaded_req and loaded_req.overrides.literal == false
+    and loaded_req.filters.file_types[1] == "lua")
+
+  check("presets: unknown name -> nil", presets.as_request("__does_not_exist__") == nil)
+
+  presets.delete(name)
+  check("presets: delete() removes it", presets.as_request(name) == nil)
 end
 
 --------------------------------------------------------------------------------

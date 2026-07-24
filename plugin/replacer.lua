@@ -17,6 +17,10 @@ if not vim.g.__replacer_cmd_registered then
     if ok_root then root.register(core.run) end
     local ok_cp, checkpoint = pcall(require, "replacer.checkpoint")
     if ok_cp then checkpoint.register() end
+    local ok_hist, history = pcall(require, "replacer.history")
+    if ok_hist then history.register(core.run) end
+    local ok_presets, presets = pcall(require, "replacer.presets")
+    if ok_presets then presets.register(core.run) end
     vim.g.__replacer_cmd_registered = true
   end
 end

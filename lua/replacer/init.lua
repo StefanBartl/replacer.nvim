@@ -132,8 +132,15 @@ local function dispatch(request, cfg, single_file, items)
   end
 
   -- Applier closure shared by ALL mode, per-file confirm, and the pickers.
+  -- Records history for every real apply (never for dry-run/export/
+  -- quickfix, which don't reach here); a history-write failure must never
+  -- affect the apply itself, hence the pcall.
   local function apply_func(chosen, replacement, write_changes)
-    return apply.apply_matches(chosen, request.old, replacement, write_changes, cfg)
+    local files, spots = apply.apply_matches(chosen, request.old, replacement, write_changes, cfg)
+    pcall(function()
+      require("replacer.history").add(request, { files = files, spots = spots })
+    end)
+    return files, spots
   end
 
   -- Interactive picker over `pick_items` (auto-detected when engine = "auto").
