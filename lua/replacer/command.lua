@@ -134,6 +134,10 @@ local BOOL_FLAGS = {
   ["no-preserve-ws"] = function(r) r.overrides.preserve_whitespace = false end,
   ["case-preserve"]    = function(r) r.overrides.case_preserve = true end,
   ["no-case-preserve"] = function(r) r.overrides.case_preserve = false end,
+  ["word"]      = function(r) r.overrides.word_boundary = true end,
+  ["no-word"]   = function(r) r.overrides.word_boundary = false end,
+  ["code-only"]    = function(r) r.overrides.code_only = true end,
+  ["no-code-only"] = function(r) r.overrides.code_only = false end,
 }
 
 -- Value flags: name -> true. Applied via apply_value_flag below.
@@ -373,6 +377,10 @@ M.FLAGS = {
   { name = "no-preserve-ws", bool = true },
   { name = "case-preserve", bool = true },
   { name = "no-case-preserve", bool = true },
+  { name = "word", bool = true },
+  { name = "no-word", bool = true },
+  { name = "code-only", bool = true },
+  { name = "no-code-only", bool = true },
   { name = "type", type = "STRING", repeatable = true },
   { name = "glob", type = "STRING", repeatable = true },
   { name = "exclude", type = "STRING", repeatable = true },

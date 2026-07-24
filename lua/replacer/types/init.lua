@@ -58,6 +58,8 @@
 ---@field preview_context? integer
 ---@field preserve_whitespace? boolean
 ---@field case_preserve? boolean
+---@field word_boundary? boolean
+---@field code_only? boolean
 
 --- Filters produced by command flags (merged over config filter lists).
 ---@class RP_Filters

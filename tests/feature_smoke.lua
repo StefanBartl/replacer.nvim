@@ -93,6 +93,35 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 2b) word_boundary: only whole-word matches are kept
+--------------------------------------------------------------------------------
+do
+  local file_b = tmp .. "/b.txt"
+  local fh = assert(io.open(file_b, "w"))
+  fh:write("foo foobar barfoo xfoox foo.bar\n")
+  fh:close()
+
+  local wcfg = { literal = true, search_engine = "vimgrep", hidden = true, word_boundary = true,
+    file_types = {}, globs = {}, exclude = {} }
+  local witems = rg.collect("foo", { file_b }, wcfg)
+  check("word_boundary: only whole-word 'foo' occurrences kept", #witems == 2, #witems)
+
+  local plain_items = rg.collect("foo", { file_b }, {
+    literal = true, search_engine = "vimgrep", hidden = true,
+    file_types = {}, globs = {}, exclude = {} })
+  check("word_boundary: off by default finds every substring occurrence", #plain_items == 5, #plain_items)
+end
+
+--------------------------------------------------------------------------------
+-- 2c) code_only (Tree-sitter, best-effort): fails open with no parser available
+--------------------------------------------------------------------------------
+do
+  local tscode = require("replacer.tscode")
+  local is_hit = tscode.is_in_string_or_comment("nonexistent.zzzUnknownExt", "foo", 0, 0)
+  check("tscode: unresolvable filetype -> fails open (false)", is_hit == false)
+end
+
+--------------------------------------------------------------------------------
 -- 3) Pure edit computation
 --------------------------------------------------------------------------------
 do

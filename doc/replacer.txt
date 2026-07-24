@@ -132,6 +132,9 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                                              whitespace around the replacement
         --case-preserve | --no-case-preserve re-case the replacement to match
                                              each match's own case style
+        --word | --no-word                   whole-word matches only
+        --code-only | --no-code-only         skip matches inside strings/
+                                             comments (Tree-sitter, best-effort)
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
         --glob=<pat>     (repeatable)        include glob pattern
         --exclude=<pat>  (repeatable)        exclude path/glob pattern
@@ -238,6 +241,8 @@ Default configuration: >lua
       smart_case = true,                 -- ripgrep -S
       preserve_whitespace = false,       -- keep a match's own leading/trailing ws
       case_preserve = false,             -- re-case replacement to match each match
+      word_boundary = false,             -- keep only whole-word matches
+      code_only = false,                 -- skip matches in strings/comments (best-effort)
       default_scope = "%",               -- scope when none is given
 
       -- Default filters (also overridable per-run via flags)
@@ -353,6 +358,24 @@ case_preserve~
     When true, the replacement is re-cased to match each match's own case
     style before being applied: foo->bar, Foo->Bar, FOO->BAR,
     fooBar->bazQux, FooBar->BazQux. See lua/replacer/casing.lua.
+
+                                            *replacer-config-word_boundary*
+word_boundary~
+    Type: boolean
+    Default: false
+
+    When true, only whole-word matches are kept: the byte immediately
+    before and after the match must not be a letter/digit/underscore.
+
+                                                *replacer-config-code_only*
+code_only~
+    Type: boolean
+    Default: false
+
+    When true, matches falling inside a string/comment Tree-sitter node are
+    skipped. Best-effort: fails open (keeps every match) for a file whose
+    language has no available Tree-sitter parser, so this filter never
+    silently drops matches it cannot classify. See lua/replacer/tscode.lua.
 
                                           *replacer-config-preview_context*
 preview_context~

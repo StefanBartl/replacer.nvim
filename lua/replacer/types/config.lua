@@ -39,6 +39,8 @@
 ---@field keymaps?              RP_Keymaps
 ---@field preserve_whitespace?  boolean     -- keep old_text's leading/trailing ws around new_text
 ---@field case_preserve?        boolean     -- re-case new_text to match each match's case style
+---@field word_boundary?        boolean     -- keep only whole-word matches
+---@field code_only?            boolean     -- skip matches inside strings/comments (Tree-sitter, best-effort)
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

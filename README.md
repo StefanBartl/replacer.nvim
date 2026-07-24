@@ -60,6 +60,8 @@ Each occurrence on a line becomes its own selectable entry (multiple hits per li
 | `--ignore` / `--no-ignore` | respect/ignore `.gitignore` |
 | `--preserve-ws` / `--no-preserve-ws` | keep the match's own leading/trailing whitespace around the replacement (useful with regex patterns like `\s*foo\s*`) |
 | `--case-preserve` / `--no-case-preserve` | re-case the replacement to match each match's own case style (`foo→bar`, `Foo→Bar`, `FOO→BAR`, `fooBar→bazQux`, `FooBar→BazQux`) |
+| `--word` / `--no-word` | keep only whole-word matches (byte before/after must not be a word byte) |
+| `--code-only` / `--no-code-only` | skip matches inside strings/comments (Tree-sitter, best-effort — falls back to keeping everything when no parser is available) |
 | `--type=<ft>` *(repeatable)* | restrict to a filetype (ripgrep `--type`) |
 | `--glob=<pat>` *(repeatable)* | include glob pattern |
 | `--exclude=<pat>` *(repeatable)* | exclude path/glob pattern |
@@ -212,6 +214,8 @@ ______________________________________________________________________
     smart_case = true,         -- ripgrep -S
     preserve_whitespace = false, -- keep a match's own leading/trailing ws around the replacement
     case_preserve = false,     -- re-case the replacement to match each match's case style
+    word_boundary = false,     -- keep only whole-word matches
+    code_only = false,         -- skip matches inside strings/comments (Tree-sitter, best-effort)
 
     default_scope = "%",          -- "%", "cwd", ".", or <path>
     confirm_wide_scope = false,   -- ask once for permission if scope ≠ "%"
@@ -279,6 +283,8 @@ ______________________________________________________________________
 | exclude         | string[] | Default exclude path/glob patterns                            |
 | preserve_whitespace | boolean | Keep a match's own leading/trailing whitespace around the replacement (default: false) |
 | case_preserve   | boolean | Re-case the replacement to match each match's own case style (default: false) |
+| word_boundary   | boolean | Keep only whole-word matches (default: false) |
+| code_only       | boolean | Skip matches inside strings/comments, Tree-sitter best-effort (default: false) |
 | fzf             | table?  | Extra options for `fzf-lua` (merged into picker opts)          |
 | telescope       | table?  | Extra options for Telescope picker (theme/layout)              |
 
@@ -300,6 +306,8 @@ require("replacer").setup({
   smart_case = true,
   preserve_whitespace = false,
   case_preserve = false,
+  word_boundary = false,
+  code_only = false,
   file_types = {},           -- e.g. { "lua" }
   globs = {},                -- e.g. { "*.lua" }
   exclude = {},              -- e.g. { "node_modules" }

@@ -28,6 +28,13 @@ return {
   -- When true, re-case the replacement to match each match's own case style:
   -- foo->bar, Foo->Bar, FOO->BAR, fooBar->bazQux, FooBar->BazQux.
   case_preserve = false,
+  -- When true, only whole-word matches are kept (the byte before/after the
+  -- match must not be a word byte: letter/digit/underscore).
+  word_boundary = false,
+  -- When true, matches falling inside a string/comment Tree-sitter node are
+  -- skipped (best-effort; falls back to keeping everything when no parser
+  -- is available for the file's language). See lua/replacer/tscode.lua.
+  code_only = false,
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }

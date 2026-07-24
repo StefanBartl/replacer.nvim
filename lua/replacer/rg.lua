@@ -531,6 +531,81 @@ local function apply_line_range(items, cfg)
   return out
 end
 
+--- True when a byte is a "word" byte (letter/digit/underscore) — an ASCII
+--- approximation of `\w`, matching what ripgrep's own `-w` treats as a word
+--- character closely enough for boundary detection purposes.
+---@param byte string|nil  # a single character, or nil (out of bounds)
+---@return boolean
+local function is_word_byte(byte)
+  return byte ~= nil and byte:match("[%w_]") ~= nil
+end
+
+--- Restrict items to whole-word matches: the byte immediately before the
+--- match and the byte immediately after it (if any) must NOT be word bytes.
+--- A no-op unless cfg.word_boundary is set.
+---@param items RP_Match[]
+---@param cfg RP_RG_Config
+---@return RP_Match[]
+local function apply_word_boundary(items, cfg)
+  if not cfg.word_boundary then return items end
+  local out, n = {}, 0
+  for _, it in ipairs(items) do
+    local line = it.line or ""
+    local mlen = #(it.old or "")
+    local before = it.col0 > 0 and line:sub(it.col0, it.col0) or nil
+    local after = line:sub(it.col0 + mlen + 1, it.col0 + mlen + 1)
+    if after == "" then after = nil end
+    if not is_word_byte(before) and not is_word_byte(after) then
+      n = n + 1
+      out[n] = it
+    end
+  end
+  return out
+end
+
+--- Drop matches that fall inside a string/comment Tree-sitter node
+--- (best-effort, fails open — see replacer.tscode). A no-op unless
+--- cfg.code_only is set. Reads each affected file once, grouped by path.
+---@param items RP_Match[]
+---@param cfg RP_RG_Config
+---@return RP_Match[]
+local function apply_code_only(items, cfg)
+  if not cfg.code_only or #items == 0 then return items end
+  local tscode = require("replacer.tscode")
+
+  ---@type table<string, string>
+  local content_cache = {}
+  local function read(path)
+    local cached = content_cache[path]
+    if cached ~= nil then return cached end
+    local ok, fh = pcall(io.open, path, "r")
+    local content = (ok and fh) and fh:read("*a") or ""
+    if ok and fh then fh:close() end
+    content_cache[path] = content
+    return content
+  end
+
+  local out, n = {}, 0
+  for _, it in ipairs(items) do
+    local content = read(it.path)
+    if content == "" or not tscode.is_in_string_or_comment(it.path, content, it.lnum - 1, it.col0) then
+      n = n + 1
+      out[n] = it
+    end
+  end
+  return out
+end
+
+--- Compose every post-collection, cfg-driven filter (line range, word
+--- boundary, code-only) into one call so every backend/scope combination
+--- applies them identically.
+---@param items RP_Match[]
+---@param cfg RP_RG_Config
+---@return RP_Match[]
+local function post_filter(items, cfg)
+  return apply_code_only(apply_word_boundary(apply_line_range(items, cfg), cfg), cfg)
+end
+
 --------------------------------------------------------------------------------
 -- Public entry
 --------------------------------------------------------------------------------
@@ -548,7 +623,7 @@ function M.collect(old, roots, cfg)
     local modified, bufnr = is_buffer_modified(roots[1])
     if modified and bufnr then
       notify.info("scanning modified buffer instead of disk")
-      return apply_line_range(collect_from_buffer(old, bufnr, cfg), cfg), nil
+      return post_filter(collect_from_buffer(old, bufnr, cfg), cfg), nil
     end
   end
 
@@ -560,7 +635,7 @@ function M.collect(old, roots, cfg)
     items = collect_vimgrep(old, roots, cfg)
   end
 
-  return apply_line_range(items, cfg), err
+  return post_filter(items, cfg), err
 end
 
 --- Collect matches asynchronously, invoking `on_done(items, err)` when ready.
@@ -579,7 +654,7 @@ function M.collect_async(old, roots, cfg, on_done)
     local modified, bufnr = is_buffer_modified(roots[1])
     if modified and bufnr then
       notify.info("scanning modified buffer instead of disk")
-      on_done(apply_line_range(collect_from_buffer(old, bufnr, cfg), cfg), nil)
+      on_done(post_filter(collect_from_buffer(old, bufnr, cfg), cfg), nil)
       return
     end
   end
@@ -589,7 +664,7 @@ function M.collect_async(old, roots, cfg, on_done)
       if err then
         on_done(nil, err)
       else
-        on_done(apply_line_range(items, cfg), nil)
+        on_done(post_filter(items, cfg), nil)
       end
     end)
   else
@@ -597,7 +672,7 @@ function M.collect_async(old, roots, cfg, on_done)
       if err then
         on_done(nil, err)
       else
-        on_done(apply_line_range(items, cfg), nil)
+        on_done(post_filter(items, cfg), nil)
       end
     end)
   end
