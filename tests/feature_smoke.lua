@@ -18,6 +18,7 @@ local encoding = require("replacer.encoding")
 local root = require("replacer.root")
 local gitfiles = require("replacer.gitfiles")
 local perfile = require("replacer.perfile")
+local checkpoint = require("replacer.checkpoint")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -325,6 +326,48 @@ do
   check("perfile: totals reflect only the applied file", files == 1 and spots == 1, files .. " " .. spots)
   check("perfile: stops at Quit, c.txt never confirmed", call_n == 3, call_n)
   check("perfile: Only-some callback never triggered here", #picked_files == 0)
+end
+
+--------------------------------------------------------------------------------
+-- 2i) checkpoint: snapshot + restore (--checkpoint / :ReplaceUndo)
+--------------------------------------------------------------------------------
+do
+  local file_cp = tmp .. "/checkpoint.txt"
+  local original = "line one\nline two\n"
+  do
+    local fh = assert(io.open(file_cp, "w"))
+    fh:write(original)
+    fh:close()
+  end
+
+  ---@diagnostic disable: missing-fields
+  local items = { { id = 1, path = file_cp, lnum = 1, col0 = 0, old = "line", line = "line one" } }
+  ---@diagnostic enable: missing-fields
+
+  local id = checkpoint.create(items)
+  check("checkpoint: create returns an id", type(id) == "string" and id ~= "", id)
+
+  -- Mutate the file after the checkpoint, as a real apply would.
+  do
+    local fh = assert(io.open(file_cp, "w"))
+    fh:write("MUTATED\n")
+    fh:close()
+  end
+
+  local restored, err = checkpoint.undo(id)
+  check("checkpoint: undo restores exactly one file", restored == 1 and err == nil, err)
+
+  local fh2 = assert(io.open(file_cp, "r"))
+  local content_after = fh2:read("*a"); fh2:close()
+  check("checkpoint: content restored byte-exact", content_after == original, content_after)
+
+  local list = checkpoint.list()
+  local found = false
+  for _, cid in ipairs(list) do if cid == id then found = true end end
+  check("checkpoint: list() includes the created id", found)
+
+  local _, err2 = checkpoint.undo("does-not-exist")
+  check("checkpoint: undo of unknown id -> error", err2 ~= nil, err2)
 end
 
 --------------------------------------------------------------------------------

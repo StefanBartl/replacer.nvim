@@ -46,6 +46,7 @@
 ---@field max_file_size?        integer     -- bytes; only enforced when safe_mode is true
 ---@field skip_binary?          boolean     -- only enforced when safe_mode is true
 ---@field confirm_per_file?     boolean     -- ALL-mode: ask All/Skip/Only-some/Quit per file
+---@field checkpoint?           boolean     -- ALL-mode: snapshot files before applying (:ReplaceUndo)
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

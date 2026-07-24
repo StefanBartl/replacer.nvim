@@ -156,6 +156,7 @@ local function validate(cfg)
   out.skip_binary        = pick_bool(cfg.skip_binary,        out.skip_binary)
   out.max_file_size      = as_pos_int(cfg.max_file_size)      or out.max_file_size
   out.confirm_per_file   = pick_bool(cfg.confirm_per_file,   out.confirm_per_file)
+  out.checkpoint         = pick_bool(cfg.checkpoint,         out.checkpoint)
 
   if type(cfg.default_scope) == "string" and cfg.default_scope ~= "" then
     out.default_scope = cfg.default_scope

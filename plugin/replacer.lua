@@ -15,6 +15,8 @@ if not vim.g.__replacer_cmd_registered then
     if ok_rx then rx.register() end
     local ok_root, root = pcall(require, "replacer.root")
     if ok_root then root.register(core.run) end
+    local ok_cp, checkpoint = pcall(require, "replacer.checkpoint")
+    if ok_cp then checkpoint.register() end
     vim.g.__replacer_cmd_registered = true
   end
 end

@@ -153,6 +153,8 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                                              ALL-mode: ask All/Skip/Only-some/
                                              Quit per file (supersedes
                                              confirm_all/confirm_wide_scope)
+        --checkpoint | --no-checkpoint       ALL-mode: snapshot touched files
+                                             first; |:ReplaceUndo| restores them
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
         --glob=<pat>     (repeatable)        include glob pattern
         --exclude=<pat>  (repeatable)        exclude path/glob pattern
@@ -183,6 +185,13 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
     instead of a positional argument (see *replacer-root-detection*).
     Prompts with |vim.ui.select()| when detection finds more than one
     candidate directory. The bang form is shorthand for --all.
+
+                                                               *:ReplaceUndo*
+:ReplaceUndo [id]
+    Restore every file from a --checkpoint snapshot: a byte-exact write
+    back to disk, plus a reload of any currently loaded buffer for that
+    path. Uses the most recent checkpoint when [id] is omitted; <Tab>
+    completes known ids. See *replacer-checkpoint*.
 
                                                              *:ReplaceEscape*
 :ReplaceEscape {text}
@@ -621,6 +630,24 @@ without touching it; &Only some opens the interactive picker scoped to just
 that file's matches; &Quit (or <Esc>) stops the whole loop, leaving any
 later files untouched. Supersedes confirm_all/confirm_wide_scope when
 enabled. See lua/replacer/perfile.lua.
+
+                                                     *replacer-checkpoint*
+Undo Checkpoint~
+
+--checkpoint (or config.checkpoint) snapshots every file about to be
+touched by an --all apply BEFORE any edit happens, so it can be undone: >vim
+    :Replace! foo bar cwd --checkpoint
+    :ReplaceUndo
+<
+Snapshots live under stdpath("data")/replacer/checkpoints/<id>/ (one
+directory per run, id is a sortable timestamp) as byte-exact copies — a
+loaded, modified-but-unsaved buffer is snapshotted from its buffer content,
+otherwise from disk. This is a plain file snapshot, NOT a git stash or temp
+branch: a stash would also scoop up unrelated uncommitted work-in-progress
+elsewhere in the same repository, which this plugin has no business doing.
+:ReplaceUndo restores the most recent checkpoint (or an explicit [id],
+<Tab>-completable) as a byte-exact write-back, reloading any buffer that
+has that file open. See lua/replacer/checkpoint.lua.
 
                                                 *replacer-root-detection*
 Monorepo / Project-Root Detection~

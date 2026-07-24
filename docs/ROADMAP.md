@@ -36,8 +36,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
   from a file/quickfix/clipboard.
 - **History & presets** — recent searches/replacements, named presets,
   re-run from a picker.
-- **Undo checkpoint** — an automatic `:write`/git-stash/temp-branch
-  checkpoint before a large apply, with one-click rollback.
 - **Soft LSP integration** — offer LSP rename when a symbol is matched
   exactly, falling back to plain text replace otherwise.
 - **Streaming picker fill** — populate the picker as ripgrep results stream

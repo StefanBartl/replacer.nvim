@@ -154,6 +154,15 @@ local function dispatch(request, cfg, single_file, items)
 
   -- Non-interactive ALL.
   if request.all then
+    if cfg.checkpoint then
+      local ok_cp, id = pcall(function() return require("replacer.checkpoint").create(items) end)
+      if ok_cp and id then
+        notify.info(string.format("checkpoint '%s' created — :ReplaceUndo to revert", id))
+      else
+        notify.warn("failed to create a checkpoint — proceeding without one")
+      end
+    end
+
     if cfg.confirm_per_file then
       local perfile = require("replacer.perfile")
       local files, spots = perfile.run(items, request.new, cfg.write_changes, apply_func, open_picker)

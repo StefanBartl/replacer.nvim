@@ -144,6 +144,8 @@ local BOOL_FLAGS = {
   ["to-loclist"]  = function(r) r.to_loclist = true end,
   ["confirm-per-file"]    = function(r) r.overrides.confirm_per_file = true end,
   ["no-confirm-per-file"] = function(r) r.overrides.confirm_per_file = false end,
+  ["checkpoint"]    = function(r) r.overrides.checkpoint = true end,
+  ["no-checkpoint"] = function(r) r.overrides.checkpoint = false end,
 }
 
 -- Value flags: name -> true. Applied via apply_value_flag below.
@@ -442,6 +444,8 @@ M.FLAGS = {
   { name = "changed", type = "STRING" },
   { name = "confirm-per-file", bool = true },
   { name = "no-confirm-per-file", bool = true },
+  { name = "checkpoint", bool = true },
+  { name = "no-checkpoint", bool = true },
   { name = "type", type = "STRING", repeatable = true },
   { name = "glob", type = "STRING", repeatable = true },
   { name = "exclude", type = "STRING", repeatable = true },

@@ -45,6 +45,9 @@ return {
   -- "apply ALL?" confirmation. Supersedes confirm_all/confirm_wide_scope
   -- when enabled.
   confirm_per_file = false,
+  -- ALL-mode: snapshot every about-to-be-touched file before applying, so
+  -- :ReplaceUndo can restore them. See lua/replacer/checkpoint.lua.
+  checkpoint = false,
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }
