@@ -45,6 +45,7 @@
 ---@field safe_mode?            boolean     -- skip read-only/oversized/binary files instead of touching them
 ---@field max_file_size?        integer     -- bytes; only enforced when safe_mode is true
 ---@field skip_binary?          boolean     -- only enforced when safe_mode is true
+---@field confirm_per_file?     boolean     -- ALL-mode: ask All/Skip/Only-some/Quit per file
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

@@ -17,6 +17,7 @@ local regex = require("replacer.regex")
 local encoding = require("replacer.encoding")
 local root = require("replacer.root")
 local gitfiles = require("replacer.gitfiles")
+local perfile = require("replacer.perfile")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -285,6 +286,45 @@ if vim.fn.executable("git") == 1 then
   check("changed: untracked file left alone (not in 'modified' kind)", c2:match("foo") ~= nil, c2)
 else
   print("SKIP  gitfiles/--changed tests (git not on PATH)")
+end
+
+--------------------------------------------------------------------------------
+-- 2h) perfile: per-file All/Skip/Only-some/Quit confirmation loop
+--------------------------------------------------------------------------------
+do
+  ---@diagnostic disable: missing-fields
+  local items = {
+    { id = 1, path = "a.txt", lnum = 1, col0 = 0, old = "foo", line = "foo" },
+    { id = 2, path = "b.txt", lnum = 1, col0 = 0, old = "foo", line = "foo" },
+    { id = 3, path = "c.txt", lnum = 1, col0 = 0, old = "foo", line = "foo" },
+  }
+  ---@diagnostic enable: missing-fields
+
+  -- Script vim.fn.confirm: All for a.txt, Skip for b.txt, Quit at c.txt.
+  local orig_confirm = vim.fn.confirm
+  local answers = { 1, 2, 4 } -- All, Skip, Quit
+  local call_n = 0
+  vim.fn.confirm = function()
+    call_n = call_n + 1
+    return answers[call_n]
+  end
+
+  local applied_paths = {}
+  local function fake_apply(list, _new_text, _write)
+    applied_paths[#applied_paths + 1] = list[1].path
+    return 1, #list
+  end
+  local picked_files = {}
+  local function fake_pick(list) picked_files[#picked_files + 1] = list[1].path end
+
+  local files, spots = perfile.run(items, "bar", true, fake_apply, fake_pick)
+  vim.fn.confirm = orig_confirm
+
+  check("perfile: only a.txt (All) got applied", #applied_paths == 1 and applied_paths[1] == "a.txt",
+    vim.inspect(applied_paths))
+  check("perfile: totals reflect only the applied file", files == 1 and spots == 1, files .. " " .. spots)
+  check("perfile: stops at Quit, c.txt never confirmed", call_n == 3, call_n)
+  check("perfile: Only-some callback never triggered here", #picked_files == 0)
 end
 
 --------------------------------------------------------------------------------

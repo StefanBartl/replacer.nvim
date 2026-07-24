@@ -67,6 +67,7 @@ Each occurrence on a line becomes its own selectable entry (multiple hits per li
 | `--to-quickfix` | send matches to the quickfix list and open it (never writes) |
 | `--to-loclist` | send matches to the current window's location list and open it (never writes) |
 | `--changed` / `--changed=<kinds>` | restrict to git changed files; bare = modified+staged+untracked, or a comma-list subset (e.g. `--changed=modified,staged`) |
+| `--confirm-per-file` / `--no-confirm-per-file` | ALL-mode: ask All/Skip/Only-some/Quit per file instead of one global confirmation |
 | `--type=<ft>` *(repeatable)* | restrict to a filetype (ripgrep `--type`) |
 | `--glob=<pat>` *(repeatable)* | include glob pattern |
 | `--exclude=<pat>` *(repeatable)* | exclude path/glob pattern |
@@ -324,6 +325,7 @@ ______________________________________________________________________
 | case_preserve   | boolean | Re-case the replacement to match each match's own case style (default: false) |
 | word_boundary   | boolean | Keep only whole-word matches (default: false) |
 | code_only       | boolean | Skip matches inside strings/comments, Tree-sitter best-effort (default: false) |
+| confirm_per_file | boolean | ALL-mode: ask All/Skip/Only-some/Quit per file, supersedes confirm_all (default: false) |
 | safe_mode       | boolean | Skip read-only/oversized/binary files instead of touching them (default: false) |
 | max_file_size   | integer | Bytes; only enforced when safe_mode is true (default: 5 MiB) |
 | skip_binary     | boolean | Only enforced when safe_mode is true (default: true) |

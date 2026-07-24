@@ -149,6 +149,10 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                                              bare = modified+staged+untracked,
                                              or a comma-list subset (e.g.
                                              --changed=modified,staged)
+        --confirm-per-file | --no-confirm-per-file
+                                             ALL-mode: ask All/Skip/Only-some/
+                                             Quit per file (supersedes
+                                             confirm_all/confirm_wide_scope)
         --type=<ft>      (repeatable)        restrict to a filetype (ripgrep)
         --glob=<pat>     (repeatable)        include glob pattern
         --exclude=<pat>  (repeatable)        exclude path/glob pattern
@@ -603,6 +607,20 @@ never widens it): >vim
 <
 Requires the scope to be inside a git repository; otherwise a warning is
 shown and nothing runs. See lua/replacer/gitfiles.lua.
+
+                                        *replacer-confirm-per-file*
+Per-File Confirmation~
+
+--confirm-per-file (or config.confirm_per_file) replaces the single global
+"Apply ALL N spot(s) across M file(s)?" confirmation with one native
+vim.fn.confirm() prompt per file, in --all mode: >vim
+    :Replace! foo bar cwd --confirm-per-file
+<
+Per file: &All applies every match in that file immediately; &Skip moves on
+without touching it; &Only some opens the interactive picker scoped to just
+that file's matches; &Quit (or <Esc>) stops the whole loop, leaving any
+later files untouched. Supersedes confirm_all/confirm_wide_scope when
+enabled. See lua/replacer/perfile.lua.
 
                                                 *replacer-root-detection*
 Monorepo / Project-Root Detection~

@@ -131,13 +131,36 @@ local function dispatch(request, cfg, single_file, items)
     return
   end
 
-  -- Applier closure shared by ALL mode and the pickers.
+  -- Applier closure shared by ALL mode, per-file confirm, and the pickers.
   local function apply_func(chosen, replacement, write_changes)
     return apply.apply_matches(chosen, request.old, replacement, write_changes, cfg)
   end
 
+  -- Interactive picker over `pick_items` (auto-detected when engine = "auto").
+  -- Shared by the default interactive path and --confirm-per-file's "Only
+  -- some" choice, which scopes it to a single file's matches.
+  local function open_picker(pick_items)
+    local engine = pick_picker(cfg)
+    if not engine then
+      notify.error("no picker available — install fzf-lua or telescope.nvim")
+      return
+    end
+    if engine == "fzf" then
+      require("replacer.pickers.fzf").run(request.old, pick_items, request.new, cfg, apply_func)
+    else
+      require("replacer.pickers.telescope").run(pick_items, request.new, cfg, apply_func)
+    end
+  end
+
   -- Non-interactive ALL.
   if request.all then
+    if cfg.confirm_per_file then
+      local perfile = require("replacer.perfile")
+      local files, spots = perfile.run(items, request.new, cfg.write_changes, apply_func, open_picker)
+      common.notify_result(files, spots)
+      return
+    end
+
     local fileset = {}
     for _, it in ipairs(items) do fileset[it.path] = true end
     local filecount = 0
@@ -165,17 +188,7 @@ local function dispatch(request, cfg, single_file, items)
     return
   end
 
-  -- Interactive picker dispatch (auto-detected when engine = "auto").
-  local engine = pick_picker(cfg)
-  if not engine then
-    notify.error("no picker available — install fzf-lua or telescope.nvim")
-    return
-  end
-  if engine == "fzf" then
-    require("replacer.pickers.fzf").run(request.old, items, request.new, cfg, apply_func)
-  else
-    require("replacer.pickers.telescope").run(items, request.new, cfg, apply_func)
-  end
+  open_picker(items)
 end
 
 --------------------------------------------------------------------------------

@@ -36,8 +36,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
   from a file/quickfix/clipboard.
 - **History & presets** — recent searches/replacements, named presets,
   re-run from a picker.
-- **Per-file confirmation step** — an intermediate "All in this file / Skip
-  file / Only some hunks" prompt instead of one global ALL confirmation.
 - **Undo checkpoint** — an automatic `:write`/git-stash/temp-branch
   checkpoint before a large apply, with one-click rollback.
 - **Soft LSP integration** — offer LSP rename when a symbol is matched

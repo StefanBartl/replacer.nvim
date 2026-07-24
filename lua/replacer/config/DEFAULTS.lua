@@ -41,6 +41,10 @@ return {
   safe_mode = false,
   max_file_size = 5 * 1024 * 1024, -- 5 MiB
   skip_binary = true,
+  -- ALL-mode: ask All/Skip/Only-some/Quit per file instead of one global
+  -- "apply ALL?" confirmation. Supersedes confirm_all/confirm_wide_scope
+  -- when enabled.
+  confirm_per_file = false,
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }
