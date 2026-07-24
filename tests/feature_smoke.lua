@@ -22,6 +22,7 @@ local checkpoint = require("replacer.checkpoint")
 local hooks = require("replacer.hooks")
 local history = require("replacer.history")
 local presets = require("replacer.presets")
+local batch = require("replacer.batch")
 
 local pass, fail = 0, 0
 local function check(name, cond, extra)
@@ -483,6 +484,53 @@ do
 
   presets.delete(name)
   check("presets: delete() removes it", presets.as_request(name) == nil)
+end
+
+--------------------------------------------------------------------------------
+-- 2m) batch: pair parsing (line + JSON), sources, end-to-end multi-pair run
+--------------------------------------------------------------------------------
+do
+  local pairs1, perr1 = batch.parse("foo => bar\n# a comment\n\nbaz => qux\n")
+  check("batch: line format parses two pairs", pairs1 and #pairs1 == 2, perr1)
+  check("batch: line format pair 1", pairs1 and pairs1[1].old == "foo" and pairs1[1].new == "bar")
+  check("batch: line format pair 2", pairs1 and pairs1[2].old == "baz" and pairs1[2].new == "qux")
+
+  local pairs2, perr2 = batch.parse('[{"old":"a","new":"b"},{"old":"c","new":"d"}]')
+  check("batch: JSON format parses two pairs", pairs2 and #pairs2 == 2, perr2)
+  check("batch: JSON format pair 1", pairs2 and pairs2[1].old == "a" and pairs2[1].new == "b")
+
+  local _, perr3 = batch.parse("not a valid line")
+  check("batch: malformed line -> error", perr3 ~= nil, perr3)
+
+  local _, perr4 = batch.parse("")
+  check("batch: empty input -> error", perr4 ~= nil, perr4)
+
+  -- End-to-end: two pairs, two files, via M.run + a real run_fun.
+  local file_b1 = tmp .. "/batch1.txt"
+  local file_b2 = tmp .. "/batch2.txt"
+  do local fh = assert(io.open(file_b1, "w")); fh:write("alpha\n"); fh:close() end
+  do local fh = assert(io.open(file_b2, "w")); fh:write("beta\n"); fh:close() end
+
+  local batch_file = tmp .. "/batch_spec.txt"
+  do
+    local fh = assert(io.open(batch_file, "w"))
+    fh:write("alpha => ALPHA\nbeta => BETA\n")
+    fh:close()
+  end
+
+  replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
+  ---@type RP_Request
+  local btpl = {
+    old = "", new = "", scope = "", all = false, dry = false, export = nil,
+    line_range = nil, overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+  }
+  batch.run(batch_file, tmp, btpl, replacer.run)
+  vim.wait(300)
+
+  local bc1 = assert(io.open(file_b1, "r")):read("*a")
+  local bc2 = assert(io.open(file_b2, "r")):read("*a")
+  check("batch: pair 1 applied across the batch scope", bc1:match("ALPHA") ~= nil, bc1)
+  check("batch: pair 2 applied across the batch scope", bc2:match("BETA") ~= nil, bc2)
 end
 
 --------------------------------------------------------------------------------

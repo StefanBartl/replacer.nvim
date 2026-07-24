@@ -32,8 +32,6 @@ Related docs: [`docs/BINDINGS.md`](BINDINGS.md), [`docs/progress-indicator.md`](
     also highlights renamed paths;
   - optionally follow the rename through the language's own import/export
     statements across the project.
-- **Batch replaces** — multiple `{old → new}` pairs in one run, importable
-  from a file/quickfix/clipboard.
 - **Soft LSP integration** — offer LSP rename when a symbol is matched
   exactly, falling back to plain text replace otherwise.
 - **Streaming picker fill** — populate the picker as ripgrep results stream

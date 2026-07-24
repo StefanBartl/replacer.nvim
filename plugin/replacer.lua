@@ -21,6 +21,8 @@ if not vim.g.__replacer_cmd_registered then
     if ok_hist then history.register(core.run) end
     local ok_presets, presets = pcall(require, "replacer.presets")
     if ok_presets then presets.register(core.run) end
+    local ok_batch, batch = pcall(require, "replacer.batch")
+    if ok_batch then batch.register(core.run) end
     vim.g.__replacer_cmd_registered = true
   end
 end

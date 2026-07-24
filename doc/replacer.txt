@@ -212,6 +212,30 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
     stdpath("data")/replacer/{history,presets}.json. See
     lua/replacer/presets.lua.
 
+                                                              *:ReplaceBatch*
+:ReplaceBatch[!] {source} [scope] [--flags]
+    Run multiple {old -> new} pairs in one invocation. Each pair is
+    dispatched as its own full :Replace run (search + apply, sequentially,
+    non-interactive — no picker), reusing the exact same pipeline (dry-run,
+    filters, checkpoints, hooks, history, …) as a normal :Replace! would.
+    The bang is implied/optional: batch always runs non-interactively.
+
+    {source} is a file path, or one of:
+        clipboard, +    the "+" register
+        unnamed, "      the unnamed register
+        qf, quickfix    the quickfix list's `text` fields
+
+    Pairs, auto-detected:
+        line format (default)  one "old => new" per line; "#" comments and
+                                blank lines are ignored
+        JSON                   a [{"old":"...","new":"..."}, ...] array,
+                                used when the content starts with "["
+
+    Examples:~
+        :ReplaceBatch pairs.txt src/
+        :ReplaceBatch clipboard cwd --dry
+        :ReplaceBatch pairs.json .
+
                                                              *:ReplaceEscape*
 :ReplaceEscape {text}
     Escape {text} for use as a Vim regex pattern (\, ., *, [, ], $, ^, ~,

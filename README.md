@@ -163,6 +163,25 @@ positional (scope is always the detected root):
 Both are stored as JSON under `stdpath("data")/replacer/` (`history.json`,
 `presets.json`).
 
+### Batch Replaces
+
+`:ReplaceBatch[!] {source} [scope] [--flags]` runs multiple `{old → new}`
+pairs in one invocation — each pair is dispatched as its own full `:Replace`
+run (search + apply, sequentially, non-interactive), so it gets the exact
+same pipeline (dry-run, filters, checkpoints, hooks, history, …) as a normal
+`:Replace!`.
+
+`{source}` is a file path, or one of `clipboard`/`+`, `unnamed`/`"`, `qf`/`quickfix`.
+Pairs are one `old => new` per line (`#` comments and blank lines ignored),
+or a `[{"old":"...","new":"..."}, ...]` JSON array (auto-detected from a
+leading `[`):
+
+```sh
+:ReplaceBatch pairs.txt src/          # from a file
+:ReplaceBatch clipboard cwd --dry     # from the clipboard, plan-only first
+:ReplaceBatch pairs.json .            # every pair applies non-interactively (no picker — the ! is implied and optional)
+```
+
 ### Hooks
 
 Lua before/after callbacks around the apply pipeline — run a linter/formatter,
