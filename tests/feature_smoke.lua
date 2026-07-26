@@ -17,7 +17,6 @@ local regex = require("replacer.regex")
 local encoding = require("replacer.encoding")
 local root = require("replacer.root")
 local gitfiles = require("replacer.gitfiles")
-local perfile = require("replacer.perfile")
 local checkpoint = require("replacer.checkpoint")
 local hooks = require("replacer.hooks")
 local history = require("replacer.history")
@@ -308,14 +307,22 @@ do
   }
   ---@diagnostic enable: missing-fields
 
-  -- Script vim.fn.confirm: All for a.txt, Skip for b.txt, Quit at c.txt.
-  local orig_confirm = vim.fn.confirm
-  local answers = { 1, 2, 4 } -- All, Skip, Quit
+  -- perfile now confirms via lib.nvim.ui.kit.confirm (async on_answer, callback-
+  -- recursive loop) instead of the old blocking vim.fn.confirm; stub the kit
+  -- module and force a reload so perfile picks up the stub's `confirm.open`.
+  -- The stub answers synchronously, so the whole recursive chain (and the
+  -- final on_done) unwinds within the initial perfile.run() call, same as
+  -- the old blocking version did.
+  local answers = { "All", "Skip", "Quit" }
   local call_n = 0
-  vim.fn.confirm = function()
-    call_n = call_n + 1
-    return answers[call_n]
-  end
+  package.loaded["lib.nvim.ui.kit.confirm"] = {
+    open = function(opts)
+      call_n = call_n + 1
+      opts.on_answer(answers[call_n])
+    end,
+  }
+  package.loaded["replacer.perfile"] = nil
+  local perfile_stubbed = require("replacer.perfile")
 
   local applied_paths = {}
   local function fake_apply(list, _new_text, _write)
@@ -325,14 +332,20 @@ do
   local picked_files = {}
   local function fake_pick(list) picked_files[#picked_files + 1] = list[1].path end
 
-  local files, spots = perfile.run(items, "bar", true, fake_apply, fake_pick)
-  vim.fn.confirm = orig_confirm
+  local files, spots
+  perfile_stubbed.run(items, "bar", true, fake_apply, fake_pick, function(f, s)
+    files, spots = f, s
+  end)
+
+  package.loaded["lib.nvim.ui.kit.confirm"] = nil
+  package.loaded["replacer.perfile"] = nil
 
   check("perfile: only a.txt (All) got applied", #applied_paths == 1 and applied_paths[1] == "a.txt",
     vim.inspect(applied_paths))
   check("perfile: totals reflect only the applied file", files == 1 and spots == 1, files .. " " .. spots)
   check("perfile: stops at Quit, c.txt never confirmed", call_n == 3, call_n)
   check("perfile: Only-some callback never triggered here", #picked_files == 0)
+  check("perfile: on_done fired synchronously with the stubbed confirm", files ~= nil)
 end
 
 --------------------------------------------------------------------------------
@@ -627,6 +640,14 @@ end
 -- 2q) rename_assist: --also-rename-file (single-file scope only)
 --------------------------------------------------------------------------------
 do
+  -- rename_assist now confirms via lib.nvim.ui.kit.confirm (async on_answer)
+  -- instead of the old blocking vim.fn.confirm; stub the kit module and
+  -- force a reload so rename_assist picks up the stub's `confirm.open`.
+  local answer_with -- set per sub-test before calling maybe_rename
+  package.loaded["lib.nvim.ui.kit.confirm"] = {
+    open = function(opts) opts.on_answer(answer_with) end,
+  }
+  package.loaded["replacer.rename_assist"] = nil
   local rename_assist = require("replacer.rename_assist")
 
   local ra_dir = tmp .. "/ra"
@@ -634,18 +655,19 @@ do
   local old_file = ra_dir .. "/foo_widget.txt"
   do local fh = assert(io.open(old_file, "w")); fh:write("foo content\n"); fh:close() end
 
-  local orig_confirm = vim.fn.confirm
-  local confirm_calls = 0
-
   -- No match in the basename -> no-op, no prompt at all.
-  vim.fn.confirm = function() confirm_calls = confirm_calls + 1; return 2 end
+  local confirm_calls = 0
+  package.loaded["lib.nvim.ui.kit.confirm"].open = function(opts)
+    confirm_calls = confirm_calls + 1
+    opts.on_answer(answer_with)
+  end
+  answer_with = false
   rename_assist.maybe_rename(old_file, "nonexistent_pattern", "bar", {})
   check("rename_assist: no basename match -> no prompt at all", confirm_calls == 0)
 
   -- Match + Yes -> renamed.
-  vim.fn.confirm = function() confirm_calls = confirm_calls + 1; return 1 end
+  answer_with = true
   rename_assist.maybe_rename(old_file, "foo", "bar", {})
-  vim.fn.confirm = orig_confirm
   check("rename_assist: match + Yes -> file renamed", confirm_calls == 1
     and vim.fn.filereadable(ra_dir .. "/bar_widget.txt") == 1
     and vim.fn.filereadable(old_file) == 0)
@@ -653,15 +675,14 @@ do
   -- Match + No -> left alone.
   local old_file2 = ra_dir .. "/foo_second.txt"
   do local fh = assert(io.open(old_file2, "w")); fh:write("x\n"); fh:close() end
-  vim.fn.confirm = function() return 2 end
+  answer_with = false
   rename_assist.maybe_rename(old_file2, "foo", "bar", {})
-  vim.fn.confirm = orig_confirm
   check("rename_assist: match + No -> left alone", vim.fn.filereadable(old_file2) == 1)
 
   -- End-to-end via replacer.run with --also-rename-file, single-file scope.
   local content_file = ra_dir .. "/foo_target.txt"
   do local fh = assert(io.open(content_file, "w")); fh:write("foo body\n"); fh:close() end
-  vim.fn.confirm = function() return 1 end -- Yes
+  answer_with = true
   replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
   local req = {
     old = "foo", new = "bar", scope = content_file, all = true, dry = false, export = nil,
@@ -670,11 +691,13 @@ do
   }
   replacer.run(req)
   vim.wait(300)
-  vim.fn.confirm = orig_confirm
   check("rename_assist: end-to-end via --also-rename-file renames the file",
     vim.fn.filereadable(ra_dir .. "/bar_target.txt") == 1 and vim.fn.filereadable(content_file) == 0)
   local final_content = assert(io.open(ra_dir .. "/bar_target.txt", "r")):read("*a")
   check("rename_assist: content also replaced", final_content:match("bar body") ~= nil, final_content)
+
+  package.loaded["lib.nvim.ui.kit.confirm"] = nil
+  package.loaded["replacer.rename_assist"] = nil
 end
 
 --------------------------------------------------------------------------------

@@ -197,8 +197,9 @@ local function dispatch(request, cfg, single_file, items)
 
     if cfg.confirm_per_file then
       local perfile = require("replacer.perfile")
-      local files, spots = perfile.run(items, request.new, cfg.write_changes, apply_func, open_picker)
-      common.notify_result(files, spots, cfg)
+      perfile.run(items, request.new, cfg.write_changes, apply_func, open_picker, function(files, spots)
+        common.notify_result(files, spots, cfg)
+      end)
       return
     end
 

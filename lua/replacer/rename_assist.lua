@@ -6,6 +6,7 @@
 --- tree — that's :ReplaceFNames' job).
 
 local notify = require("replacer.util.notify")
+local confirm = require("lib.nvim.ui.kit.confirm")
 
 local M = {}
 
@@ -33,11 +34,13 @@ function M.maybe_rename(path, old, new, cfg)
     for _, e in ipairs(errors) do notify.error(e) end
   end
 
-  local choice = vim.fn.confirm(
-    string.format("Also rename %s -> %s?",
+  confirm.open({
+    question = string.format("Also rename %s -> %s?",
       vim.fn.fnamemodify(m.old_path, ":t"), vim.fn.fnamemodify(m.new_path, ":t")),
-    "&Yes\n&No", 2)
-  if choice == 1 then do_rename() end
+    on_answer = function(yes)
+      if yes then do_rename() end
+    end,
+  })
 end
 
 return M
