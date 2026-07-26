@@ -74,19 +74,25 @@ function M.pick(run_fun)
     notify.info("no replace history yet")
     return
   end
-  vim.ui.select(history, {
-    prompt = "Replace history:",
-    format_item = format_entry,
-  }, function(choice)
-    if not choice then return end
-    ---@type RP_Request
-    local req = {
-      old = choice.old, new = choice.new, scope = choice.scope or "",
-      all = choice.all and true or false, dry = false, export = nil, line_range = nil,
-      overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
-    }
-    run_fun(req)
-  end)
+  local display = {}
+  for i, entry in ipairs(history) do
+    display[i] = format_entry(entry)
+  end
+  require("lib.nvim.ui.kit").select({
+    items = display,
+    title = "Replace history:",
+    on_select = function(_, idx)
+      local choice = history[idx]
+      if not choice then return end
+      ---@type RP_Request
+      local req = {
+        old = choice.old, new = choice.new, scope = choice.scope or "",
+        all = choice.all and true or false, dry = false, export = nil, line_range = nil,
+        overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+      }
+      run_fun(req)
+    end,
+  })
 end
 
 --- Register :ReplaceHistory.
