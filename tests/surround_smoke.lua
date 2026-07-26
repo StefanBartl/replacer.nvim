@@ -110,6 +110,33 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 5b) :Surround with no delimiter arg asks kit.input, not a raw vim.ui.input
+--------------------------------------------------------------------------------
+do
+  local nodelim_dir = vim.fn.tempname(); vim.fn.mkdir(nodelim_dir, "p")
+  local fc = nodelim_dir .. "/d.txt"
+  local fh = assert(io.open(fc, "w")); fh:write("gamma delta gamma\n"); fh:close()
+
+  local captured_title
+  package.loaded["lib.nvim.ui.kit"] = {
+    input = function(opts)
+      captured_title = opts.title
+      opts.on_submit("_")
+    end,
+  }
+
+  vim.cmd("edit " .. vim.fn.fnameescape(fc))
+  vim.cmd("Surround! gamma")
+  vim.wait(300)
+
+  check("no-delim: kit.input was asked for the delimiter", captured_title ~= nil, tostring(captured_title))
+  local c = assert(io.open(fc, "r")):read("*a")
+  check("no-delim: submitted '_' wraps the matches", select(2, c:gsub("_gamma_", "")) == 2, c)
+
+  package.loaded["lib.nvim.ui.kit"] = nil
+end
+
+--------------------------------------------------------------------------------
 -- 6) End-to-end idempotency: re-running :Surround does not stack layers,
 --    and --nested forces another wrap.
 --------------------------------------------------------------------------------
