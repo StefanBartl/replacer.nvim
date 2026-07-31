@@ -111,6 +111,40 @@ local function skip_surrounded_filter(left, right)
   end
 end
 
+--- Keep-predicate for a single-line charwise range: without it, a range
+--- restricts by LINE only (via req.line_range), so `:'<,'>Surround` would wrap
+--- every match on the selected line, not just the ones inside the actual
+--- selection. `col1`/`col2` are composer's ctx.range columns (1-based, from
+--- the '<'/'> marks) — a match is kept only when its full span sits inside
+--- that range.
+---@param lnum integer
+---@param col1 integer
+---@param col2 integer
+---@return fun(match: RP_Match): boolean
+local function col_range_filter(lnum, col1, col2)
+  if col2 < col1 then
+    col1, col2 = col2, col1
+  end
+  return function(m)
+    if m.lnum ~= lnum then
+      return true -- a different line: req.line_range already excludes it
+    end
+    local mstart = m.col0 + 1
+    local mend = m.col0 + #(m.old or "")
+    return mstart >= col1 and mend <= col2
+  end
+end
+
+--- AND two match keep-predicates together.
+---@param a fun(match: RP_Match): boolean
+---@param b fun(match: RP_Match): boolean
+---@return fun(match: RP_Match): boolean
+local function and_filters(a, b)
+  return function(m)
+    return a(m) and b(m)
+  end
+end
+
 --------------------------------------------------------------------------------
 -- Request construction
 --------------------------------------------------------------------------------
@@ -127,8 +161,9 @@ local USAGE =
 ---@param req RP_Request        # already carries flags applied by apply_tokens
 ---@param line_range integer[]|nil
 ---@param nested boolean        # when true, also wrap already-surrounded matches
+---@param col_filter (fun(match: RP_Match): boolean)|nil  # single-line charwise range narrowing, if any
 ---@return RP_Request
-local function build_request(pattern, delim, scope, req, line_range, nested)
+local function build_request(pattern, delim, scope, req, line_range, nested, col_filter)
   local left, right = resolve_delim(delim)
   req.old        = pattern
   req.new        = left .. pattern .. right
@@ -139,11 +174,17 @@ local function build_request(pattern, delim, scope, req, line_range, nested)
   req.overrides.literal = true
   -- Idempotency: unless --nested was given, skip spots already wrapped by this
   -- delimiter so repeated :Surround runs don't stack extra layers.
+  local skip_filter
   if not nested then
-    req.filter = skip_surrounded_filter(left, right)
+    skip_filter = skip_surrounded_filter(left, right)
     req.filter_empty_msg =
       string.format("every match is already surrounded by %s…%s (use --nested to wrap again)",
         left, right)
+  end
+  if col_filter and skip_filter then
+    req.filter = and_filters(col_filter, skip_filter)
+  else
+    req.filter = col_filter or skip_filter
   end
   return req
 end
@@ -155,7 +196,8 @@ end
 --- Parse args, resolve the delimiter (prompting when absent), then run.
 ---@param run_fun fun(request: RP_Request): nil
 ---@param opts table              # nvim user-command opts
-local function handle(run_fun, opts)
+---@param range Lib.UserCmd.Composer.RangeInfo|nil  # composer's ctx.range, for a charwise column narrowing
+local function handle(run_fun, opts, range)
   local raw = (type(opts.args) == "string") and opts.args or ""
   local tokens, unterminated = command.tokenize(raw)
   if unterminated then
@@ -221,11 +263,20 @@ local function handle(run_fun, opts)
 
   -- Range (e.g. :'<,'>Surround) restricts to the current buffer line span.
   local line_range
+  local col_filter
   if type(opts.range) == "number" and opts.range > 0 then
     local l1, l2 = opts.line1 or 1, opts.line2 or (opts.line1 or 1)
     if l2 < l1 then l1, l2 = l2, l1 end
     line_range = { l1, l2 }
     if scope == "" then scope = "%" end
+
+    -- A single-line charwise selection carries real column bounds; anything
+    -- else (linewise, blockwise, or a charwise span across several lines)
+    -- keeps the pre-existing whole-line-span behavior — narrowing to columns
+    -- only makes sense when there is exactly one line's worth of them.
+    if range and range.mode == "v" and l1 == l2 and range.col1 and range.col2 then
+      col_filter = col_range_filter(l1, range.col1, range.col2)
+    end
   end
 
   local messages = require("replacer.messages")
@@ -236,7 +287,7 @@ local function handle(run_fun, opts)
       messages.info(cfg, messages.fmt(cfg, "surround_cancelled"))
       return
     end
-    run_fun(build_request(pattern, d, scope, req, line_range, nested))
+    run_fun(build_request(pattern, d, scope, req, line_range, nested, col_filter))
   end
 
   if delim == nil then
@@ -291,7 +342,7 @@ function M.register(run_fun)
         },
         flags = FLAGS,
         range = true,
-        run = function(ctx) handle(run_fun, ctx.raw) end },
+        run = function(ctx) handle(run_fun, ctx.raw, ctx.range) end },
     },
   }
 

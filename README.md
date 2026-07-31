@@ -126,6 +126,19 @@ is an alias. Search is always **literal** (regex would need per-match capture).
 :Surround word ** --nested       # wrap even already-**bold** matches
 ```
 
+- A **charwise** Visual range (`v`) on a **single line** narrows further: only
+  matches inside the selection itself are wrapped, not every match on that
+  line. A linewise (`V`) or multi-line range keeps the line-span behavior
+  above — narrowing to columns only makes sense with exactly one line's worth
+  of them.
+
+```sh
+# "foo bar foo baz" with only the FIRST foo charwise-selected:
+:'<,'>Surround foo *             # *foo* bar foo baz   (only the selected one)
+# the same line with a linewise V selection:
+:'<,'>Surround foo *             # *foo* bar *foo* baz (every match on the line)
+```
+
 ### Regex helpers
 
 - `:ReplaceEscape {text}` — escape `{text}` for use as a Vim regex pattern; echoes the result and copies it to the unnamed register.
