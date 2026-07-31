@@ -259,7 +259,7 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
     The bang form applies non-interactively; otherwise a single confirm
     asks for the whole batch. Does NOT follow the rename through source
     references (imports/requires) across the project. See
-    lua/replacer/fnames.lua and *replacer-rename-assist* for the narrower,
+    lua/replacer/fnames.lua and |replacer-rename-assist| for the narrower,
     single-file case.
 
                                                              *:ReplaceEscape*
