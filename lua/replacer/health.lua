@@ -288,6 +288,10 @@ function M.check()
   health.start("Summary")
   health.info("Usage: :[range]Replace[!] {old} {new} [scope] [--flags]")
   health.info("See :help replacer for documentation")
+
+  -- Composer route pre-flight (:Replace, :Surround)
+  require("lib.nvim.usercmd.composer").checkhealth("Replace")
+  require("lib.nvim.usercmd.composer").checkhealth("Surround")
 end
 
 return M
