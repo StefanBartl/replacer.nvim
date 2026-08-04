@@ -15,6 +15,7 @@ local M = {}
 -- IO helpers
 --------------------------------------------------------------------------------
 
+---@internal
 --- Read a file's lines, preferring a loaded buffer's content when available
 --- (so a dry-run reflects unsaved edits just like the real apply path). The
 --- raw io.open fallback strips a leading BOM and trailing \r so the plan
@@ -39,8 +40,10 @@ local function read_lines(path)
   return lines, true
 end
 
+---@internal
 ---@param items RP_Match[]
 ---@return table<string, RP_Match[]>
+---@see replacer.apply.group_by_path
 local function group_by_path(items)
   local by_path = {}
   local counts = {}

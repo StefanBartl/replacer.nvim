@@ -38,6 +38,7 @@ end
 -- Helpers
 --------------------------------------------------------------------------------
 
+---@internal
 --- Resolve the picker UI engine, honoring "auto" (fzf-lua preferred, else telescope).
 ---@param cfg RP_Config
 ---@return "fzf"|"telescope"|nil
@@ -49,6 +50,7 @@ local function pick_picker(cfg)
   return nil
 end
 
+---@internal
 --- Append every element of `src` onto `dst` (in place).
 ---@param dst string[]
 ---@param src string[]|nil
@@ -56,6 +58,7 @@ local function extend(dst, src)
   for i = 1, #(src or {}) do dst[#dst + 1] = src[i] end
 end
 
+---@internal
 --- Build the effective per-run config from a request (overrides + filters + range).
 ---@param request RP_Request
 ---@return RP_Config
@@ -71,6 +74,7 @@ local function effective_cfg(request)
   return cfg
 end
 
+---@internal
 --- Open a read-only scratch split showing diff text.
 ---@param patch string
 local function show_diff_scratch(patch)
@@ -88,6 +92,7 @@ local function show_diff_scratch(patch)
   end)
 end
 
+---@internal
 --- Dry-run / export path: compute the plan, report stats, optionally export, preview.
 ---@param request RP_Request
 ---@param items RP_Match[]
@@ -112,6 +117,7 @@ local function plan(request, items, cfg)
   show_diff_scratch(export.build_patch(results))
 end
 
+---@internal
 --- Handle collected matches: plan (dry/export), apply ALL, or open the picker.
 ---@param request RP_Request
 ---@param cfg RP_Config

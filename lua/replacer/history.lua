@@ -9,6 +9,7 @@ local M = {}
 
 local MAX_ENTRIES = 50
 
+---@internal
 ---@return string
 local function history_path()
   return vim.fn.stdpath("data") .. "/replacer/history.json"
@@ -25,6 +26,7 @@ function M.load()
   return data
 end
 
+---@internal
 ---@param history table[]
 local function save(history)
   require("lib.nvim.fs.write.to_file")(history_path(), vim.json.encode(history))
@@ -53,6 +55,7 @@ function M.add(request, result)
   save(history)
 end
 
+---@internal
 ---@param entry table
 ---@return string
 local function format_entry(entry)

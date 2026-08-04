@@ -24,6 +24,7 @@ function M.looks_like_identifier(text)
   return text ~= nil and text ~= "" and text:match("^[%w_]+$") ~= nil
 end
 
+---@internal
 --- List LSP clients attached to `bufnr`, tolerant of the Neovim API
 --- generation (vim.lsp.get_clients is 0.10+; older versions only have
 --- get_active_clients).
@@ -43,6 +44,7 @@ local function list_clients(bufnr)
   return {}
 end
 
+---@internal
 ---@param client table
 ---@return boolean
 local function supports_rename(client)
@@ -53,6 +55,7 @@ local function supports_rename(client)
   return client.server_capabilities ~= nil and client.server_capabilities.renameProvider ~= nil
 end
 
+---@internal
 --- Find an attached client for `bufnr` that supports textDocument/rename.
 ---@param bufnr integer
 ---@return table|nil
@@ -121,6 +124,7 @@ end
 ---@param new_text string
 ---@param timeout_ms integer|nil
 ---@return RP_Match[] lsp_renamed, RP_Match[] fallback
+---@see replacer.apply.apply_matches
 function M.try_rename_batch(items, new_text, timeout_ms)
   local pending = #items
   ---@type table<integer, boolean>

@@ -4,6 +4,7 @@
 
 local M = {}
 
+---@internal
 --- Run a git subcommand and return its stdout as trimmed, non-empty lines.
 ---@param cwd string
 ---@param args string[]
@@ -21,6 +22,7 @@ local function git_lines(cwd, args)
   return vim.split(out or "", "\n", { trimempty = true }), true
 end
 
+---@internal
 --- Resolve the git top-level directory containing `start_dir`.
 ---@param start_dir string
 ---@return string|nil

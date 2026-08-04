@@ -14,11 +14,13 @@ local notify = require("replacer.util.notify")
 
 local M = {}
 
+---@internal
 ---@return string
 local function checkpoints_dir()
   return vim.fn.stdpath("data") .. "/replacer/checkpoints"
 end
 
+---@internal
 --- Sanitize an absolute path into a safe, flat filename for the snapshot dir.
 ---@param path string
 ---@return string
@@ -26,6 +28,7 @@ local function sanitize(path)
   return (path:gsub("[/\\:]", "_"))
 end
 
+---@internal
 --- Byte-exact write (no newline-injection/normalization) so a checkpoint
 --- round-trip never alters file content.
 ---@param path string
@@ -41,6 +44,7 @@ local function write_exact(path, content)
   return true
 end
 
+---@internal
 --- Read a path's CURRENT content, preferring a loaded buffer over disk (so
 --- the checkpoint reflects unsaved edits too, consistent with dry-run).
 ---@param path string

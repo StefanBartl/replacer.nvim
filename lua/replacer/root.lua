@@ -66,6 +66,7 @@ function M.detect_best(start_dir)
   return candidates[1], candidates
 end
 
+---@internal
 --- Resolve a starting directory: the current buffer's directory when it has
 --- a file-backed name, else cwd.
 ---@return string|nil

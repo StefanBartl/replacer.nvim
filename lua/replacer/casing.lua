@@ -15,6 +15,7 @@ local M = {}
 
 ---@alias RP_CaseStyle "upper"|"lower"|"title"|"camel"|"pascal"
 
+---@internal
 --- Split `text` into "words" on `_`, `-`, whitespace, and internal
 --- lower->upper camelCase boundaries (so "fooBar" and "foo_bar" both yield
 --- { "foo", "bar" }).

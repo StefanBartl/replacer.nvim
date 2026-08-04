@@ -13,6 +13,7 @@ local confirm = require("lib.nvim.ui.kit.confirm")
 
 local M = {}
 
+---@internal
 --- Group matches by file path, returning a stable (sorted) path order so
 --- the confirmation sequence is deterministic/reproducible.
 ---@param items RP_Match[]

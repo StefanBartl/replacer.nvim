@@ -19,6 +19,8 @@ local M = {}
 ---@param new string
 ---@param cfg RP_Config|nil
 ---@return nil
+---@see replacer.fnames.collect
+---@see replacer.fnames.apply
 function M.maybe_rename(path, old, new, cfg)
   local fnames = require("replacer.fnames")
   local matches = fnames.collect(old, new, path, cfg or {})

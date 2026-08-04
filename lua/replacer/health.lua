@@ -2,6 +2,7 @@
 --- Health check module for :checkhealth replacer
 local M = {}
 
+---@internal
 --- Check if command exists in PATH
 ---@param cmd string
 ---@return boolean
@@ -9,6 +10,7 @@ local function cmd_exists(cmd)
   return vim.fn.executable(cmd) == 1
 end
 
+---@internal
 --- Get version string from command
 ---@param cmd string
 ---@param args string[]
@@ -35,6 +37,7 @@ local function get_version(cmd, args)
   return version
 end
 
+---@internal
 --- Check Neovim version
 ---@param health table vim.health module
 local function check_neovim(health)
@@ -53,6 +56,7 @@ local function check_neovim(health)
   end
 end
 
+---@internal
 --- Check lib.nvim: required for the :Replace/:Replacer/:Surround/:Wrap
 --- command layer (lib.nvim.usercmd.composer). Notify/confirm/export also
 --- depend on it directly; only progress_style (see check_optional) stays
@@ -71,6 +75,7 @@ local function check_lib_nvim(health)
   end
 end
 
+---@internal
 --- Check ripgrep
 ---@param health table vim.health module
 local function check_ripgrep(health)
@@ -131,6 +136,7 @@ local function check_ripgrep(health)
   end
 end
 
+---@internal
 --- Check picker availability
 ---@param health table vim.health module
 local function check_pickers(health)
@@ -169,6 +175,7 @@ local function check_pickers(health)
   end
 end
 
+---@internal
 --- Check plugin configuration
 ---@param health table vim.health module
 local function check_config(health)
@@ -223,6 +230,7 @@ local function check_config(health)
   end
 end
 
+---@internal
 --- Check optional integrations (progress indicator, which-key).
 --- Both are soft dependencies: missing is fine, this is informational only.
 ---@param health table vim.health module
@@ -245,6 +253,7 @@ local function check_optional(health)
   end
 end
 
+---@internal
 --- Check UTF-8 support
 ---@param health table vim.health module
 local function check_utf8(health)

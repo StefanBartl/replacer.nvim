@@ -26,6 +26,7 @@ local confirm = require("lib.nvim.ui.kit.confirm")
 -- Use an extmark namespace for clean highlight management
 local NS = vim.api.nvim_create_namespace("replacer_preview")
 
+---@internal
 ---@param items RP_Match[]
 ---@param new_text string
 ---@param cfg RP_Config            -- receives _old_len optionally (we cast below)

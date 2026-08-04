@@ -19,6 +19,7 @@ local M = {}
 -- Per-match replacement text (cfg-driven transforms)
 --------------------------------------------------------------------------------
 
+---@internal
 --- When `old_text` has leading/trailing whitespace (e.g. matched via a regex
 --- like `\s*foo\s*`), sandwich `new_text` between that same whitespace instead
 --- of letting it clobber the surrounding formatting. A no-op when `old_text`
@@ -33,6 +34,7 @@ local function wrap_with_original_whitespace(old_text, new_text)
   return leading .. new_text .. trailing
 end
 
+---@internal
 --- Resolve the effective replacement text for one match, applying optional
 --- cfg-driven transforms on top of the plain `new_text`, in order:
 ---   1. backreferences: in regex mode, expand \0-\9 against `old_pattern`
@@ -129,9 +131,11 @@ end
 -- Real buffer application (side-effecting, guarded)
 --------------------------------------------------------------------------------
 
+---@internal
 --- Group matches by file path.
 ---@param items RP_Match[]
 ---@return table<string, RP_Match[]>
+---@see replacer.export.group_by_path
 local function group_by_path(items)
   local by_path = {}
   local counts = {}
@@ -146,6 +150,7 @@ local function group_by_path(items)
   return by_path
 end
 
+---@internal
 --- Sniff the first 512 bytes of `path` for a NUL byte (the classic
 --- binary-file heuristic used by grep/git/etc).
 ---@param path string
@@ -158,6 +163,7 @@ local function is_binary_file(path)
   return chunk ~= nil and chunk:find("\0", 1, true) ~= nil
 end
 
+---@internal
 --- When cfg.safe_mode is set, decide whether `path` should be skipped
 --- (read-only / oversized / binary) instead of edited. Returns nil to
 --- proceed, or a short human-readable reason to skip.
@@ -181,6 +187,7 @@ end
 ---@param write_changes boolean
 ---@param cfg RP_Config|nil
 ---@return integer files, integer spots, RP_Error[] errors
+---@see replacer.lsp_rename.try_rename_batch
 function M.apply_matches(items, old, new_text, write_changes, cfg)
   local by_path = group_by_path(items)
 

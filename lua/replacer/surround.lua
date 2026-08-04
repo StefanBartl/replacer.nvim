@@ -111,6 +111,7 @@ local function skip_surrounded_filter(left, right)
   end
 end
 
+---@internal
 --- Keep-predicate for a single-line charwise range: without it, a range
 --- restricts by LINE only (via req.line_range), so `:'<,'>Surround` would wrap
 --- every match on the selected line, not just the ones inside the actual
@@ -135,6 +136,7 @@ local function col_range_filter(lnum, col1, col2)
   end
 end
 
+---@internal
 --- AND two match keep-predicates together.
 ---@param a fun(match: RP_Match): boolean
 ---@param b fun(match: RP_Match): boolean
@@ -153,6 +155,7 @@ local USAGE =
   "Usage: :[range]Surround[!] {pattern} [delim] [scope] [--flags]   " ..
   "(delim aliases: b ` , q \", s ', star, bold, paren …)"
 
+---@internal
 --- Build the RP_Request for wrapping `pattern` with the resolved delimiter,
 --- carrying over scope/flags and range. Search is forced to literal mode.
 ---@param pattern string
@@ -193,6 +196,7 @@ end
 -- Command handler
 --------------------------------------------------------------------------------
 
+---@internal
 --- Parse args, resolve the delimiter (prompting when absent), then run.
 ---@param run_fun fun(request: RP_Request): nil
 ---@param opts table              # nvim user-command opts

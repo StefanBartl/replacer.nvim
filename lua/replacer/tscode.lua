@@ -10,6 +10,7 @@
 
 local M = {}
 
+---@internal
 --- Any node type containing "string" or "comment" is treated as such —
 --- covers the common grammar spellings (string, string_literal,
 --- interpreted_string_literal, comment, line_comment, block_comment, …)

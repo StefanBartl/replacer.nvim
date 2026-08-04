@@ -16,6 +16,7 @@ local confirm = require("lib.nvim.ui.kit.confirm")
 local map = require("lib.nvim.map")
 local window = require("lib.nvim.window")
 
+---@internal
 --- Translate a Neovim-style key notation ("<C-a>", "<Tab>", "<S-Tab>", "<Esc>")
 --- into fzf's own `--bind`/actions-table key spec ("ctrl-a", "tab", "shift-tab", "esc").
 --- Covers the modifiers replacer's default keymaps actually use; unrecognized
@@ -30,6 +31,7 @@ local function to_fzf_key(nvim_key)
   return s
 end
 
+---@internal
 ---@param old string
 ---@param items RP_Match[]
 ---@param new_text string

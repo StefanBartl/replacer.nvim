@@ -33,6 +33,7 @@ local M = {}
 ---@field old string
 ---@field new string
 
+---@internal
 --- Parse the line-oriented "old => new" format.
 ---@param content string
 ---@return RP_BatchPair[]|nil pairs, string|nil err
@@ -53,6 +54,7 @@ local function parse_lines(content)
   return out, nil
 end
 
+---@internal
 --- Parse a JSON array of {old, new}.
 ---@param content string
 ---@return RP_BatchPair[]|nil pairs, string|nil err
@@ -87,6 +89,7 @@ end
 -- Sources
 --------------------------------------------------------------------------------
 
+---@internal
 --- Resolve {source} into raw text content.
 ---@param source string
 ---@return string|nil content, string|nil err

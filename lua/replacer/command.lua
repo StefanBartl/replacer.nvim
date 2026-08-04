@@ -41,6 +41,7 @@ local M = {}
 -- Tokenizer
 --------------------------------------------------------------------------------
 
+---@internal
 --- Split a raw argument string into tokens, honoring single/double quotes and
 --- backslash escapes (inside and outside quotes).
 --- The second return value is true when a quote was opened but never closed
@@ -166,6 +167,7 @@ local VALUE_FLAGS = {
   ["max-filesize"] = true,
 }
 
+---@internal
 --- Apply a value flag to the request; returns nil on success or an error string.
 ---@param req RP_Request
 ---@param key string
@@ -207,6 +209,7 @@ end
 
 local USAGE = "Usage: :[range]Replace[!] {old} {new} [scope] [--flags]   (:h replacer-commands)"
 
+---@internal
 --- Consume `tokens`, applying flags to `req` and collecting positionals.
 --- Shared by :Replace and :Surround so both honor the exact same flag grammar.
 ---@param tokens string[]

@@ -27,6 +27,7 @@ local state = vim.deepcopy(Defaults)
 -- Validators / Coercers (defensive)
 --------------------------------------------------------------------------------
 
+---@internal
 ---@param v any
 ---@return boolean|nil # strict boolean or nil when unrecognized
 local function as_bool(v)
@@ -36,6 +37,7 @@ local function as_bool(v)
   return nil
 end
 
+---@internal
 ---@param v any
 ---@return integer|nil
 local function as_pos_int(v)
@@ -43,6 +45,7 @@ local function as_pos_int(v)
   return nil
 end
 
+---@internal
 ---@param v any
 ---@return "fzf"|"telescope"|"auto"|nil
 local function as_engine(v)
@@ -54,6 +57,7 @@ local function as_engine(v)
   return nil
 end
 
+---@internal
 ---@param v any
 ---@return "ripgrep"|"vimgrep"|"auto"|nil
 local function as_search_engine(v)
@@ -65,6 +69,7 @@ local function as_search_engine(v)
   return nil
 end
 
+---@internal
 ---@param v any
 ---@return "auto"|"notify"|"statusline"|"fidget"|"float"|"kit"|nil
 local function as_progress_style(v)
@@ -76,6 +81,7 @@ local function as_progress_style(v)
   return nil
 end
 
+---@internal
 --- Coerce a value into a clean array of non-empty strings.
 --- Accepts a single string (wrapped) or a list; ignores non-strings.
 ---@param v any
@@ -95,10 +101,12 @@ local function as_string_list(v)
   return out
 end
 
+---@internal
 ---@param t table|nil
 ---@return table
 local function tbl(t) return (type(t) == "table") and t or {} end
 
+---@internal
 --- Pick a boolean override, falling back to `default` only when unset/unrecognized.
 --- NOTE: do not use `as_bool(x) or default` — a legitimate `false` would be lost.
 ---@param v any
@@ -110,6 +118,7 @@ local function pick_bool(v, default)
   return b
 end
 
+---@internal
 --- Merge user-supplied keymaps over the defaults, key by key. An invalid
 --- (non-string or empty) value for a given key silently keeps its default
 --- instead of disabling the keymap outright.
@@ -129,6 +138,7 @@ local function as_keymaps(v)
   return out
 end
 
+---@internal
 ---@param cfg table|nil
 ---@return RP_Config
 local function validate(cfg)

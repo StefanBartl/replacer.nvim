@@ -29,6 +29,7 @@ local M = {}
 ---@field new_path string
 ---@field is_dir boolean
 
+---@internal
 --- Replace every literal occurrence of `old` in `text` with `new`.
 ---@param text string
 ---@param old string
@@ -50,6 +51,7 @@ local function replace_all_literal(text, old, new)
   return table.concat(parts)
 end
 
+---@internal
 --- Recursively collect every file/directory path under `root` (root itself
 --- excluded — callers add it separately when relevant).
 ---@param root string
@@ -104,6 +106,7 @@ function M.collect(pattern, replacement, scope, cfg)
   return matches
 end
 
+---@internal
 --- True when `path` is a strict descendant of `ancestor`.
 ---@param path string
 ---@param ancestor string

@@ -73,6 +73,7 @@ end
 
 local TEST_NS = vim.api.nvim_create_namespace("replacer_regex_test")
 
+---@internal
 --- Highlight every occurrence of line 1 (pattern) inside line 2 (sample).
 ---@param buf integer
 local function highlight_test_buffer(buf)

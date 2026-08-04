@@ -27,6 +27,7 @@ local M = {}
 
 local ok_progress, progress_mod = pcall(require, "lib.nvim.progress")
 
+---@internal
 --- Start a progress handle, or nil when lib.nvim isn't installed. Every call
 --- site must guard with `if h then ... end` — the search still works without
 --- lib.nvim, only the indicator is skipped.
@@ -41,6 +42,7 @@ end
 -- Shared: occurrence scanning
 --------------------------------------------------------------------------------
 
+---@internal
 --- Find every occurrence of `pattern` in `line_text`.
 --- Literal mode uses plain byte search; regex mode uses Vim regex via matchstrpos.
 ---@param line_text string
@@ -80,6 +82,7 @@ end
 -- Buffer-aware fast path
 --------------------------------------------------------------------------------
 
+---@internal
 ---@param path string
 ---@return boolean modified, integer|nil bufnr
 local function is_buffer_modified(path)
@@ -89,6 +92,7 @@ local function is_buffer_modified(path)
   return vim.bo[bufnr].modified, bufnr
 end
 
+---@internal
 ---@param old string
 ---@param bufnr integer
 ---@param cfg RP_RG_Config
@@ -116,6 +120,7 @@ end
 -- ripgrep backend
 --------------------------------------------------------------------------------
 
+---@internal
 --- Build the ripgrep argument vector from config + filters.
 ---@param old string
 ---@param roots string[]
@@ -159,6 +164,7 @@ local function build_rg_args(old, roots, cfg)
   return args
 end
 
+---@internal
 --- Parse one line of ripgrep `--json` stdout (a single event, no trailing
 --- newline) into the matches it produces, continuing id numbering from
 --- `id_start`. Non-match events (begin/end/summary) and malformed JSON
@@ -232,6 +238,7 @@ local function parse_rg_json_line(line, old, cfg, id_start)
   return matches, id
 end
 
+---@internal
 --- Parse ripgrep `--json` stdout into a flat list of matches.
 ---@param stdout string
 ---@param old string
@@ -251,6 +258,7 @@ local function parse_rg_json(stdout, old, cfg)
   return matches
 end
 
+---@internal
 --- Run ripgrep synchronously and parse the result. Errors are returned (not
 --- notified here) so the calling layer decides how to surface them — matches
 --- the async sibling `collect_ripgrep_async` below.
@@ -280,6 +288,7 @@ end
 --- with one notification per stdout chunk on large searches.
 local PROGRESS_THROTTLE_MS = 100
 
+---@internal
 --- Run ripgrep asynchronously (non-blocking). Falls back to sync when
 --- `vim.system` is unavailable. Errors are passed to `on_done` (not notified
 --- here) so the calling layer decides how to surface them.
@@ -353,6 +362,7 @@ end
 -- vimgrep (native) backend
 --------------------------------------------------------------------------------
 
+---@internal
 --- Sniff the first 512 bytes of `path` for a NUL byte (the classic
 --- binary-file heuristic used by grep/git/etc).
 ---@param path string
@@ -365,6 +375,7 @@ local function is_binary_file(path)
   return chunk ~= nil and chunk:find("\0", 1, true) ~= nil
 end
 
+---@internal
 --- Decide whether a file path passes the configured filters.
 ---@param path string
 ---@param cfg RP_RG_Config
@@ -409,6 +420,7 @@ local function passes_filters(path, cfg)
   return true
 end
 
+---@internal
 --- Recursively list candidate files under a root directory.
 ---@param root string
 ---@param cfg RP_RG_Config
@@ -430,6 +442,7 @@ local function list_files(root, cfg, acc)
   end
 end
 
+---@internal
 --- Scan a single file's lines for occurrences.
 ---@param old string
 ---@param path string
@@ -459,6 +472,7 @@ local function scan_file(old, path, cfg, id_start, acc)
   return id
 end
 
+---@internal
 ---@param old string
 ---@param roots string[]
 ---@param cfg RP_RG_Config
@@ -485,6 +499,7 @@ end
 --- Keeps the native fallback responsive (non-blocking) on large trees.
 local VIMGREP_CHUNK_SIZE = 25
 
+---@internal
 --- Async, chunked counterpart to `collect_vimgrep`: scans `VIMGREP_CHUNK_SIZE`
 --- files per event-loop tick instead of one blocking loop, and reports
 --- progress after each chunk. Used only by `M.collect_async`; `M.collect`
@@ -543,6 +558,7 @@ end
 -- Backend selection
 --------------------------------------------------------------------------------
 
+---@internal
 --- Resolve the effective search backend, applying the ripgrep->vimgrep fallback.
 ---@param cfg RP_RG_Config
 ---@return "ripgrep"|"vimgrep"
@@ -558,6 +574,7 @@ local function pick_backend(cfg)
   return has_rg and "ripgrep" or "vimgrep"
 end
 
+---@internal
 --- Restrict items to cfg._line_range (a {l1,l2} span) when present.
 ---@param items RP_Match[]
 ---@param cfg RP_RG_Config
@@ -578,6 +595,7 @@ local function apply_line_range(items, cfg)
   return out
 end
 
+---@internal
 --- True when a byte is a "word" byte (letter/digit/underscore) — an ASCII
 --- approximation of `\w`, matching what ripgrep's own `-w` treats as a word
 --- character closely enough for boundary detection purposes.
@@ -587,6 +605,7 @@ local function is_word_byte(byte)
   return byte ~= nil and byte:match("[%w_]") ~= nil
 end
 
+---@internal
 --- Restrict items to whole-word matches: the byte immediately before the
 --- match and the byte immediately after it (if any) must NOT be word bytes.
 --- A no-op unless cfg.word_boundary is set.
@@ -610,6 +629,7 @@ local function apply_word_boundary(items, cfg)
   return out
 end
 
+---@internal
 --- Drop matches that fall inside a string/comment Tree-sitter node
 --- (best-effort, fails open — see replacer.tscode). A no-op unless
 --- cfg.code_only is set. Reads each affected file once, grouped by path.
@@ -643,6 +663,7 @@ local function apply_code_only(items, cfg)
   return out
 end
 
+---@internal
 --- Compose every post-collection, cfg-driven filter (line range, word
 --- boundary, code-only) into one call so every backend/scope combination
 --- applies them identically.

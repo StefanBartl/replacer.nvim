@@ -8,6 +8,7 @@ local notify = require("replacer.util.notify")
 
 local M = {}
 
+---@internal
 ---@return string
 local function presets_path()
   return vim.fn.stdpath("data") .. "/replacer/presets.json"
@@ -24,6 +25,7 @@ function M.load()
   return data
 end
 
+---@internal
 ---@param presets table<string, table>
 local function save(presets)
   require("lib.nvim.fs.write.to_file")(presets_path(), vim.json.encode(presets))
