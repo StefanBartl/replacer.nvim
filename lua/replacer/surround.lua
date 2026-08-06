@@ -48,20 +48,41 @@ local M = {}
 ---@type table<string, string|string[]>
 local ALIASES = {
   -- backtick
-  b = "`", bt = "`", backtick = "`", tick = "`", code = "`",
+  b = "`",
+  bt = "`",
+  backtick = "`",
+  tick = "`",
+  code = "`",
   -- double quote
-  q = '"', dq = '"', quote = '"', quotes = '"',
+  q = '"',
+  dq = '"',
+  quote = '"',
+  quotes = '"',
   -- single quote
-  s = "'", sq = "'", single = "'", apos = "'",
+  s = "'",
+  sq = "'",
+  single = "'",
+  apos = "'",
   -- markdown emphasis
-  star = "*", asterisk = "*",
-  bold = "**", strong = "**",
-  italic = "_", underscore = "_", us = "_",
+  star = "*",
+  asterisk = "*",
+  bold = "**",
+  strong = "**",
+  italic = "_",
+  underscore = "_",
+  us = "_",
   -- brackets / braces (asymmetric)
-  paren = { "(", ")" }, parens = { "(", ")" }, round = { "(", ")" },
-  bracket = { "[", "]" }, brackets = { "[", "]" }, square = { "[", "]" },
-  brace = { "{", "}" }, braces = { "{", "}" }, curly = { "{", "}" },
-  angle = { "<", ">" }, angles = { "<", ">" },
+  paren = { "(", ")" },
+  parens = { "(", ")" },
+  round = { "(", ")" },
+  bracket = { "[", "]" },
+  brackets = { "[", "]" },
+  square = { "[", "]" },
+  brace = { "{", "}" },
+  braces = { "{", "}" },
+  curly = { "{", "}" },
+  angle = { "<", ">" },
+  angles = { "<", ">" },
 }
 
 --- Bare bracket openers → their matching close, so ":Surround x (" works.
@@ -80,7 +101,9 @@ local function resolve_delim(tok)
   end
   -- A lone opening bracket implies its matching close; otherwise symmetric.
   local close = BRACKET_CLOSE[tok]
-  if close then return tok, close end
+  if close then
+    return tok, close
+  end
   return tok, tok
 end
 
@@ -100,12 +123,12 @@ local function skip_surrounded_filter(left, right)
   local llen, rlen = #left, #right
   return function(m)
     local line = m.line or ""
-    local s = m.col0                 -- 0-based byte start of the match
-    local mlen = #(m.old or "")      -- matched text length (== pattern, literal)
+    local s = m.col0 -- 0-based byte start of the match
+    local mlen = #(m.old or "") -- matched text length (== pattern, literal)
     -- 1-based ranges: left occupies (s-llen+1 .. s); right occupies the bytes
     -- right after the match (s+mlen+1 .. s+mlen+rlen).
     local before = (s - llen >= 0) and line:sub(s - llen + 1, s) or ""
-    local after  = line:sub(s + mlen + 1, s + mlen + rlen)
+    local after = line:sub(s + mlen + 1, s + mlen + rlen)
     -- Keep only when NOT already wrapped by this exact delimiter.
     return not (before == left and after == right)
   end
@@ -151,9 +174,8 @@ end
 -- Request construction
 --------------------------------------------------------------------------------
 
-local USAGE =
-  "Usage: :[range]Surround[!] {pattern} [delim] [scope] [--flags]   " ..
-  "(delim aliases: b ` , q \", s ', star, bold, paren …)"
+local USAGE = "Usage: :[range]Surround[!] {pattern} [delim] [scope] [--flags]   "
+  .. "(delim aliases: b ` , q \", s ', star, bold, paren …)"
 
 ---@internal
 --- Build the RP_Request for wrapping `pattern` with the resolved delimiter,
@@ -168,9 +190,9 @@ local USAGE =
 ---@return RP_Request
 local function build_request(pattern, delim, scope, req, line_range, nested, col_filter)
   local left, right = resolve_delim(delim)
-  req.old        = pattern
-  req.new        = left .. pattern .. right
-  req.scope      = scope or ""
+  req.old = pattern
+  req.new = left .. pattern .. right
+  req.scope = scope or ""
   req.line_range = line_range
   -- Regex would need per-match capture expansion, which the applier does not do;
   -- force literal so `new` is a valid fixed replacement for every spot.
@@ -180,9 +202,11 @@ local function build_request(pattern, delim, scope, req, line_range, nested, col
   local skip_filter
   if not nested then
     skip_filter = skip_surrounded_filter(left, right)
-    req.filter_empty_msg =
-      string.format("every match is already surrounded by %s…%s (use --nested to wrap again)",
-        left, right)
+    req.filter_empty_msg = string.format(
+      "every match is already surrounded by %s…%s (use --nested to wrap again)",
+      left,
+      right
+    )
   end
   if col_filter and skip_filter then
     req.filter = and_filters(col_filter, skip_filter)
@@ -207,9 +231,10 @@ local function handle(run_fun, opts, range)
   if unterminated then
     vim.schedule(function()
       notify.error(
-        "Surround: unterminated quote in argument list — every \" or ' must be closed " ..
-        "(escape a literal quote with \\\" or \\', or use the other quote style around it).\n" ..
-        USAGE)
+        "Surround: unterminated quote in argument list — every \" or ' must be closed "
+          .. "(escape a literal quote with \\\" or \\', or use the other quote style around it).\n"
+          .. USAGE
+      )
     end)
     return
   end
@@ -232,16 +257,22 @@ local function handle(run_fun, opts, range)
 
   ---@type RP_Request
   local req = {
-    old = "", new = "", scope = "",
+    old = "",
+    new = "",
+    scope = "",
     all = opts.bang and true or false,
-    dry = false, export = nil, line_range = nil,
+    dry = false,
+    export = nil,
+    line_range = nil,
     overrides = {},
     filters = { file_types = {}, globs = {}, exclude = {} },
   }
 
   local positionals, err = command.apply_tokens(tokens, req)
   if not positionals then
-    vim.schedule(function() notify.error(err) end)
+    vim.schedule(function()
+      notify.error(err)
+    end)
     return
   end
 
@@ -253,26 +284,34 @@ local function handle(run_fun, opts, range)
   end
   if #positionals > 3 then
     vim.schedule(function()
-      notify.error(string.format(
-        "Surround: too many arguments — got %d; expected {pattern} [delim] [scope]. " ..
-        "Quote values with spaces, e.g. :Surround \"foo bar\" `.\n%s",
-        #positionals, USAGE))
+      notify.error(
+        string.format(
+          "Surround: too many arguments — got %d; expected {pattern} [delim] [scope]. "
+            .. 'Quote values with spaces, e.g. :Surround "foo bar" `.\n%s',
+          #positionals,
+          USAGE
+        )
+      )
     end)
     return
   end
 
   local pattern = positionals[1]
-  local delim   = positionals[2]
-  local scope   = positionals[3] or ""
+  local delim = positionals[2]
+  local scope = positionals[3] or ""
 
   -- Range (e.g. :'<,'>Surround) restricts to the current buffer line span.
   local line_range
   local col_filter
   if type(opts.range) == "number" and opts.range > 0 then
     local l1, l2 = opts.line1 or 1, opts.line2 or (opts.line1 or 1)
-    if l2 < l1 then l1, l2 = l2, l1 end
+    if l2 < l1 then
+      l1, l2 = l2, l1
+    end
     line_range = { l1, l2 }
-    if scope == "" then scope = "%" end
+    if scope == "" then
+      scope = "%"
+    end
 
     -- A single-line charwise selection carries real column bounds; anything
     -- else (linewise, blockwise, or a charwise span across several lines)
@@ -317,8 +356,26 @@ end
 -- Delimiter aliases + Surround-only --nested/--allow-nested, for <Tab>
 -- completion on the (unnamed, optional) `delim` positional slot.
 local DELIM_VALUES = {
-  "`", '"', "'", "*", "**", "_", "(", "[", "{", "<",
-  "b", "q", "s", "star", "bold", "italic", "paren", "bracket", "brace", "angle",
+  "`",
+  '"',
+  "'",
+  "*",
+  "**",
+  "_",
+  "(",
+  "[",
+  "{",
+  "<",
+  "b",
+  "q",
+  "s",
+  "star",
+  "bold",
+  "italic",
+  "paren",
+  "bracket",
+  "brace",
+  "angle",
 }
 
 local FLAGS = vim.deepcopy(command.FLAGS)
@@ -338,15 +395,24 @@ function M.register(run_fun)
     desc = "Wrap every match of a pattern: :[range]Surround[!] {pattern} [delim] [scope] [--flags]",
     bang = true,
     routes = {
-      { path = {},
+      {
+        path = {},
         args = {
           { name = "pattern", type = "STRING" },
           { name = "delim", type = "STRING", optional = true, values = DELIM_VALUES },
-          { name = "scope", type = "STRING", optional = true, values = { "%", "cwd", ".", "root" } },
+          {
+            name = "scope",
+            type = "STRING",
+            optional = true,
+            values = { "%", "cwd", ".", "root" },
+          },
         },
         flags = FLAGS,
         range = true,
-        run = function(ctx) handle(run_fun, ctx.raw, ctx.range) end },
+        run = function(ctx)
+          handle(run_fun, ctx.raw, ctx.range)
+        end,
+      },
     },
   }
 

@@ -1,11 +1,25 @@
 # replacer.nvim
 
+```
+  ____             _
+ |  _ \ ___ _ __ | | __ _  ___ ___ _ __
+ | |_) / _ \ '_ \| |/ _` |/ __/ _ \ '__|
+ |  _ <  __/ |_) | | (_| | (_|  __/ |
+ |_| \_\___| .__/|_|\__,_|\___\___|_|
+           |_|
+```
+
 ![version](https://img.shields.io/badge/version-0.2-blue.svg)
 ![State](https://img.shields.io/badge/status-beta-orange.svg)
 [![CI](https://github.com/StefanBartl/replacer.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/StefanBartl/replacer.nvim/actions/workflows/ci.yml)
 ![Lazy.nvim compatible](https://img.shields.io/badge/lazy.nvim-supported-success)
 ![Neovim](https://img.shields.io/badge/Neovim-0.9+-success.svg)
 ![Lua](https://img.shields.io/badge/language-Lua-yellow.svg)
+
+> Looking for file/directory-level operations (move, copy, delete, touch) to
+> pair with replacer's content-level renames? See
+> [`fileops.nvim`](https://github.com/StefanBartl/fileops.nvim), a sister
+> plugin from the same author.
 
 Project-wide search-and-replace with ripgrep, an interactive picker (fzf-lua or Telescope), live preview, and precise application of changes.
 
@@ -360,15 +374,8 @@ ______________________________________________________________________
 
 ## Roadmap
 
-- [x] Non-interactive “All” mode via `:Replace ... All`
-- [x] Backend switch: `engine = "fzf"` or `"telescope"`
-- [x] Confirm-all guard and write/no-write switch
-- [x] Per-match preview and robust bottom-up edits
-- [ ] Optional diff-style preview (before/after)
-- [ ] Regex escape helpers (when literal=false)
-- [ ] Built-in help `:help replacer`
-
-______________________________________________________________________
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the maintained, up-to-date list
+of shipped features and what's next.
 
 ______________________________________________________________________
 

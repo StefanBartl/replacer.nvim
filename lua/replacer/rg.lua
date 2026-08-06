@@ -34,7 +34,9 @@ local ok_progress, progress_mod = pcall(require, "lib.nvim.progress")
 ---@param cfg RP_RG_Config
 ---@return Lib.Progress.Handle|nil
 local function new_progress(cfg)
-  if not ok_progress then return nil end
+  if not ok_progress then
+    return nil
+  end
   return progress_mod.create({ title = "[replacer]", style = cfg.progress_style or "auto" })
 end
 
@@ -51,14 +53,18 @@ end
 ---@return { start0: integer, end0: integer, text: string }[]
 local function find_all_occurrences(line_text, pattern, literal)
   local out = {}
-  if line_text == "" or not pattern or pattern == "" then return out end
+  if line_text == "" or not pattern or pattern == "" then
+    return out
+  end
 
   local n = 0 -- explicit index avoids recomputing #out per append
   if literal then
     local start = 1
     while true do
       local s, e = line_text:find(pattern, start, true)
-      if not s then break end
+      if not s then
+        break
+      end
       n = n + 1
       out[n] = { start0 = s - 1, end0 = e - 1, text = line_text:sub(s, e) }
       start = e + 1
@@ -68,11 +74,15 @@ local function find_all_occurrences(line_text, pattern, literal)
     while true do
       local mt = vim.fn.matchstrpos(line_text, pattern, pos)
       local matched, s, e = mt[1], mt[2], mt[3]
-      if s == -1 or not matched or matched == "" then break end
+      if s == -1 or not matched or matched == "" then
+        break
+      end
       n = n + 1
       out[n] = { start0 = s, end0 = e - 1, text = matched }
       pos = e
-      if pos >= #line_text then break end
+      if pos >= #line_text then
+        break
+      end
     end
   end
   return out
@@ -87,8 +97,12 @@ end
 ---@return boolean modified, integer|nil bufnr
 local function is_buffer_modified(path)
   local bufnr = vim.fn.bufnr(path)
-  if bufnr == -1 then return false, nil end
-  if not vim.api.nvim_buf_is_loaded(bufnr) then return false, nil end
+  if bufnr == -1 then
+    return false, nil
+  end
+  if not vim.api.nvim_buf_is_loaded(bufnr) then
+    return false, nil
+  end
   return vim.bo[bufnr].modified, bufnr
 end
 
@@ -109,7 +123,12 @@ local function collect_from_buffer(old, bufnr, cfg)
       id = id + 1
       -- id is the running occurrence count, so it is also the next array index.
       matches[id] = {
-        id = id, path = path, lnum = lnum, col0 = occ.start0, old = occ.text, line = line,
+        id = id,
+        path = path,
+        lnum = lnum,
+        col0 = occ.start0,
+        old = occ.text,
+        line = line,
       }
     end
   end
@@ -129,38 +148,57 @@ end
 local function build_rg_args(old, roots, cfg)
   local args = { "rg", "--json", "-n", "--column", "--hidden", "-o" }
 
-  if cfg.smart_case then args[#args + 1] = "-S" end
-  if cfg.literal then args[#args + 1] = "--fixed-strings" end
-  if cfg.hidden == false then
-    for i = #args, 1, -1 do if args[i] == "--hidden" then table.remove(args, i) end end
+  if cfg.smart_case then
+    args[#args + 1] = "-S"
   end
-  if cfg.git_ignore == false then args[#args + 1] = "--no-ignore" end
+  if cfg.literal then
+    args[#args + 1] = "--fixed-strings"
+  end
+  if cfg.hidden == false then
+    for i = #args, 1, -1 do
+      if args[i] == "--hidden" then
+        table.remove(args, i)
+      end
+    end
+  end
+  if cfg.git_ignore == false then
+    args[#args + 1] = "--no-ignore"
+  end
   if cfg.exclude_git_dir then
-    args[#args + 1] = "--glob"; args[#args + 1] = "!.git"
+    args[#args + 1] = "--glob"
+    args[#args + 1] = "!.git"
   end
   if cfg.safe_mode and cfg.max_file_size and cfg.max_file_size > 0 then
-    args[#args + 1] = "--max-filesize"; args[#args + 1] = tostring(cfg.max_file_size)
+    args[#args + 1] = "--max-filesize"
+    args[#args + 1] = tostring(cfg.max_file_size)
   end
 
   -- Filters
   for _, ft in ipairs(cfg.file_types or {}) do
-    args[#args + 1] = "--type"; args[#args + 1] = ft
+    args[#args + 1] = "--type"
+    args[#args + 1] = ft
   end
   for _, g in ipairs(cfg.globs or {}) do
-    args[#args + 1] = "--glob"; args[#args + 1] = g
+    args[#args + 1] = "--glob"
+    args[#args + 1] = g
   end
   for _, ex in ipairs(cfg.exclude or {}) do
     -- A bare word excludes a directory subtree anywhere; an explicit glob is used as-is.
     if not ex:find("[*/?%[]") then
-      args[#args + 1] = "--glob"; args[#args + 1] = "!**/" .. ex .. "/**"
-      args[#args + 1] = "--glob"; args[#args + 1] = "!" .. ex
+      args[#args + 1] = "--glob"
+      args[#args + 1] = "!**/" .. ex .. "/**"
+      args[#args + 1] = "--glob"
+      args[#args + 1] = "!" .. ex
     else
-      args[#args + 1] = "--glob"; args[#args + 1] = "!" .. ex
+      args[#args + 1] = "--glob"
+      args[#args + 1] = "!" .. ex
     end
   end
 
   args[#args + 1] = old
-  for i = 1, #roots do args[#args + 1] = roots[i] end
+  for i = 1, #roots do
+    args[#args + 1] = roots[i]
+  end
   return args
 end
 
@@ -200,7 +238,12 @@ local function parse_rg_json_line(line, old, cfg, id_start)
             for _, occ in ipairs(local_occ) do
               id = id + 1
               matches[#matches + 1] = {
-                id = id, path = path, lnum = lnum, col0 = occ.start0, old = occ.text, line = line_text,
+                id = id,
+                path = path,
+                lnum = lnum,
+                col0 = occ.start0,
+                old = occ.text,
+                line = line_text,
               }
             end
           else
@@ -208,8 +251,12 @@ local function parse_rg_json_line(line, old, cfg, id_start)
             if type(sm.start) == "number" then
               id = id + 1
               matches[#matches + 1] = {
-                id = id, path = path, lnum = lnum, col0 = sm.start,
-                old = (sm.match and sm.match.text) or old or "", line = line_text,
+                id = id,
+                path = path,
+                lnum = lnum,
+                col0 = sm.start,
+                old = (sm.match and sm.match.text) or old or "",
+                line = line_text,
               }
             end
           end
@@ -218,8 +265,12 @@ local function parse_rg_json_line(line, old, cfg, id_start)
             if type(sm.start) == "number" then
               id = id + 1
               matches[#matches + 1] = {
-                id = id, path = path, lnum = lnum, col0 = sm.start,
-                old = (sm.match and sm.match.text) or old or "", line = line_text,
+                id = id,
+                path = path,
+                lnum = lnum,
+                col0 = sm.start,
+                old = (sm.match and sm.match.text) or old or "",
+                line = line_text,
               }
             end
           end
@@ -228,7 +279,12 @@ local function parse_rg_json_line(line, old, cfg, id_start)
         for _, occ in ipairs(find_all_occurrences(line_text, old, cfg.literal)) do
           id = id + 1
           matches[#matches + 1] = {
-            id = id, path = path, lnum = lnum, col0 = occ.start0, old = occ.text, line = line_text,
+            id = id,
+            path = path,
+            lnum = lnum,
+            col0 = occ.start0,
+            old = occ.text,
+            line = line_text,
           }
         end
       end
@@ -252,7 +308,9 @@ local function parse_rg_json(stdout, old, cfg)
   for line in string.gmatch((stdout or ""), "([^\n]+)\n?") do
     local line_matches, next_id = parse_rg_json_line(line, old, cfg, id)
     id = next_id
-    for _, m in ipairs(line_matches) do matches[#matches + 1] = m end
+    for _, m in ipairs(line_matches) do
+      matches[#matches + 1] = m
+    end
   end
 
   return matches
@@ -311,10 +369,14 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
   local proc = vim.system(args, {
     text = true,
     stdout = function(_, data)
-      if not data then return end
+      if not data then
+        return
+      end
       n_chunks = n_chunks + 1
       chunks[n_chunks] = data
-      if not h then return end
+      if not h then
+        return
+      end
       for _ in data:gmatch('"type":"match"') do
         match_count = match_count + 1
       end
@@ -333,9 +395,11 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
       local code = obj and obj.code or 1
       if code ~= 0 and code ~= 1 then
         local err = (h and h.cancelled)
-          and require("replacer.error").search_error("search cancelled")
+            and require("replacer.error").search_error("search cancelled")
           or require("replacer.error").search_error("ripgrep failed", obj and obj.stderr or nil)
-        if h then h:cancel("search failed") end
+        if h then
+          h:cancel("search failed")
+        end
         on_done(nil, err)
         return
       end
@@ -343,7 +407,10 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
       if h then
         local files, n_files = {}, 0
         for _, it in ipairs(items) do
-          if not files[it.path] then files[it.path] = true; n_files = n_files + 1 end
+          if not files[it.path] then
+            files[it.path] = true
+            n_files = n_files + 1
+          end
         end
         h:finish(string.format("%d match(es) in %d file(s)", #items, n_files))
       end
@@ -353,7 +420,9 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
 
   if h then
     h:on_cancel(function()
-      pcall(function() proc:kill(15) end)
+      pcall(function()
+        proc:kill(15)
+      end)
     end)
   end
 end
@@ -369,7 +438,9 @@ end
 ---@return boolean
 local function is_binary_file(path)
   local ok, fh = pcall(io.open, path, "rb")
-  if not ok or not fh then return false end
+  if not ok or not fh then
+    return false
+  end
   local chunk = fh:read(512)
   fh:close()
   return chunk ~= nil and chunk:find("\0", 1, true) ~= nil
@@ -383,14 +454,20 @@ end
 local function passes_filters(path, cfg)
   local name = vim.fn.fnamemodify(path, ":t")
 
-  if cfg.hidden == false and name:sub(1, 1) == "." then return false end
+  if cfg.hidden == false and name:sub(1, 1) == "." then
+    return false
+  end
 
   if cfg.safe_mode then
     if cfg.max_file_size and cfg.max_file_size > 0 then
       local size = vim.fn.getfsize(path)
-      if size < 0 or size > cfg.max_file_size then return false end
+      if size < 0 or size > cfg.max_file_size then
+        return false
+      end
     end
-    if cfg.skip_binary ~= false and is_binary_file(path) then return false end
+    if cfg.skip_binary ~= false and is_binary_file(path) then
+      return false
+    end
   end
 
   -- file_types are interpreted as extensions in native mode
@@ -398,8 +475,15 @@ local function passes_filters(path, cfg)
   if #types > 0 then
     local ext = name:match("%.([%w_]+)$")
     local ok = false
-    for _, ft in ipairs(types) do if ext == ft then ok = true break end end
-    if not ok then return false end
+    for _, ft in ipairs(types) do
+      if ext == ft then
+        ok = true
+        break
+      end
+    end
+    if not ok then
+      return false
+    end
   end
 
   -- include globs (filename must match at least one)
@@ -407,14 +491,21 @@ local function passes_filters(path, cfg)
   if #globs > 0 then
     local ok = false
     for _, g in ipairs(globs) do
-      if vim.fn.match(name, vim.fn.glob2regpat(g)) >= 0 then ok = true break end
+      if vim.fn.match(name, vim.fn.glob2regpat(g)) >= 0 then
+        ok = true
+        break
+      end
     end
-    if not ok then return false end
+    if not ok then
+      return false
+    end
   end
 
   -- excludes (substring match anywhere in the path)
   for _, ex in ipairs(cfg.exclude or {}) do
-    if path:find(ex, 1, true) then return false end
+    if path:find(ex, 1, true) then
+      return false
+    end
   end
 
   return true
@@ -427,7 +518,9 @@ end
 ---@param acc string[]
 local function list_files(root, cfg, acc)
   local ok, iter = pcall(vim.fs.dir, root, { depth = 32 })
-  if not ok or not iter then return end
+  if not ok or not iter then
+    return
+  end
   local n = #acc
   for name, typ in iter do
     -- skip .git subtree
@@ -453,18 +546,27 @@ end
 local function scan_file(old, path, cfg, id_start, acc)
   local id = id_start
   local ok, fh = pcall(io.open, path, "r")
-  if not ok or not fh then return id end
+  if not ok or not fh then
+    return id
+  end
   local lnum = 0
   for line in fh:lines() do
     lnum = lnum + 1
-    if lnum == 1 then line = encoding.strip_bom(line) end
+    if lnum == 1 then
+      line = encoding.strip_bom(line)
+    end
     line = encoding.strip_cr(line)
     local occs = find_all_occurrences(line, old, cfg.literal)
     for _, occ in ipairs(occs) do
       id = id + 1
       -- Invariant: id == #acc, so id is also the next array index.
       acc[id] = {
-        id = id, path = path, lnum = lnum, col0 = occ.start0, old = occ.text, line = line,
+        id = id,
+        path = path,
+        lnum = lnum,
+        col0 = occ.start0,
+        old = occ.text,
+        line = line,
       }
     end
   end
@@ -534,7 +636,9 @@ local function collect_vimgrep_async(old, roots, cfg, on_done)
       id = scan_file(old, files[j], cfg, id, matches)
     end
     i = last
-    if h then h:update({ text = "scanning files…", current = i, total = total }) end
+    if h then
+      h:update({ text = "scanning files…", current = i, total = total })
+    end
 
     if i < total then
       vim.schedule(step)
@@ -544,7 +648,10 @@ local function collect_vimgrep_async(old, roots, cfg, on_done)
     if h then
       local fileset, n_files = {}, 0
       for _, it in ipairs(matches) do
-        if not fileset[it.path] then fileset[it.path] = true; n_files = n_files + 1 end
+        if not fileset[it.path] then
+          fileset[it.path] = true
+          n_files = n_files + 1
+        end
       end
       h:finish(string.format("%d match(es) in %d file(s)", #matches, n_files))
     end
@@ -565,9 +672,13 @@ end
 local function pick_backend(cfg)
   local want = cfg.search_engine or "auto"
   local has_rg = vim.fn.executable("rg") == 1
-  if want == "vimgrep" then return "vimgrep" end
+  if want == "vimgrep" then
+    return "vimgrep"
+  end
   if want == "ripgrep" then
-    if has_rg then return "ripgrep" end
+    if has_rg then
+      return "ripgrep"
+    end
     notify.warn("ripgrep not found — falling back to vimgrep")
     return "vimgrep"
   end
@@ -581,9 +692,13 @@ end
 ---@return RP_Match[]
 local function apply_line_range(items, cfg)
   local range = cfg._line_range
-  if type(range) ~= "table" then return items end
+  if type(range) ~= "table" then
+    return items
+  end
   local l1, l2 = range[1], range[2]
-  if type(l1) ~= "number" or type(l2) ~= "number" then return items end
+  if type(l1) ~= "number" or type(l2) ~= "number" then
+    return items
+  end
   local out = {}
   local n = 0
   for _, it in ipairs(items) do
@@ -613,14 +728,18 @@ end
 ---@param cfg RP_RG_Config
 ---@return RP_Match[]
 local function apply_word_boundary(items, cfg)
-  if not cfg.word_boundary then return items end
+  if not cfg.word_boundary then
+    return items
+  end
   local out, n = {}, 0
   for _, it in ipairs(items) do
     local line = it.line or ""
     local mlen = #(it.old or "")
     local before = it.col0 > 0 and line:sub(it.col0, it.col0) or nil
     local after = line:sub(it.col0 + mlen + 1, it.col0 + mlen + 1)
-    if after == "" then after = nil end
+    if after == "" then
+      after = nil
+    end
     if not is_word_byte(before) and not is_word_byte(after) then
       n = n + 1
       out[n] = it
@@ -637,17 +756,23 @@ end
 ---@param cfg RP_RG_Config
 ---@return RP_Match[]
 local function apply_code_only(items, cfg)
-  if not cfg.code_only or #items == 0 then return items end
+  if not cfg.code_only or #items == 0 then
+    return items
+  end
   local tscode = require("replacer.tscode")
 
   ---@type table<string, string>
   local content_cache = {}
   local function read(path)
     local cached = content_cache[path]
-    if cached ~= nil then return cached end
+    if cached ~= nil then
+      return cached
+    end
     local ok, fh = pcall(io.open, path, "r")
     local content = (ok and fh) and fh:read("*a") or ""
-    if ok and fh then fh:close() end
+    if ok and fh then
+      fh:close()
+    end
     content_cache[path] = content
     return content
   end
@@ -655,7 +780,9 @@ local function apply_code_only(items, cfg)
   local out, n = {}, 0
   for _, it in ipairs(items) do
     local content = read(it.path)
-    if content == "" or not tscode.is_in_string_or_comment(it.path, content, it.lnum - 1, it.col0) then
+    if
+      content == "" or not tscode.is_in_string_or_comment(it.path, content, it.lnum - 1, it.col0)
+    then
       n = n + 1
       out[n] = it
     end
@@ -767,7 +894,9 @@ function M.collect_streaming(old, roots, cfg, on_batch, on_done)
     if modified and bufnr then
       notify.info("scanning modified buffer instead of disk")
       local items = post_filter(collect_from_buffer(old, bufnr, cfg), cfg)
-      if #items > 0 then on_batch(items) end
+      if #items > 0 then
+        on_batch(items)
+      end
       on_done(items, nil)
       return
     end
@@ -775,7 +904,9 @@ function M.collect_streaming(old, roots, cfg, on_batch, on_done)
 
   if pick_backend(cfg) ~= "ripgrep" or not vim.system then
     M.collect_async(old, roots, cfg, function(items, err)
-      if items and #items > 0 then on_batch(items) end
+      if items and #items > 0 then
+        on_batch(items)
+      end
       on_done(items, err)
     end)
     return
@@ -802,42 +933,60 @@ function M.collect_streaming(old, roots, cfg, on_batch, on_done)
       complete, rest = "", data
     end
     buf_tail = rest
-    if complete == "" then return end
+    if complete == "" then
+      return
+    end
 
     ---@type RP_Match[]
     local raw_batch = {}
     for line in complete:gmatch("([^\n]+)") do
       local line_matches, next_id = parse_rg_json_line(line, old, cfg, id)
       id = next_id
-      for _, m in ipairs(line_matches) do raw_batch[#raw_batch + 1] = m end
+      for _, m in ipairs(line_matches) do
+        raw_batch[#raw_batch + 1] = m
+      end
     end
-    if #raw_batch == 0 then return end
+    if #raw_batch == 0 then
+      return
+    end
 
     local batch = post_filter(raw_batch, cfg)
-    if #batch == 0 then return end
-    for _, m in ipairs(batch) do all_items[#all_items + 1] = m end
+    if #batch == 0 then
+      return
+    end
+    for _, m in ipairs(batch) do
+      all_items[#all_items + 1] = m
+    end
     on_batch(batch)
   end
 
   local proc = vim.system(args, {
     text = true,
     stdout = function(_, data)
-      if not data then return end
+      if not data then
+        return
+      end
       vim.schedule(function()
         feed(data)
-        if h then h:update({ text = string.format("%d match(es) found…", #all_items) }) end
+        if h then
+          h:update({ text = string.format("%d match(es) found…", #all_items) })
+        end
       end)
     end,
   }, function(obj)
     vim.schedule(function()
-      if buf_tail ~= "" then feed("\n") end -- flush a trailing line with no final newline
+      if buf_tail ~= "" then
+        feed("\n")
+      end -- flush a trailing line with no final newline
 
       local code = obj and obj.code or 1
       if code ~= 0 and code ~= 1 then
         local err = (h and h.cancelled)
-          and require("replacer.error").search_error("search cancelled")
+            and require("replacer.error").search_error("search cancelled")
           or require("replacer.error").search_error("ripgrep failed", obj and obj.stderr or nil)
-        if h then h:cancel("search failed") end
+        if h then
+          h:cancel("search failed")
+        end
         on_done(nil, err)
         return
       end
@@ -845,7 +994,10 @@ function M.collect_streaming(old, roots, cfg, on_batch, on_done)
       if h then
         local files, n_files = {}, 0
         for _, it in ipairs(all_items) do
-          if not files[it.path] then files[it.path] = true; n_files = n_files + 1 end
+          if not files[it.path] then
+            files[it.path] = true
+            n_files = n_files + 1
+          end
         end
         h:finish(string.format("%d match(es) in %d file(s)", #all_items, n_files))
       end
@@ -855,7 +1007,9 @@ function M.collect_streaming(old, roots, cfg, on_batch, on_done)
 
   if h then
     h:on_cancel(function()
-      pcall(function() proc:kill(15) end)
+      pcall(function()
+        proc:kill(15)
+      end)
     end)
   end
 end

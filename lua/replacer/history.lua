@@ -20,9 +20,13 @@ end
 ---@return table[]
 function M.load()
   local ok, lines = pcall(vim.fn.readfile, history_path())
-  if not ok or type(lines) ~= "table" or #lines == 0 then return {} end
+  if not ok or type(lines) ~= "table" or #lines == 0 then
+    return {}
+  end
   local ok_json, data = pcall(vim.json.decode, table.concat(lines, "\n"))
-  if not ok_json or type(data) ~= "table" then return {} end
+  if not ok_json or type(data) ~= "table" then
+    return {}
+  end
   return data
 end
 
@@ -40,7 +44,9 @@ end
 ---@param result { files: integer, spots: integer }|nil
 ---@return nil
 function M.add(request, result)
-  if not request or not request.old or request.old == "" then return end
+  if not request or not request.old or request.old == "" then
+    return
+  end
   local history = M.load()
   table.insert(history, 1, {
     timestamp = os.time(),
@@ -51,7 +57,9 @@ function M.add(request, result)
     files = result and result.files or nil,
     spots = result and result.spots or nil,
   })
-  while #history > MAX_ENTRIES do table.remove(history) end
+  while #history > MAX_ENTRIES do
+    table.remove(history)
+  end
   save(history)
 end
 
@@ -62,9 +70,11 @@ local function format_entry(entry)
   return string.format(
     "%s | %s -> %s | scope=%s%s",
     os.date("%Y-%m-%d %H:%M", entry.timestamp),
-    entry.old, entry.new,
+    entry.old,
+    entry.new,
     (entry.scope ~= nil and entry.scope ~= "") and entry.scope or "(default)",
-    entry.files and string.format(" | %d file(s)/%d spot(s)", entry.files, entry.spots or 0) or "")
+    entry.files and string.format(" | %d file(s)/%d spot(s)", entry.files, entry.spots or 0) or ""
+  )
 end
 
 --- Open vim.ui.select over recent runs; on selection, re-run it (in the
@@ -86,12 +96,20 @@ function M.pick(run_fun)
     title = "Replace history:",
     on_select = function(_, idx)
       local choice = history[idx]
-      if not choice then return end
+      if not choice then
+        return
+      end
       ---@type RP_Request
       local req = {
-        old = choice.old, new = choice.new, scope = choice.scope or "",
-        all = choice.all and true or false, dry = false, export = nil, line_range = nil,
-        overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+        old = choice.old,
+        new = choice.new,
+        scope = choice.scope or "",
+        all = choice.all and true or false,
+        dry = false,
+        export = nil,
+        line_range = nil,
+        overrides = {},
+        filters = { file_types = {}, globs = {}, exclude = {} },
       }
       run_fun(req)
     end,
@@ -103,7 +121,9 @@ end
 ---@return nil
 function M.register(run_fun)
   local usercmd = require("lib.nvim.usercmd")
-  usercmd.create("ReplaceHistory", function() M.pick(run_fun) end, {
+  usercmd.create("ReplaceHistory", function()
+    M.pick(run_fun)
+  end, {
     desc = "Re-run a recent :Replace from history: :ReplaceHistory",
   })
 end

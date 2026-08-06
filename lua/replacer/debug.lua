@@ -38,16 +38,18 @@ end
 function M.status()
   local ok, replacer = pcall(require, "replacer")
   local cfg_debug = ok
-    and replacer.options
-    and replacer.options.ext_highlight_opts
-    and replacer.options.ext_highlight_opts.debug
+      and replacer.options
+      and replacer.options.ext_highlight_opts
+      and replacer.options.ext_highlight_opts.debug
     or false
 
-  notify.info(string.format(
-    "Debug: %s (config: %s)",
-    debug_enabled and "ON" or "OFF",
-    cfg_debug and "ON" or "OFF"
-  ))
+  notify.info(
+    string.format(
+      "Debug: %s (config: %s)",
+      debug_enabled and "ON" or "OFF",
+      cfg_debug and "ON" or "OFF"
+    )
+  )
   return debug_enabled
 end
 
@@ -87,8 +89,9 @@ function M.inspect_buffer()
   print("\n=== First 5 lines (with byte lengths) ===")
   for i = 1, math.min(5, #lines) do
     local line = lines[i]
-    print(string.format("Line %d: len=%d bytes, %d chars: '%s'",
-      i, #line, vim.fn.strchars(line), line))
+    print(
+      string.format("Line %d: len=%d bytes, %d chars: '%s'", i, #line, vim.fn.strchars(line), line)
+    )
   end
   print("")
 end
@@ -117,21 +120,26 @@ function M.analyze_line(lnum, pattern)
   print("\nOccurrences:")
   while true do
     local s, e = line:find(pattern, pos, true)
-    if not s then break end
+    if not s then
+      break
+    end
     count = count + 1
 
     local matched = line:sub(s, e)
     print(string.format(
       "  #%d: bytes [%d:%d] chars [%d:%d] text='%s'",
       count,
-      s - 1, e - 1,  -- 0-based byte offsets
+      s - 1,
+      e - 1, -- 0-based byte offsets
       vim.str_utfindex(line, s - 1) or -1,
       vim.str_utfindex(line, e) or -1,
       matched
     ))
 
     pos = e + 1
-    if pos > #line then break end
+    if pos > #line then
+      break
+    end
   end
 
   if count == 0 then

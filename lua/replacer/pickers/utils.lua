@@ -9,10 +9,14 @@ local U = {}
 ---@param byte_idx0 number
 ---@return number
 function U.byte_to_display_col(line_text, byte_idx0)
-  if not line_text then return 0 end
+  if not line_text then
+    return 0
+  end
   local prefix = line_text:sub(1, byte_idx0)
   local ok, w = pcall(vim.fn.strdisplaywidth, prefix)
-  if ok and type(w) == "number" then return w end
+  if ok and type(w) == "number" then
+    return w
+  end
   return #prefix
 end
 
@@ -26,7 +30,9 @@ end
 --- This acts as small API that telescope's ensure_highlight_groups will call.
 ---@param cfg RP_HighlightConfig
 function U.setup_highlight_groups(cfg)
-  if not cfg or not cfg.enabled then return end
+  if not cfg or not cfg.enabled then
+    return
+  end
   local ok, _ = pcall(function()
     -- base old
     vim.api.nvim_set_hl(0, "ReplacerOld", {

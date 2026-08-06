@@ -36,9 +36,13 @@ end
 ---@return boolean
 local function write_exact(path, content)
   local dir = vim.fn.fnamemodify(path, ":h")
-  if dir ~= "" then pcall(vim.fn.mkdir, dir, "p") end
+  if dir ~= "" then
+    pcall(vim.fn.mkdir, dir, "p")
+  end
   local ok, fh = pcall(io.open, path, "wb")
-  if not ok or not fh then return false end
+  if not ok or not fh then
+    return false
+  end
   fh:write(content)
   fh:close()
   return true
@@ -56,7 +60,9 @@ local function read_current(path)
     return table.concat(lines, "\n") .. "\n"
   end
   local ok, fh = pcall(io.open, path, "rb")
-  if not ok or not fh then return "" end
+  if not ok or not fh then
+    return ""
+  end
   local content = fh:read("*a") or ""
   fh:close()
   return content
@@ -79,12 +85,16 @@ function M.create(items)
       paths[#paths + 1] = it.path
     end
   end
-  if #paths == 0 then return nil end
+  if #paths == 0 then
+    return nil
+  end
 
   local id = os.date("%Y%m%d-%H%M%S") .. "-" .. tostring(math.random(1000, 9999))
   local dir = checkpoints_dir() .. "/" .. id
   local ok_mkdir = pcall(vim.fn.mkdir, dir, "p")
-  if not ok_mkdir then return nil end
+  if not ok_mkdir then
+    return nil
+  end
 
   local manifest = {}
   for _, path in ipairs(paths) do
@@ -93,11 +103,15 @@ function M.create(items)
       manifest[#manifest + 1] = { path = path, snapshot = snap_name }
     end
   end
-  if #manifest == 0 then return nil end
+  if #manifest == 0 then
+    return nil
+  end
 
-  local ok_manifest = require("lib.nvim.fs.write.to_file")(
-    dir .. "/manifest.json", vim.json.encode(manifest))
-  if not ok_manifest then return nil end
+  local ok_manifest =
+    require("lib.nvim.fs.write.to_file")(dir .. "/manifest.json", vim.json.encode(manifest))
+  if not ok_manifest then
+    return nil
+  end
 
   return id
 end
@@ -111,8 +125,12 @@ end
 ---@return string[]
 function M.list()
   local ok, entries = pcall(vim.fn.readdir, checkpoints_dir())
-  if not ok or type(entries) ~= "table" then return {} end
-  table.sort(entries, function(a, b) return a > b end)
+  if not ok or type(entries) ~= "table" then
+    return {}
+  end
+  table.sort(entries, function(a, b)
+    return a > b
+  end)
   return entries
 end
 
@@ -124,7 +142,9 @@ end
 function M.undo(id)
   if not id then
     id = M.list()[1]
-    if not id then return 0, "no checkpoints found" end
+    if not id then
+      return 0, "no checkpoints found"
+    end
   end
 
   local dir = checkpoints_dir() .. "/" .. id
@@ -147,7 +167,9 @@ function M.undo(id)
         restored = restored + 1
         local bufnr = vim.fn.bufnr(entry.path)
         if bufnr ~= -1 and vim.api.nvim_buf_is_loaded(bufnr) then
-          pcall(vim.api.nvim_buf_call, bufnr, function() vim.cmd("silent! edit!") end)
+          pcall(vim.api.nvim_buf_call, bufnr, function()
+            vim.cmd("silent! edit!")
+          end)
         end
       else
         notify.warn("checkpoint: failed to restore " .. entry.path)
@@ -173,12 +195,18 @@ function M.register()
       notify.error("ReplaceUndo: " .. err)
       return
     end
-    notify.info(string.format(
-      "restored %d file(s) from checkpoint%s",
-      restored, id and (" '" .. id .. "'") or " (most recent)"))
+    notify.info(
+      string.format(
+        "restored %d file(s) from checkpoint%s",
+        restored,
+        id and (" '" .. id .. "'") or " (most recent)"
+      )
+    )
   end, {
     nargs = "?",
-    complete = function() return M.list() end,
+    complete = function()
+      return M.list()
+    end,
     desc = "Restore files from a replacer checkpoint: :ReplaceUndo [id]",
   })
 end

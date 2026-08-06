@@ -24,23 +24,37 @@ local M = {}
 function M.maybe_rename(path, old, new, cfg)
   local fnames = require("replacer.fnames")
   local matches = fnames.collect(old, new, path, cfg or {})
-  if #matches == 0 then return end
+  if #matches == 0 then
+    return
+  end
   local m = matches[1]
 
   local function do_rename()
     local renamed, errors = fnames.apply({ m })
     if renamed == 1 then
-      notify.info(string.format("also renamed file: %s -> %s",
-        vim.fn.fnamemodify(m.old_path, ":."), vim.fn.fnamemodify(m.new_path, ":.")))
+      notify.info(
+        string.format(
+          "also renamed file: %s -> %s",
+          vim.fn.fnamemodify(m.old_path, ":."),
+          vim.fn.fnamemodify(m.new_path, ":.")
+        )
+      )
     end
-    for _, e in ipairs(errors) do notify.error(e) end
+    for _, e in ipairs(errors) do
+      notify.error(e)
+    end
   end
 
   confirm.open({
-    question = string.format("Also rename %s -> %s?",
-      vim.fn.fnamemodify(m.old_path, ":t"), vim.fn.fnamemodify(m.new_path, ":t")),
+    question = string.format(
+      "Also rename %s -> %s?",
+      vim.fn.fnamemodify(m.old_path, ":t"),
+      vim.fn.fnamemodify(m.new_path, ":t")
+    ),
     on_answer = function(yes)
-      if yes then do_rename() end
+      if yes then
+        do_rename()
+      end
     end,
   })
 end

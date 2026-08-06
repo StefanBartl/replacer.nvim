@@ -51,7 +51,9 @@ local M = {}
 ---@param s string|nil
 ---@return string[] tokens, boolean unterminated_quote
 local function parse_args(s)
-  if s == nil then return {}, false end
+  if s == nil then
+    return {}, false
+  end
   if type(s) ~= "string" then
     if type(s) == "table" then
       s = table.concat(s, " ")
@@ -59,14 +61,20 @@ local function parse_args(s)
       return {}, false
     end
   end
-  if s == "" then return {}, false end
+  if s == "" then
+    return {}, false
+  end
 
   local out = {} ---@type string[]
   local unterminated = false
   local i, n = 1, #s
   while i <= n do
-    while i <= n and s:sub(i, i):match("%s") do i = i + 1 end
-    if i > n then break end
+    while i <= n and s:sub(i, i):match("%s") do
+      i = i + 1
+    end
+    if i > n then
+      break
+    end
 
     local c = s:sub(i, i)
     if c == '"' or c == "'" then
@@ -89,7 +97,9 @@ local function parse_args(s)
           i = i + 1
         end
       end
-      if not closed then unterminated = true end
+      if not closed then
+        unterminated = true
+      end
       out[#out + 1] = table.concat(buf)
     else
       local j = i
@@ -120,50 +130,116 @@ end
 -- Boolean flags: name -> function(req) applying the effect.
 ---@type table<string, fun(req: RP_Request)>
 local BOOL_FLAGS = {
-  ["dry"]           = function(r) r.dry = true end,
-  ["all"]           = function(r) r.all = true end,
-  ["literal"]       = function(r) r.overrides.literal = true end,
-  ["no-literal"]    = function(r) r.overrides.literal = false end,
-  ["regex"]         = function(r) r.overrides.literal = false end,
-  ["smart-case"]    = function(r) r.overrides.smart_case = true end,
-  ["no-smart-case"] = function(r) r.overrides.smart_case = false end,
-  ["hidden"]        = function(r) r.overrides.hidden = true end,
-  ["no-hidden"]     = function(r) r.overrides.hidden = false end,
-  ["ignore"]        = function(r) r.overrides.git_ignore = true end,
-  ["no-ignore"]     = function(r) r.overrides.git_ignore = false end,
-  ["preserve-ws"]    = function(r) r.overrides.preserve_whitespace = true end,
-  ["no-preserve-ws"] = function(r) r.overrides.preserve_whitespace = false end,
-  ["case-preserve"]    = function(r) r.overrides.case_preserve = true end,
-  ["no-case-preserve"] = function(r) r.overrides.case_preserve = false end,
-  ["word"]      = function(r) r.overrides.word_boundary = true end,
-  ["no-word"]   = function(r) r.overrides.word_boundary = false end,
-  ["code-only"]    = function(r) r.overrides.code_only = true end,
-  ["no-code-only"] = function(r) r.overrides.code_only = false end,
-  ["safe"]    = function(r) r.overrides.safe_mode = true end,
-  ["no-safe"] = function(r) r.overrides.safe_mode = false end,
-  ["to-quickfix"] = function(r) r.to_quickfix = true end,
-  ["to-loclist"]  = function(r) r.to_loclist = true end,
-  ["also-rename-file"]    = function(r) r.overrides.also_rename_file = true end,
-  ["no-also-rename-file"] = function(r) r.overrides.also_rename_file = false end,
-  ["confirm-per-file"]    = function(r) r.overrides.confirm_per_file = true end,
-  ["no-confirm-per-file"] = function(r) r.overrides.confirm_per_file = false end,
-  ["checkpoint"]    = function(r) r.overrides.checkpoint = true end,
-  ["no-checkpoint"] = function(r) r.overrides.checkpoint = false end,
-  ["lsp"]    = function(r) r.overrides.lsp = true end,
-  ["no-lsp"] = function(r) r.overrides.lsp = false end,
-  ["stream"]    = function(r) r.overrides.stream = true end,
-  ["no-stream"] = function(r) r.overrides.stream = false end,
+  ["dry"] = function(r)
+    r.dry = true
+  end,
+  ["all"] = function(r)
+    r.all = true
+  end,
+  ["literal"] = function(r)
+    r.overrides.literal = true
+  end,
+  ["no-literal"] = function(r)
+    r.overrides.literal = false
+  end,
+  ["regex"] = function(r)
+    r.overrides.literal = false
+  end,
+  ["smart-case"] = function(r)
+    r.overrides.smart_case = true
+  end,
+  ["no-smart-case"] = function(r)
+    r.overrides.smart_case = false
+  end,
+  ["hidden"] = function(r)
+    r.overrides.hidden = true
+  end,
+  ["no-hidden"] = function(r)
+    r.overrides.hidden = false
+  end,
+  ["ignore"] = function(r)
+    r.overrides.git_ignore = true
+  end,
+  ["no-ignore"] = function(r)
+    r.overrides.git_ignore = false
+  end,
+  ["preserve-ws"] = function(r)
+    r.overrides.preserve_whitespace = true
+  end,
+  ["no-preserve-ws"] = function(r)
+    r.overrides.preserve_whitespace = false
+  end,
+  ["case-preserve"] = function(r)
+    r.overrides.case_preserve = true
+  end,
+  ["no-case-preserve"] = function(r)
+    r.overrides.case_preserve = false
+  end,
+  ["word"] = function(r)
+    r.overrides.word_boundary = true
+  end,
+  ["no-word"] = function(r)
+    r.overrides.word_boundary = false
+  end,
+  ["code-only"] = function(r)
+    r.overrides.code_only = true
+  end,
+  ["no-code-only"] = function(r)
+    r.overrides.code_only = false
+  end,
+  ["safe"] = function(r)
+    r.overrides.safe_mode = true
+  end,
+  ["no-safe"] = function(r)
+    r.overrides.safe_mode = false
+  end,
+  ["to-quickfix"] = function(r)
+    r.to_quickfix = true
+  end,
+  ["to-loclist"] = function(r)
+    r.to_loclist = true
+  end,
+  ["also-rename-file"] = function(r)
+    r.overrides.also_rename_file = true
+  end,
+  ["no-also-rename-file"] = function(r)
+    r.overrides.also_rename_file = false
+  end,
+  ["confirm-per-file"] = function(r)
+    r.overrides.confirm_per_file = true
+  end,
+  ["no-confirm-per-file"] = function(r)
+    r.overrides.confirm_per_file = false
+  end,
+  ["checkpoint"] = function(r)
+    r.overrides.checkpoint = true
+  end,
+  ["no-checkpoint"] = function(r)
+    r.overrides.checkpoint = false
+  end,
+  ["lsp"] = function(r)
+    r.overrides.lsp = true
+  end,
+  ["no-lsp"] = function(r)
+    r.overrides.lsp = false
+  end,
+  ["stream"] = function(r)
+    r.overrides.stream = true
+  end,
+  ["no-stream"] = function(r)
+    r.overrides.stream = false
+  end,
 }
 
 -- Value flags: name -> true. Applied via apply_value_flag below.
 ---@type table<string, true>
 local VALUE_FLAGS = {
-  ["type"]    = true,
-  ["glob"]    = true,
+  ["type"] = true,
+  ["glob"] = true,
   ["exclude"] = true,
-  ["engine"]  = true,
+  ["engine"] = true,
   ["context"] = true,
-  ["export"]  = true,
+  ["export"] = true,
   ["max-filesize"] = true,
 }
 
@@ -200,7 +276,10 @@ local function apply_value_flag(req, key, val)
   elseif key == "max-filesize" then
     local n = tonumber(val)
     if not n or n <= 0 or n ~= math.floor(n) then
-      return string.format("invalid --max-filesize '%s' (expected a positive integer, in bytes)", val)
+      return string.format(
+        "invalid --max-filesize '%s' (expected a positive integer, in bytes)",
+        val
+      )
     end
     req.overrides.max_file_size = n
   end
@@ -243,8 +322,11 @@ local function apply_tokens(tokens, req)
           kinds = vim.split(inline_val, ",", { trimempty = true })
           for _, kind in ipairs(kinds) do
             if kind ~= "modified" and kind ~= "staged" and kind ~= "untracked" then
-              return nil, string.format(
-                "Replace: invalid --changed kind '%s' (expected modified|staged|untracked)", kind)
+              return nil,
+                string.format(
+                  "Replace: invalid --changed kind '%s' (expected modified|staged|untracked)",
+                  kind
+                )
             end
           end
         end
@@ -252,9 +334,13 @@ local function apply_tokens(tokens, req)
       elseif BOOL_FLAGS[key] and not inline_val then
         BOOL_FLAGS[key](req)
       elseif BOOL_FLAGS[key] and inline_val then
-        return nil, string.format(
-          "Replace: option '--%s' does not take a value (got '%s'). Use '--%s' on its own.",
-          key, t, key)
+        return nil,
+          string.format(
+            "Replace: option '--%s' does not take a value (got '%s'). Use '--%s' on its own.",
+            key,
+            t,
+            key
+          )
       elseif VALUE_FLAGS[key] then
         local val = inline_val
         if val == nil then
@@ -268,10 +354,15 @@ local function apply_tokens(tokens, req)
           end
         end
         local err = apply_value_flag(req, key, val)
-        if err then return nil, "Replace: " .. err end
+        if err then
+          return nil, "Replace: " .. err
+        end
       else
-        return nil, string.format(
-          "Replace: unknown option '%s'. See :h replacer-commands for valid flags.", t)
+        return nil,
+          string.format(
+            "Replace: unknown option '%s'. See :h replacer-commands for valid flags.",
+            t
+          )
       end
     else
       positionals[#positionals + 1] = t
@@ -297,10 +388,13 @@ function M.parse_request(raw, cmd_opts)
   cmd_opts = cmd_opts or {}
   local tokens, unterminated = parse_args(raw)
   if unterminated then
-    return false, nil, string.format(
-      "Replace: unterminated quote in argument list — every \" or ' must be closed " ..
-      "(escape a literal quote with \\\" or \\', or use the other quote style around it).\n%s",
-      USAGE)
+    return false,
+      nil,
+      string.format(
+        "Replace: unterminated quote in argument list — every \" or ' must be closed "
+          .. "(escape a literal quote with \\\" or \\', or use the other quote style around it).\n%s",
+        USAGE
+      )
   end
 
   ---@type RP_Request
@@ -324,14 +418,19 @@ function M.parse_request(raw, cmd_opts)
   -- Validate positional count with explicit, user-facing messages.
   if #positionals < 2 then
     local missing = (#positionals == 0) and "{old} and {new}" or "{new}"
-    return false, nil, string.format(
-      "Replace: missing argument(s) — expected %s.\n%s", missing, USAGE)
+    return false,
+      nil,
+      string.format("Replace: missing argument(s) — expected %s.\n%s", missing, USAGE)
   end
   if #positionals > 3 then
-    return false, nil, string.format(
-      "Replace: too many arguments — got %d positional values; expected {old} {new} [scope]. " ..
-      "Quote values that contain spaces, e.g. :Replace \"foo bar\" baz.\n%s",
-      #positionals, USAGE)
+    return false,
+      nil,
+      string.format(
+        "Replace: too many arguments — got %d positional values; expected {old} {new} [scope]. "
+          .. 'Quote values that contain spaces, e.g. :Replace "foo bar" baz.\n%s',
+        #positionals,
+        USAGE
+      )
   end
 
   req.old = positionals[1]
@@ -342,9 +441,13 @@ function M.parse_request(raw, cmd_opts)
   if type(cmd_opts.range) == "number" and cmd_opts.range > 0 then
     local l1 = cmd_opts.line1 or 1
     local l2 = cmd_opts.line2 or l1
-    if l2 < l1 then l1, l2 = l2, l1 end
+    if l2 < l1 then
+      l1, l2 = l2, l1
+    end
     req.line_range = { l1, l2 }
-    if req.scope == "" then req.scope = "%" end
+    if req.scope == "" then
+      req.scope = "%"
+    end
   end
 
   return true, req, nil
@@ -381,7 +484,9 @@ local function resolve_scope(scope)
   end
 
   if scope == "" or scope_lc == "cwd" or scope_lc == "." then
-    local ok, cwd = pcall(function() return uv.cwd() end)
+    local ok, cwd = pcall(function()
+      return uv.cwd()
+    end)
     if not ok or not cwd then
       notify.warn("failed to determine cwd")
       return {}, false
@@ -395,7 +500,9 @@ local function resolve_scope(scope)
     if buf_name ~= "" then
       start_dir = vim.fn.fnamemodify(buf_name, ":h")
     else
-      local ok, cwd = pcall(function() return uv.cwd() end)
+      local ok, cwd = pcall(function()
+        return uv.cwd()
+      end)
       start_dir = ok and cwd or nil
     end
     if not start_dir then
@@ -404,9 +511,15 @@ local function resolve_scope(scope)
     end
     local best = require("replacer.root").detect_best(start_dir)
     if not best then
-      notify.warn("no project root markers found (.git, package.json, go.mod, …) — falling back to cwd")
-      local ok, cwd = pcall(function() return uv.cwd() end)
-      if not ok or not cwd then return {}, false end
+      notify.warn(
+        "no project root markers found (.git, package.json, go.mod, …) — falling back to cwd"
+      )
+      local ok, cwd = pcall(function()
+        return uv.cwd()
+      end)
+      if not ok or not cwd then
+        return {}, false
+      end
       return { cwd }, false
     end
     return { best }, false
@@ -485,7 +598,7 @@ function M.register(run_fun)
   local function handler(opts)
     local raw = (type(opts.args) == "string") and opts.args or ""
     local ok, request, err = M.parse_request(raw, {
-      bang  = opts.bang,
+      bang = opts.bang,
       range = opts.range,
       line1 = opts.line1,
       line2 = opts.line2,
@@ -494,7 +607,9 @@ function M.register(run_fun)
       -- Defer so the message shows as a clean notification instead of bubbling
       -- up as a raw "Vim:Replace:" command error.
       local msg = err or "Replace: invalid arguments"
-      vim.schedule(function() notify.error(msg) end)
+      vim.schedule(function()
+        notify.error(msg)
+      end)
       return
     end
     run_fun(request)
@@ -504,15 +619,24 @@ function M.register(run_fun)
     desc = "Interactive replace: :[range]Replace[!] {old} {new} [scope] [--flags]",
     bang = true,
     routes = {
-      { path = {},
+      {
+        path = {},
         args = {
           { name = "old", type = "STRING" },
           { name = "new", type = "STRING" },
-          { name = "scope", type = "STRING", optional = true, values = { "%", "cwd", ".", "root" } },
+          {
+            name = "scope",
+            type = "STRING",
+            optional = true,
+            values = { "%", "cwd", ".", "root" },
+          },
         },
         flags = M.FLAGS,
         range = true,
-        run = function(ctx) handler(ctx.raw) end },
+        run = function(ctx)
+          handler(ctx.raw)
+        end,
+      },
     },
   }
 
@@ -521,7 +645,7 @@ function M.register(run_fun)
 end
 
 M.resolve_scope = resolve_scope
-M.tokenize      = parse_args   -- quote/escape-aware tokenizer (shared with :Surround)
-M.apply_tokens  = apply_tokens -- flag+positional splitter (shared with :Surround)
+M.tokenize = parse_args -- quote/escape-aware tokenizer (shared with :Surround)
+M.apply_tokens = apply_tokens -- flag+positional splitter (shared with :Surround)
 
 return M

@@ -23,17 +23,23 @@ end
 
 ---@param message string
 ---@return RP_Error
-function M.invalid_scope(message) return M.new("InvalidScopeError", message) end
+function M.invalid_scope(message)
+  return M.new("InvalidScopeError", message)
+end
 
 ---@param message string
 ---@param cause any|nil
 ---@return RP_Error
-function M.write_error(message, cause) return M.new("WriteError", message, cause) end
+function M.write_error(message, cause)
+  return M.new("WriteError", message, cause)
+end
 
 ---@param message string
 ---@param cause any|nil
 ---@return RP_Error
-function M.search_error(message, cause) return M.new("SearchError", message, cause) end
+function M.search_error(message, cause)
+  return M.new("SearchError", message, cause)
+end
 
 --- Call `fn(...)` under pcall and return a uniform result envelope.
 ---@generic T
@@ -52,7 +58,9 @@ end
 ---@param err RP_Error
 ---@return string
 function M.format(err)
-  if type(err) ~= "table" then return tostring(err) end
+  if type(err) ~= "table" then
+    return tostring(err)
+  end
   return string.format("[%s] %s", err.type or "Error", err.message or "")
 end
 

@@ -42,19 +42,29 @@ end
 ---@param text string|nil
 ---@return RP_CaseStyle|nil
 function M.detect(text)
-  if not text or text == "" or not text:match("%a") then return nil end
+  if not text or text == "" or not text:match("%a") then
+    return nil
+  end
 
   local has_upper = text:match("%u") ~= nil
   local has_lower = text:match("%l") ~= nil
-  if has_upper and not has_lower then return "upper" end
-  if has_lower and not has_upper then return "lower" end
+  if has_upper and not has_lower then
+    return "upper"
+  end
+  if has_lower and not has_upper then
+    return "lower"
+  end
 
   -- Mixed case: word-split (separators AND camel boundaries) to tell a
   -- single Capitalized word ("title", e.g. "Foo") apart from a genuine
   -- multi-word identifier ("camel"/"pascal", e.g. "fooBar"/"Foo_Bar").
   local words = split_words(text)
-  if #words <= 1 then return "title" end
-  if text:sub(1, 1):match("%u") then return "pascal" end
+  if #words <= 1 then
+    return "title"
+  end
+  if text:sub(1, 1):match("%u") then
+    return "pascal"
+  end
   return "camel"
 end
 
@@ -67,17 +77,25 @@ end
 ---@param style RP_CaseStyle|nil
 ---@return string
 function M.apply(new_text, style)
-  if not new_text or new_text == "" or not style then return new_text or "" end
+  if not new_text or new_text == "" or not style then
+    return new_text or ""
+  end
 
-  if style == "upper" then return new_text:upper() end
-  if style == "lower" then return new_text:lower() end
+  if style == "upper" then
+    return new_text:upper()
+  end
+  if style == "lower" then
+    return new_text:lower()
+  end
   if style == "title" then
     return new_text:sub(1, 1):upper() .. new_text:sub(2):lower()
   end
 
   if style == "camel" or style == "pascal" then
     local words = split_words(new_text)
-    if #words == 0 then return new_text end
+    if #words == 0 then
+      return new_text
+    end
     local out = {} ---@type string[]
     for i, w in ipairs(words) do
       local lw = w:lower()

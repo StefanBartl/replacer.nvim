@@ -28,7 +28,9 @@ local M = {}
 ---@param new_text string
 ---@return string
 local function wrap_with_original_whitespace(old_text, new_text)
-  if old_text == "" or not old_text:match("%S") then return new_text end
+  if old_text == "" or not old_text:match("%S") then
+    return new_text
+  end
   local leading = old_text:match("^%s*") or ""
   local trailing = old_text:match("%s*$") or ""
   return leading .. new_text .. trailing
@@ -91,7 +93,11 @@ function M.compute_file_edits(lines, matches, new_text, cfg, old_pattern)
   for i = 1, #matches do
     local it = matches[i]
     local key = it.lnum
-    local t = by_lnum[key]; if not t then t = {}; by_lnum[key] = t end
+    local t = by_lnum[key]
+    if not t then
+      t = {}
+      by_lnum[key] = t
+    end
     local c = (counts[key] or 0) + 1
     counts[key] = c
     t[c] = it
@@ -99,11 +105,15 @@ function M.compute_file_edits(lines, matches, new_text, cfg, old_pattern)
 
   -- Copy lines (do not mutate caller input).
   local new_lines = {}
-  for i = 1, #lines do new_lines[i] = lines[i] end
+  for i = 1, #lines do
+    new_lines[i] = lines[i]
+  end
 
   local spots, skipped = 0, 0
   for lnum, list in pairs(by_lnum) do
-    table.sort(list, function(a, b) return a.col0 > b.col0 end)
+    table.sort(list, function(a, b)
+      return a.col0 > b.col0
+    end)
     local line = new_lines[lnum]
     if type(line) == "string" then
       for _, it in ipairs(list) do
@@ -142,7 +152,11 @@ local function group_by_path(items)
   for i = 1, #items do
     local it = items[i]
     local key = it.path
-    local t = by_path[key]; if not t then t = {}; by_path[key] = t end
+    local t = by_path[key]
+    if not t then
+      t = {}
+      by_path[key] = t
+    end
     local c = (counts[key] or 0) + 1
     counts[key] = c
     t[c] = it
@@ -157,7 +171,9 @@ end
 ---@return boolean
 local function is_binary_file(path)
   local ok, fh = pcall(io.open, path, "rb")
-  if not ok or not fh then return false end
+  if not ok or not fh then
+    return false
+  end
   local chunk = fh:read(512)
   fh:close()
   return chunk ~= nil and chunk:find("\0", 1, true) ~= nil
@@ -171,12 +187,18 @@ end
 ---@param cfg RP_Config
 ---@return string|nil reason
 local function safe_mode_skip_reason(path, cfg)
-  if vim.fn.filewritable(path) == 0 then return "read-only" end
+  if vim.fn.filewritable(path) == 0 then
+    return "read-only"
+  end
   if cfg.max_file_size and cfg.max_file_size > 0 then
     local size = vim.fn.getfsize(path)
-    if size > cfg.max_file_size then return "too large" end
+    if size > cfg.max_file_size then
+      return "too large"
+    end
   end
-  if cfg.skip_binary ~= false and is_binary_file(path) then return "binary" end
+  if cfg.skip_binary ~= false and is_binary_file(path) then
+    return "binary"
+  end
   return nil
 end
 
@@ -199,14 +221,19 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
     if cfg and cfg.safe_mode then
       local reason = safe_mode_skip_reason(path, cfg)
       if reason then
-        notify.warn(string.format("safe_mode: skipping %s (%s)", vim.fn.fnamemodify(path, ":."), reason))
+        notify.warn(
+          string.format("safe_mode: skipping %s (%s)", vim.fn.fnamemodify(path, ":."), reason)
+        )
         skipped_total = skipped_total + #list
         goto next_path
       end
     end
 
-    local proceed = require("replacer.hooks").run("before_apply",
-      { path = path, matches = list, new_text = new_text }, cfg)
+    local proceed = require("replacer.hooks").run(
+      "before_apply",
+      { path = path, matches = list, new_text = new_text },
+      cfg
+    )
     if not proceed then
       skipped_total = skipped_total + #list
       goto next_path
@@ -226,7 +253,9 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
 
     -- Bottom-up so earlier edits do not shift later offsets.
     table.sort(list, function(a, b)
-      if a.lnum ~= b.lnum then return a.lnum > b.lnum end
+      if a.lnum ~= b.lnum then
+        return a.lnum > b.lnum
+      end
       return a.col0 > b.col0
     end)
 
@@ -258,25 +287,41 @@ function M.apply_matches(items, old, new_text, write_changes, cfg)
 
     skipped_total = skipped_total + skipped
     if skipped > 0 and skipped >= #list * 0.5 then
-      notify.warn(string.format(
-        "%s: %d/%d spot(s) skipped — buffer may have changed; re-run :Replace",
-        vim.fn.fnamemodify(path, ":."), skipped, #list))
+      notify.warn(
+        string.format(
+          "%s: %d/%d spot(s) skipped — buffer may have changed; re-run :Replace",
+          vim.fn.fnamemodify(path, ":."),
+          skipped,
+          #list
+        )
+      )
     end
 
-    require("replacer.hooks").run("after_apply", { path = path, spots = file_spots, skipped = skipped }, cfg)
+    require("replacer.hooks").run(
+      "after_apply",
+      { path = path, spots = file_spots, skipped = skipped },
+      cfg
+    )
 
     -- Write or count modified files.
     if vim.bo[bufnr].modified then
       if write_changes then
         require("replacer.hooks").run("before_write", { path = path, bufnr = bufnr }, cfg)
         local ok_write = pcall(function()
-          vim.api.nvim_buf_call(bufnr, function() vim.cmd("silent noautocmd write") end)
+          vim.api.nvim_buf_call(bufnr, function()
+            vim.cmd("silent noautocmd write")
+          end)
         end)
-        require("replacer.hooks").run("after_write", { path = path, bufnr = bufnr, ok = ok_write }, cfg)
+        require("replacer.hooks").run(
+          "after_write",
+          { path = path, bufnr = bufnr, ok = ok_write },
+          cfg
+        )
         if ok_write then
           files = files + 1
         else
-          errors[#errors + 1] = Err.write_error("failed to write " .. vim.fn.fnamemodify(path, ":."))
+          errors[#errors + 1] =
+            Err.write_error("failed to write " .. vim.fn.fnamemodify(path, ":."))
         end
       else
         files = files + 1

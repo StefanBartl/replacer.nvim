@@ -28,12 +28,16 @@ local function read_lines(path)
     return vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), true
   end
   local ok, fh = pcall(io.open, path, "r")
-  if not ok or not fh then return {}, false end
+  if not ok or not fh then
+    return {}, false
+  end
   local lines = {}
   local n = 0
   for line in fh:lines() do
     n = n + 1
-    if n == 1 then line = encoding.strip_bom(line) end
+    if n == 1 then
+      line = encoding.strip_bom(line)
+    end
     lines[n] = encoding.strip_cr(line)
   end
   fh:close()
@@ -50,7 +54,11 @@ local function group_by_path(items)
   for i = 1, #items do
     local it = items[i]
     local key = it.path
-    local t = by_path[key]; if not t then t = {}; by_path[key] = t end
+    local t = by_path[key]
+    if not t then
+      t = {}
+      by_path[key] = t
+    end
     local c = (counts[key] or 0) + 1
     counts[key] = c
     t[c] = it
@@ -92,19 +100,26 @@ function M.build_results(items, new_text, cfg, old_pattern)
 
   for path, list in pairs(by_path) do
     local old_lines = read_lines(path)
-    local new_lines, spots, skipped = apply.compute_file_edits(old_lines, list, new_text, cfg, old_pattern)
+    local new_lines, spots, skipped =
+      apply.compute_file_edits(old_lines, list, new_text, cfg, old_pattern)
     totals.spots = totals.spots + spots
     totals.skipped = totals.skipped + skipped
     if spots > 0 then
       totals.files = totals.files + 1
       results[#results + 1] = {
-        path = path, old_lines = old_lines, new_lines = new_lines,
-        spots = spots, skipped = skipped, matches = list,
+        path = path,
+        old_lines = old_lines,
+        new_lines = new_lines,
+        spots = spots,
+        skipped = skipped,
+        matches = list,
       }
     end
   end
 
-  table.sort(results, function(a, b) return a.path < b.path end)
+  table.sort(results, function(a, b)
+    return a.path < b.path
+  end)
   return results, totals
 end
 
@@ -128,7 +143,9 @@ function M.build_patch(results)
       out[#out + 1] = (hunks:gsub("\n$", ""))
     end
   end
-  if #out == 0 then return "" end
+  if #out == 0 then
+    return ""
+  end
   return table.concat(out, "\n") .. "\n"
 end
 
@@ -144,16 +161,25 @@ function M.build_json(results, new_text)
     local matches = {}
     for _, it in ipairs(r.matches) do
       matches[#matches + 1] = {
-        lnum = it.lnum, col = it.col0 + 1, old = it.old, new = new_text, line = it.line,
+        lnum = it.lnum,
+        col = it.col0 + 1,
+        old = it.old,
+        new = new_text,
+        line = it.line,
       }
     end
     files[#files + 1] = {
       path = vim.fn.fnamemodify(r.path, ":."),
-      spots = r.spots, skipped = r.skipped, matches = matches,
+      spots = r.spots,
+      skipped = r.skipped,
+      matches = matches,
     }
   end
   return vim.json.encode({
-    new_text = new_text, total_files = #results, total_spots = total_spots, files = files,
+    new_text = new_text,
+    total_files = #results,
+    total_spots = total_spots,
+    files = files,
   })
 end
 

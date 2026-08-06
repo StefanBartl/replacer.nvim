@@ -14,11 +14,15 @@ local function git_lines(cwd, args)
   vim.list_extend(cmd, args)
   if vim.system then
     local obj = vim.system(cmd, { text = true }):wait()
-    if not obj or obj.code ~= 0 then return {}, false end
+    if not obj or obj.code ~= 0 then
+      return {}, false
+    end
     return vim.split(obj.stdout or "", "\n", { trimempty = true }), true
   end
   local ok, out = require("lib.nvim.cross.run_argv").run_blocking_captured(cmd)
-  if not ok then return {}, false end
+  if not ok then
+    return {}, false
+  end
   return vim.split(out or "", "\n", { trimempty = true }), true
 end
 
@@ -28,7 +32,9 @@ end
 ---@return string|nil
 local function toplevel(start_dir)
   local lines, ok = git_lines(start_dir, { "rev-parse", "--show-toplevel" })
-  if not ok or #lines == 0 then return nil end
+  if not ok or #lines == 0 then
+    return nil
+  end
   return lines[1]
 end
 
@@ -40,10 +46,14 @@ end
 ---@return string[] files, string|nil top
 function M.list(start_dir, kinds)
   local top = toplevel(start_dir)
-  if not top then return {}, nil end
+  if not top then
+    return {}, nil
+  end
 
   local set = {}
-  for _, k in ipairs(kinds) do set[k] = true end
+  for _, k in ipairs(kinds) do
+    set[k] = true
+  end
 
   local rel, seen = {}, {}
   local function add_all(lines)

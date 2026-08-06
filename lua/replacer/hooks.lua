@@ -31,7 +31,9 @@ end
 --- untouched). Mainly for tests.
 ---@return nil
 function M.clear()
-  for event in pairs(registered) do registered[event] = {} end
+  for event in pairs(registered) do
+    registered[event] = {}
+  end
 end
 
 --- Run every hook registered for `event` (config.hooks[event], then

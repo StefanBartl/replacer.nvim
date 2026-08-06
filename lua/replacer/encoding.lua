@@ -30,7 +30,9 @@ end
 ---@param line string
 ---@return string
 function M.strip_cr(line)
-  if line:sub(-1) == "\r" then return line:sub(1, -2) end
+  if line:sub(-1) == "\r" then
+    return line:sub(1, -2)
+  end
   return line
 end
 
@@ -44,7 +46,9 @@ function M.detect_eol(content)
   if not nl then
     return content:find("\r", 1, true) and "cr" or "none"
   end
-  if nl > 1 and content:sub(nl - 1, nl - 1) == "\r" then return "crlf" end
+  if nl > 1 and content:sub(nl - 1, nl - 1) == "\r" then
+    return "crlf"
+  end
   return "lf"
 end
 

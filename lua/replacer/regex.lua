@@ -44,10 +44,14 @@ end
 ---@param pattern string
 ---@return string
 function M.expand_backrefs(new_text, line, pattern)
-  if not M.has_backrefs(new_text) then return new_text end
+  if not M.has_backrefs(new_text) then
+    return new_text
+  end
 
   local ok, groups = pcall(vim.fn.matchlist, line, pattern)
-  if not ok or type(groups) ~= "table" then return new_text end
+  if not ok or type(groups) ~= "table" then
+    return new_text
+  end
 
   return (new_text:gsub("\\(%d)", function(d)
     return groups[tonumber(d) + 1] or ""
@@ -64,7 +68,7 @@ end
 function M.escape_and_report(text)
   local escaped = M.escape(text)
   pcall(vim.fn.setreg, '"', escaped)
-  notify.info(string.format('escaped (also copied to the unnamed register "\"): %s', escaped))
+  notify.info(string.format('escaped (also copied to the unnamed register ""): %s', escaped))
 end
 
 --------------------------------------------------------------------------------
@@ -80,7 +84,9 @@ local function highlight_test_buffer(buf)
   vim.api.nvim_buf_clear_namespace(buf, TEST_NS, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(buf, 0, 2, false)
   local pattern, sample = lines[1] or "", lines[2] or ""
-  if pattern == "" or sample == "" then return end
+  if pattern == "" or sample == "" then
+    return
+  end
 
   -- Invalid/incomplete pattern while typing just yields no highlights (pcall
   -- swallows the Vim regex error rather than spamming it on every keystroke).
@@ -89,13 +95,19 @@ local function highlight_test_buffer(buf)
     local guard = 0
     while true do
       guard = guard + 1
-      if guard > 1000 then break end -- pathological pattern safety valve
+      if guard > 1000 then
+        break
+      end -- pathological pattern safety valve
       local mt = vim.fn.matchstrpos(sample, pattern, pos)
       local matched, s, e = mt[1], mt[2], mt[3]
-      if s == -1 or not matched or matched == "" then break end
+      if s == -1 or not matched or matched == "" then
+        break
+      end
       vim.api.nvim_buf_set_extmark(buf, TEST_NS, 1, s, { end_col = e, hl_group = "ReplacerTarget" })
       pos = e
-      if pos >= #sample then break end
+      if pos >= #sample then
+        break
+      end
     end
   end)
 end
@@ -112,7 +124,10 @@ function M.open_test_panel(pattern, sample)
   vim.bo[buf].bufhidden = "wipe"
   vim.bo[buf].swapfile = false
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-    pattern or "", sample or "", "", "-- line 1: pattern (Vim regex) · line 2: sample text",
+    pattern or "",
+    sample or "",
+    "",
+    "-- line 1: pattern (Vim regex) · line 2: sample text",
   })
 
   pcall(vim.api.nvim_set_hl, 0, "ReplacerTarget", { link = "Search" })
@@ -132,11 +147,15 @@ function M.open_test_panel(pattern, sample)
 
   vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
     buffer = buf,
-    callback = function() highlight_test_buffer(buf) end,
+    callback = function()
+      highlight_test_buffer(buf)
+    end,
   })
 
   local function close()
-    if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true)
+    end
   end
   vim.keymap.set({ "n" }, "<Esc>", close, { buffer = buf, nowait = true, silent = true })
   vim.keymap.set({ "n" }, "q", close, { buffer = buf, nowait = true, silent = true })

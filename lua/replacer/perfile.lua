@@ -23,11 +23,16 @@ local function group_by_path_sorted(items)
   for i = 1, #items do
     local it = items[i]
     local t = by_path[it.path]
-    if not t then t = {}; by_path[it.path] = t end
+    if not t then
+      t = {}
+      by_path[it.path] = t
+    end
     t[#t + 1] = it
   end
   local paths = {}
-  for p in pairs(by_path) do paths[#paths + 1] = p end
+  for p in pairs(by_path) do
+    paths[#paths + 1] = p
+  end
   table.sort(paths)
   return by_path, paths
 end

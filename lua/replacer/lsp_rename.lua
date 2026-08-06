@@ -33,13 +33,17 @@ end
 local function list_clients(bufnr)
   if vim.lsp.get_clients then
     local ok, clients = pcall(vim.lsp.get_clients, { bufnr = bufnr })
-    if ok and clients then return clients end
+    if ok and clients then
+      return clients
+    end
   end
   ---@diagnostic disable-next-line: deprecated
   if vim.lsp.get_active_clients then
     ---@diagnostic disable-next-line: deprecated
     local ok, clients = pcall(vim.lsp.get_active_clients, { bufnr = bufnr })
-    if ok and clients then return clients end
+    if ok and clients then
+      return clients
+    end
   end
   return {}
 end
@@ -50,7 +54,9 @@ end
 local function supports_rename(client)
   if client.supports_method then
     local ok, result = pcall(client.supports_method, client, "textDocument/rename")
-    if ok then return result == true end
+    if ok then
+      return result == true
+    end
   end
   return client.server_capabilities ~= nil and client.server_capabilities.renameProvider ~= nil
 end
@@ -61,7 +67,9 @@ end
 ---@return table|nil
 local function rename_capable_client(bufnr)
   for _, client in ipairs(list_clients(bufnr)) do
-    if supports_rename(client) then return client end
+    if supports_rename(client) then
+      return client
+    end
   end
   return nil
 end
@@ -110,11 +118,14 @@ function M.try_rename(match, new_text, on_done)
       on_done(false)
       return
     end
-    local ok_apply = pcall(vim.lsp.util.apply_workspace_edit, result, client.offset_encoding or "utf-16")
+    local ok_apply =
+      pcall(vim.lsp.util.apply_workspace_edit, result, client.offset_encoding or "utf-16")
     on_done(ok_apply == true)
   end, bufnr)
 
-  if not ok_req then on_done(false) end
+  if not ok_req then
+    on_done(false)
+  end
 end
 
 --- Attempt LSP rename for every item in `items`, blocking (vim.wait) until
@@ -140,7 +151,9 @@ function M.try_rename_batch(items, new_text, timeout_ms)
   end
 
   if pending > 0 then
-    pcall(vim.wait, timeout_ms or 2000, function() return pending <= 0 end, 10)
+    pcall(vim.wait, timeout_ms or 2000, function()
+      return pending <= 0
+    end, 10)
   end
 
   ---@type RP_Match[]

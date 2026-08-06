@@ -27,7 +27,9 @@ local function to_fzf_key(nvim_key)
   local s = tostring(nvim_key or ""):gsub("^<", ""):gsub(">$", "")
   s = s:gsub("[Cc]%-", "ctrl-"):gsub("[Ss]%-", "shift-"):gsub("[MmAa]%-", "alt-")
   s = s:lower()
-  if s == "cr" then return "enter" end
+  if s == "cr" then
+    return "enter"
+  end
   return s
 end
 
@@ -52,7 +54,7 @@ local function run(old, items, new_text, cfg, apply_func)
     local it = items[i] --[[@as RP_Match]]
     local rel = vim.fn.fnamemodify(it.path, ":.")
     local visible = string.format("%s:%d:%d: %s", rel, it.lnum, it.col0 + 1, it.line)
-    local hidden  = string.format("ID%d", it.id)
+    local hidden = string.format("ID%d", it.id)
     source[#source + 1] = visible .. "\t" .. hidden
     idmap[hidden] = it
   end
@@ -71,8 +73,12 @@ local function run(old, items, new_text, cfg, apply_func)
   -- only the full-span preview highlight is skipped. Hence the failure is ignored
   -- on purpose (not a swallowed error).
   local grep_fn
-  local ok_grep = pcall(function() grep_fn = require("fzf-lua.providers.grep").grep end)
-  if not ok_grep then grep_fn = nil end
+  local ok_grep = pcall(function()
+    grep_fn = require("fzf-lua.providers.grep").grep
+  end)
+  if not ok_grep then
+    grep_fn = nil
+  end
   local ok_utils, utils = pcall(require, "fzf-lua.utils")
   if ok_utils and utils and (cfg.literal ~= false) then
     last_query = utils.rg_escape(last_query)
@@ -86,15 +92,21 @@ local function run(old, items, new_text, cfg, apply_func)
 
   local actions = {
     ["default"] = function(selected)
-      if not selected or #selected == 0 then return end
+      if not selected or #selected == 0 then
+        return
+      end
       local chosen = {} ---@type RP_Match[]
       for _, line in ipairs(selected) do
         local s = type(line) == "table" and line[1] or line
         local id = (type(s) == "string") and s:match("\t(ID%d+)$") or nil
         local it = id and idmap[id] or nil
-        if it then chosen[#chosen + 1] = it end
+        if it then
+          chosen[#chosen + 1] = it
+        end
       end
-      if #chosen == 0 then return end
+      if #chosen == 0 then
+        return
+      end
       local files, spots = apply_func(chosen, new_text, cfg.write_changes)
       common.notify_result(files, spots, cfg)
     end,
@@ -103,13 +115,23 @@ local function run(old, items, new_text, cfg, apply_func)
       for _, s in ipairs(source) do
         local id = s:match("\t(ID%d+)$")
         local it = id and idmap[id] or nil
-        if it then all[#all + 1] = it end
+        if it then
+          all[#all + 1] = it
+        end
       end
-      if #all == 0 then return end
+      if #all == 0 then
+        return
+      end
       if cfg.confirm_all then
         local messages = require("replacer.messages")
-        local fileset = {}; for _, it in ipairs(all) do fileset[it.path] = true end
-        local fc = 0; for _ in pairs(fileset) do fc = fc + 1 end
+        local fileset = {}
+        for _, it in ipairs(all) do
+          fileset[it.path] = true
+        end
+        local fc = 0
+        for _ in pairs(fileset) do
+          fc = fc + 1
+        end
         confirm.open({
           question = messages.fmt(cfg, "confirm_all", #all, fc),
           on_answer = function(yes)
@@ -127,39 +149,47 @@ local function run(old, items, new_text, cfg, apply_func)
       common.notify_result(files, spots, cfg)
     end,
     [key_reopen] = function(selected)
-      if not selected or #selected == 0 then return end
+      if not selected or #selected == 0 then
+        return
+      end
       local s = type(selected[1]) == "table" and selected[1][1] or selected[1]
       local id = (type(s) == "string") and s:match("\t(ID%d+)$") or nil
       local it = id and idmap[id] or nil
-      if not it then return end
+      if not it then
+        return
+      end
 
       local files, spots = apply_func({ it }, new_text, cfg.write_changes)
       common.notify_result(files, spots, cfg)
 
       local remaining = {} ---@type RP_Match[]
       for _, other in ipairs(items) do
-        if other.id ~= it.id then remaining[#remaining + 1] = other end
+        if other.id ~= it.id then
+          remaining[#remaining + 1] = other
+        end
       end
       if #remaining == 0 then
         notify.info("no more matches")
         return
       end
       -- Reopen after this picker instance finishes closing.
-      vim.schedule(function() run(old, remaining, new_text, cfg, apply_func) end)
+      vim.schedule(function()
+        run(old, remaining, new_text, cfg, apply_func)
+      end)
     end,
   }
 
   local base = {
     prompt = "Select matches> ",
     fzf_opts = {
-      ["--multi"]     = true,
-      ["--with-nth"]  = "1",
+      ["--multi"] = true,
+      ["--with-nth"] = "1",
       ["--delimiter"] = "\t",
-      ["--no-mouse"]  = true,
-      ["--marker"]    = "*",
+      ["--no-mouse"] = true,
+      ["--marker"] = "*",
       -- fzf's own default already toggles on tab/shift-tab; this bind is a
       -- no-op in that common case and only matters when the keys are remapped.
-      ["--bind"]      = string.format("%s:toggle+down,%s:toggle+up", key_next, key_prev),
+      ["--bind"] = string.format("%s:toggle+down,%s:toggle+up", key_next, key_prev),
     },
     actions = actions,
   }
@@ -181,11 +211,12 @@ local function run(old, items, new_text, cfg, apply_func)
     local key_quit = keys.quit or "<Esc>"
     local prev_on_create = opts.winopts.on_create
     opts.winopts.on_create = function(...)
-      if type(prev_on_create) == "function" then pcall(prev_on_create, ...) end
+      if type(prev_on_create) == "function" then
+        pcall(prev_on_create, ...)
+      end
       local buf = vim.api.nvim_get_current_buf()
       local win = vim.api.nvim_get_current_win()
-      pcall(map, "t", "<Esc>", [[<C-\><C-n>]],
-        { buffer = buf, nowait = true, silent = true })
+      pcall(map, "t", "<Esc>", [[<C-\><C-n>]], { buffer = buf, nowait = true, silent = true })
       window.nice_quit(win, { keys = { key_quit }, force = true })
 
       -- Only "quit" is a real Neovim keymap which-key can see: toggle_select
@@ -200,8 +231,8 @@ local function run(old, items, new_text, cfg, apply_func)
 
   -- Wire official previewer + grep hints (full-span highlight)
   if ctor and grep_fn and last_query ~= "" then
-    opts.previewer   = { _ctor = ctor }
-    opts.__ACT_TO    = grep_fn
+    opts.previewer = { _ctor = ctor }
+    opts.__ACT_TO = grep_fn
     opts._last_query = last_query
   end
 

@@ -18,7 +18,6 @@
 ---| "root"   # auto-detected project root (see replacer.root); falls back to cwd
 ---| string   # absolute/relative file or directory path
 
-
 -- rg module accepts the same config surface (subset used).
 ---@alias RP_RG_Config RP_Config
 
@@ -100,7 +99,6 @@
 ---@field register ReplacerRunRegisterFn
 ---@field resolve_scope ReplacerResolveScopeFn
 ---@field parse_request fun(raw: string|nil, cmd_opts: table|nil): boolean, RP_Request|nil, string|nil
-
 
 ----------------
 -- apply.lua  -- Local extended match type to satisfy LuaLS when accessing optional fields.

@@ -15,9 +15,17 @@ local M = {}
 
 ---@type string[]
 local MARKERS = {
-  ".git", ".hg", ".svn",
-  "package.json", "go.mod", "Cargo.toml", "pyproject.toml", "setup.py",
-  "pom.xml", "build.gradle", "build.gradle.kts",
+  ".git",
+  ".hg",
+  ".svn",
+  "package.json",
+  "go.mod",
+  "Cargo.toml",
+  "pyproject.toml",
+  "setup.py",
+  "pom.xml",
+  "build.gradle",
+  "build.gradle.kts",
 }
 
 --- Walk up from `start_dir`, collecting every directory containing at least
@@ -26,14 +34,18 @@ local MARKERS = {
 ---@return string[] candidates
 function M.detect(start_dir)
   local dir = vim.fn.fnamemodify(start_dir, ":p"):gsub("[/\\]+$", "")
-  if dir == "" then return {} end
+  if dir == "" then
+    return {}
+  end
 
   local candidates, seen = {}, {}
   local guard = 0
   while dir ~= "" and not seen[dir] do
     seen[dir] = true
     guard = guard + 1
-    if guard > 200 then break end -- pathological path safety valve
+    if guard > 200 then
+      break
+    end -- pathological path safety valve
 
     for _, marker in ipairs(MARKERS) do
       local p = dir .. "/" .. marker
@@ -44,7 +56,9 @@ function M.detect(start_dir)
     end
 
     local parent = vim.fn.fnamemodify(dir, ":h")
-    if parent == dir then break end
+    if parent == dir then
+      break
+    end
     dir = parent
   end
   return candidates
@@ -57,7 +71,9 @@ end
 ---@return string|nil root, string[] candidates
 function M.detect_best(start_dir)
   local candidates = M.detect(start_dir)
-  if #candidates == 0 then return nil, candidates end
+  if #candidates == 0 then
+    return nil, candidates
+  end
   for i = #candidates, 1, -1 do
     if vim.fn.isdirectory(candidates[i] .. "/.git") == 1 then
       return candidates[i], candidates
@@ -76,7 +92,9 @@ local function default_start_dir()
     return vim.fn.fnamemodify(buf_name, ":h")
   end
   local uv = vim.uv or vim.loop
-  local ok, cwd = pcall(function() return uv.cwd() end)
+  local ok, cwd = pcall(function()
+    return uv.cwd()
+  end)
   return ok and cwd or nil
 end
 
@@ -133,23 +151,33 @@ function M.register(run_fun)
 
     ---@type RP_Request
     local req = {
-      old = "", new = "", scope = "",
+      old = "",
+      new = "",
+      scope = "",
       all = opts.bang and true or false,
-      dry = false, export = nil, line_range = nil,
+      dry = false,
+      export = nil,
+      line_range = nil,
       overrides = {},
       filters = { file_types = {}, globs = {}, exclude = {} },
     }
 
     local positionals, err = command.apply_tokens(tokens, req)
     if not positionals then
-      vim.schedule(function() notify.error(err) end)
+      vim.schedule(function()
+        notify.error(err)
+      end)
       return
     end
     if #positionals ~= 2 then
       vim.schedule(function()
-        notify.error(string.format(
-          "ReplaceRoot: expected {old} {new} — got %d positional value(s).\n%s",
-          #positionals, USAGE))
+        notify.error(
+          string.format(
+            "ReplaceRoot: expected {old} {new} — got %d positional value(s).\n%s",
+            #positionals,
+            USAGE
+          )
+        )
       end)
       return
     end

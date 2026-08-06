@@ -44,9 +44,15 @@ end
 ---@return "fzf"|"telescope"|nil
 local function pick_picker(cfg)
   local e = cfg.engine or "auto"
-  if e == "fzf" or e == "telescope" then return e end
-  if pcall(require, "fzf-lua") then return "fzf" end
-  if pcall(require, "telescope") then return "telescope" end
+  if e == "fzf" or e == "telescope" then
+    return e
+  end
+  if pcall(require, "fzf-lua") then
+    return "fzf"
+  end
+  if pcall(require, "telescope") then
+    return "telescope"
+  end
   return nil
 end
 
@@ -55,7 +61,9 @@ end
 ---@param dst string[]
 ---@param src string[]|nil
 local function extend(dst, src)
-  for i = 1, #(src or {}) do dst[#dst + 1] = src[i] end
+  for i = 1, #(src or {}) do
+    dst[#dst + 1] = src[i]
+  end
 end
 
 ---@internal
@@ -78,7 +86,9 @@ end
 --- Open a read-only scratch split showing diff text.
 ---@param patch string
 local function show_diff_scratch(patch)
-  if patch == "" then return end
+  if patch == "" then
+    return
+  end
   pcall(function()
     vim.cmd("botright new")
     local buf = vim.api.nvim_get_current_buf()
@@ -100,10 +110,14 @@ end
 ---@return nil
 local function plan(request, items, cfg)
   local results, totals = export.build_results(items, request.new, cfg, request.old)
-  notify.info(string.format(
-    "dry-run: %d spot(s) in %d file(s)%s — no changes written",
-    totals.spots, totals.files,
-    totals.skipped > 0 and string.format(" (%d skipped)", totals.skipped) or ""))
+  notify.info(
+    string.format(
+      "dry-run: %d spot(s) in %d file(s)%s — no changes written",
+      totals.spots,
+      totals.files,
+      totals.skipped > 0 and string.format(" (%d skipped)", totals.skipped) or ""
+    )
+  )
 
   if request.export and request.export ~= "" then
     local ok, err = export.write_export(request.export, results, request.new)
@@ -133,8 +147,13 @@ local function dispatch(request, cfg, single_file, items)
   -- Quickfix/loclist export: send the raw match list and open it. Never writes.
   if request.to_quickfix or request.to_loclist then
     export.send_to_quickfix(items, request.to_loclist == true)
-    notify.info(string.format(
-      "%d match(es) sent to %s", #items, request.to_loclist and "the location list" or "quickfix"))
+    notify.info(
+      string.format(
+        "%d match(es) sent to %s",
+        #items,
+        request.to_loclist and "the location list" or "quickfix"
+      )
+    )
     return
   end
 
@@ -150,8 +169,8 @@ local function dispatch(request, cfg, single_file, items)
     local lsp_count = 0
     local to_apply = chosen
     if cfg.lsp then
-      local ok_lsp, lsp_renamed, fallback = pcall(
-        require("replacer.lsp_rename").try_rename_batch, chosen, replacement)
+      local ok_lsp, lsp_renamed, fallback =
+        pcall(require("replacer.lsp_rename").try_rename_batch, chosen, replacement)
       if ok_lsp and lsp_renamed and fallback then
         lsp_count = #lsp_renamed
         to_apply = fallback
@@ -168,7 +187,12 @@ local function dispatch(request, cfg, single_file, items)
     -- affects the content apply it followed.
     if cfg._also_rename_file and single_file and files > 0 and chosen[1] then
       pcall(function()
-        require("replacer.rename_assist").maybe_rename(chosen[1].path, request.old, replacement, cfg)
+        require("replacer.rename_assist").maybe_rename(
+          chosen[1].path,
+          request.old,
+          replacement,
+          cfg
+        )
       end)
     end
     return files, spots
@@ -193,7 +217,9 @@ local function dispatch(request, cfg, single_file, items)
   -- Non-interactive ALL.
   if request.all then
     if cfg.checkpoint then
-      local ok_cp, id = pcall(function() return require("replacer.checkpoint").create(items) end)
+      local ok_cp, id = pcall(function()
+        return require("replacer.checkpoint").create(items)
+      end)
       if ok_cp and id then
         notify.info(string.format("checkpoint '%s' created — :ReplaceUndo to revert", id))
       else
@@ -203,16 +229,27 @@ local function dispatch(request, cfg, single_file, items)
 
     if cfg.confirm_per_file then
       local perfile = require("replacer.perfile")
-      perfile.run(items, request.new, cfg.write_changes, apply_func, open_picker, function(files, spots)
-        common.notify_result(files, spots, cfg)
-      end)
+      perfile.run(
+        items,
+        request.new,
+        cfg.write_changes,
+        apply_func,
+        open_picker,
+        function(files, spots)
+          common.notify_result(files, spots, cfg)
+        end
+      )
       return
     end
 
     local fileset = {}
-    for _, it in ipairs(items) do fileset[it.path] = true end
+    for _, it in ipairs(items) do
+      fileset[it.path] = true
+    end
     local filecount = 0
-    for _ in pairs(fileset) do filecount = filecount + 1 end
+    for _ in pairs(fileset) do
+      filecount = filecount + 1
+    end
 
     local wide = (not single_file) and cfg.confirm_wide_scope
     if cfg.confirm_all or wide then
@@ -255,9 +292,15 @@ end
 function M.run(request, new_text, scope, all)
   if type(request) == "string" then
     request = {
-      old = request, new = new_text or "", scope = scope or "",
-      all = all and true or false, dry = false, export = nil, line_range = nil,
-      overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+      old = request,
+      new = new_text or "",
+      scope = scope or "",
+      all = all and true or false,
+      dry = false,
+      export = nil,
+      line_range = nil,
+      overrides = {},
+      filters = { file_types = {}, globs = {}, exclude = {} },
     }
   end
   ---@cast request RP_Request
@@ -290,7 +333,9 @@ function M.run(request, new_text, scope, all)
     local filtered = {}
     for _, f in ipairs(files) do
       if single_file then
-        if f == prefix then filtered[#filtered + 1] = f end
+        if f == prefix then
+          filtered[#filtered + 1] = f
+        end
       elseif f == prefix or f:sub(1, #prefix + 1) == prefix .. "/" then
         filtered[#filtered + 1] = f
       end

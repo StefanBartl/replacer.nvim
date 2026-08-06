@@ -16,7 +16,9 @@ end
 ---@param args string[]
 ---@return string|nil
 local function get_version(cmd, args)
-  if not cmd_exists(cmd) then return nil end
+  if not cmd_exists(cmd) then
+    return nil
+  end
 
   local ok, result
   if vim.system then
@@ -24,14 +26,19 @@ local function get_version(cmd, args)
     ok = obj.code == 0
     result = obj.stdout or ""
   else
-    ok, result = require("lib.nvim.cross.run_argv").run_blocking_captured(vim.list_extend({ cmd }, args))
+    ok, result =
+      require("lib.nvim.cross.run_argv").run_blocking_captured(vim.list_extend({ cmd }, args))
   end
 
-  if not ok then return nil end
+  if not ok then
+    return nil
+  end
 
   -- Extract version number (first line, first number-like sequence)
   local first_line = result:match("^([^\n]+)")
-  if not first_line then return nil end
+  if not first_line then
+    return nil
+  end
 
   local version = first_line:match("(%d+%.%d+[%.%d]*)")
   return version
@@ -47,7 +54,14 @@ local function check_neovim(health)
   local current = vim.version()
 
   if vim.version.cmp(current, required) >= 0 then
-    health.ok(string.format("Version %s.%s.%s (required: 0.9.0+)", current.major, current.minor, current.patch))
+    health.ok(
+      string.format(
+        "Version %s.%s.%s (required: 0.9.0+)",
+        current.major,
+        current.minor,
+        current.patch
+      )
+    )
   else
     health.error(
       string.format("Version %s.%s.%s is too old", current.major, current.minor, current.patch),
@@ -82,14 +96,11 @@ local function check_ripgrep(health)
   health.start("ripgrep")
 
   if not cmd_exists("rg") then
-    health.warn(
-      "ripgrep (rg) not found in PATH — using the native vimgrep backend",
-      {
-        "ripgrep is faster and honors .gitignore/--type; vimgrep works without it.",
-        "Install ripgrep: https://github.com/BurntSushi/ripgrep#installation",
-        "On macOS: brew install ripgrep · Ubuntu: apt install ripgrep · Windows: choco install ripgrep",
-      }
-    )
+    health.warn("ripgrep (rg) not found in PATH — using the native vimgrep backend", {
+      "ripgrep is faster and honors .gitignore/--type; vimgrep works without it.",
+      "Install ripgrep: https://github.com/BurntSushi/ripgrep#installation",
+      "On macOS: brew install ripgrep · Ubuntu: apt install ripgrep · Windows: choco install ripgrep",
+    })
     return
   end
 
@@ -115,12 +126,14 @@ local function check_ripgrep(health)
 
   pcall(function()
     if vim.system then
-      local obj = vim.system({ "rg", "--json", "-e", "test" }, { text = true, stdin = "test" }):wait()
-      test_ok = obj.code == 0 or obj.code == 1  -- 0 = match, 1 = no match (both OK)
+      local obj = vim
+        .system({ "rg", "--json", "-e", "test" }, { text = true, stdin = "test" })
+        :wait()
+      test_ok = obj.code == 0 or obj.code == 1 -- 0 = match, 1 = no match (both OK)
       test_result = obj.stdout or ""
     else
       -- Fallback for older Neovim
-      local handle = io.popen('echo test | rg --json -e test 2>&1')
+      local handle = io.popen("echo test | rg --json -e test 2>&1")
       if handle then
         test_result = handle:read("*a")
         handle:close()
@@ -165,13 +178,10 @@ local function check_pickers(health)
   end
 
   if not telescope_ok and not fzf_ok then
-    health.error(
-      "No picker found",
-      {
-        "Install telescope.nvim: https://github.com/nvim-telescope/telescope.nvim",
-        "OR install fzf-lua: https://github.com/ibhagwan/fzf-lua"
-      }
-    )
+    health.error("No picker found", {
+      "Install telescope.nvim: https://github.com/nvim-telescope/telescope.nvim",
+      "OR install fzf-lua: https://github.com/ibhagwan/fzf-lua",
+    })
   end
 end
 
@@ -196,8 +206,7 @@ local function check_config(health)
       or "none"
     health.ok(string.format("Picker engine: auto (resolves to %s)", resolved))
     if resolved == "none" then
-      health.error("No picker available for engine='auto'",
-        { "Install fzf-lua or telescope.nvim" })
+      health.error("No picker available for engine='auto'", { "Install fzf-lua or telescope.nvim" })
     end
   elseif cfg.engine == "telescope" or cfg.engine == "fzf" then
     health.ok(string.format("Picker engine: %s", cfg.engine))
@@ -210,8 +219,10 @@ local function check_config(health)
       )
     end
   else
-    health.warn(string.format("Unknown engine: %s", tostring(cfg.engine)),
-      { "Expected 'auto', 'fzf', or 'telescope'" })
+    health.warn(
+      string.format("Unknown engine: %s", tostring(cfg.engine)),
+      { "Expected 'auto', 'fzf', or 'telescope'" }
+    )
   end
 
   -- Search backend ("auto" prefers ripgrep, falls back to vimgrep)
@@ -222,9 +233,15 @@ local function check_config(health)
   health.info(string.format("literal mode: %s", tostring(cfg.literal)))
 
   local filters = {}
-  if #(cfg.file_types or {}) > 0 then filters[#filters + 1] = "types=" .. table.concat(cfg.file_types, ",") end
-  if #(cfg.globs or {}) > 0 then filters[#filters + 1] = "globs=" .. table.concat(cfg.globs, ",") end
-  if #(cfg.exclude or {}) > 0 then filters[#filters + 1] = "exclude=" .. table.concat(cfg.exclude, ",") end
+  if #(cfg.file_types or {}) > 0 then
+    filters[#filters + 1] = "types=" .. table.concat(cfg.file_types, ",")
+  end
+  if #(cfg.globs or {}) > 0 then
+    filters[#filters + 1] = "globs=" .. table.concat(cfg.globs, ",")
+  end
+  if #(cfg.exclude or {}) > 0 then
+    filters[#filters + 1] = "exclude=" .. table.concat(cfg.exclude, ",")
+  end
   if #filters > 0 then
     health.info("Default filters: " .. table.concat(filters, "  "))
   end
@@ -264,7 +281,7 @@ local function check_utf8(health)
     health.ok("vim.str_byteindex available")
 
     -- Test UTF-8 conversion
-    local test_line = "Müller test"  -- ü = 2 bytes
+    local test_line = "Müller test" -- ü = 2 bytes
     local ok, result = pcall(vim.str_byteindex, test_line, 2, true)
     if ok and result == 2 then
       health.ok("UTF-8 byte index conversion working")

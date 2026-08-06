@@ -36,7 +36,9 @@ local M = {}
 ---@param new string
 ---@return string
 local function replace_all_literal(text, old, new)
-  if old == "" then return text end
+  if old == "" then
+    return text
+  end
   local parts, i = {}, 1
   while true do
     local s, e = text:find(old, i, true)
@@ -58,7 +60,9 @@ end
 ---@param acc { path: string, is_dir: boolean }[]
 local function list_all(root, acc)
   local ok, iter = pcall(vim.fs.dir, root, { depth = 32 })
-  if not ok or not iter then return end
+  if not ok or not iter then
+    return
+  end
   for name, typ in iter do
     if typ == "file" or typ == "directory" then
       acc[#acc + 1] = { path = root .. "/" .. name, is_dir = (typ == "directory") }
@@ -75,7 +79,9 @@ end
 ---@return RP_FNameMatch[]
 function M.collect(pattern, replacement, scope, cfg)
   cfg = cfg or {}
-  if pattern == "" then return {} end
+  if pattern == "" then
+    return {}
+  end
 
   local p = vim.fn.fnamemodify(scope, ":p"):gsub("[/\\]+$", "")
   ---@type { path: string, is_dir: boolean }[]
@@ -99,7 +105,8 @@ function M.collect(pattern, replacement, scope, cfg)
       local dir = vim.fn.fnamemodify(e.path, ":h")
       local new_name = replace_all_literal(name, pattern, replacement)
       if new_name ~= name then
-        matches[#matches + 1] = { old_path = e.path, new_path = dir .. "/" .. new_name, is_dir = e.is_dir }
+        matches[#matches + 1] =
+          { old_path = e.path, new_path = dir .. "/" .. new_name, is_dir = e.is_dir }
       end
     end
   end
@@ -151,7 +158,9 @@ function M.apply(matches)
   -- Deepest-first: a safety net even after filter_nested (e.g. unrelated
   -- same-length siblings), so a rename never operates on a path a previous
   -- rename in this batch already moved.
-  table.sort(matches, function(a, b) return #a.old_path > #b.old_path end)
+  table.sort(matches, function(a, b)
+    return #a.old_path > #b.old_path
+  end)
 
   local renamed = 0
   ---@type string[]
@@ -174,11 +183,13 @@ function M.apply(matches)
         end
       else
         local bufnr = vim.fn.bufnr(m.old_path)
-        if bufnr ~= -1 then pcall(vim.api.nvim_buf_set_name, bufnr, m.new_path) end
+        if bufnr ~= -1 then
+          pcall(vim.api.nvim_buf_set_name, bufnr, m.new_path)
+        end
       end
     else
-      errors[#errors + 1] = string.format("%s -> %s failed (%s)",
-        m.old_path, m.new_path, tostring(err))
+      errors[#errors + 1] =
+        string.format("%s -> %s failed (%s)", m.old_path, m.new_path, tostring(err))
     end
   end
 
@@ -191,9 +202,12 @@ end
 function M.build_preview(matches)
   local lines = {}
   for _, m in ipairs(matches) do
-    lines[#lines + 1] = string.format("%s  %s -> %s",
+    lines[#lines + 1] = string.format(
+      "%s  %s -> %s",
       m.is_dir and "[dir] " or "[file]",
-      vim.fn.fnamemodify(m.old_path, ":."), vim.fn.fnamemodify(m.new_path, ":."))
+      vim.fn.fnamemodify(m.old_path, ":."),
+      vim.fn.fnamemodify(m.new_path, ":.")
+    )
   end
   return table.concat(lines, "\n")
 end
@@ -221,10 +235,15 @@ function M.register()
 
     ---@type RP_Request
     local req = {
-      old = "", new = "", scope = "",
+      old = "",
+      new = "",
+      scope = "",
       all = opts.bang and true or false,
-      dry = false, export = nil, line_range = nil,
-      overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+      dry = false,
+      export = nil,
+      line_range = nil,
+      overrides = {},
+      filters = { file_types = {}, globs = {}, exclude = {} },
     }
     local positionals, err = command.apply_tokens(tokens, req)
     if not positionals then
@@ -242,7 +261,9 @@ function M.register()
 
     local roots = command.resolve_scope(req.scope)
     local scope_path = roots and roots[1]
-    if not scope_path then return end -- resolve_scope already notified
+    if not scope_path then
+      return
+    end -- resolve_scope already notified
 
     local matches = M.collect(req.old, req.new, scope_path, cfg)
     local kept, skipped = M.filter_nested(matches)
@@ -253,20 +274,32 @@ function M.register()
 
     local function do_apply()
       local renamed, errors = M.apply(kept)
-      notify.info(string.format(
-        "ReplaceFNames: renamed %d %s%s",
-        renamed, renamed == 1 and "entry" or "entries",
-        skipped > 0
-          and string.format(" (%d nested match(es) skipped — re-run to catch them)", skipped)
-          or ""))
-      for _, e in ipairs(errors) do notify.error("ReplaceFNames: " .. e) end
+      notify.info(
+        string.format(
+          "ReplaceFNames: renamed %d %s%s",
+          renamed,
+          renamed == 1 and "entry" or "entries",
+          skipped > 0
+              and string.format(" (%d nested match(es) skipped — re-run to catch them)", skipped)
+            or ""
+        )
+      )
+      for _, e in ipairs(errors) do
+        notify.error("ReplaceFNames: " .. e)
+      end
     end
 
     if req.dry then
       pcall(function()
         vim.cmd("botright new")
         local buf = vim.api.nvim_get_current_buf()
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(M.build_preview(kept), "\n", { plain = true }))
+        vim.api.nvim_buf_set_lines(
+          buf,
+          0,
+          -1,
+          false,
+          vim.split(M.build_preview(kept), "\n", { plain = true })
+        )
         vim.bo[buf].buftype = "nofile"
         vim.bo[buf].bufhidden = "wipe"
         vim.bo[buf].swapfile = false
@@ -282,10 +315,19 @@ function M.register()
     end
 
     confirm.open({
-      question = string.format("Rename %d file/director%s matching '%s' -> '%s'?",
-        #kept, #kept == 1 and "y" or "ies", req.old, req.new),
+      question = string.format(
+        "Rename %d file/director%s matching '%s' -> '%s'?",
+        #kept,
+        #kept == 1 and "y" or "ies",
+        req.old,
+        req.new
+      ),
       on_answer = function(yes)
-        if yes then do_apply() else notify.info("cancelled") end
+        if yes then
+          do_apply()
+        else
+          notify.info("cancelled")
+        end
       end,
     })
   end, { nargs = "+", bang = true, desc = USAGE })

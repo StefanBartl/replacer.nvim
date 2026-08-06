@@ -18,7 +18,9 @@ local M = {}
 ---@param t string|nil
 ---@return boolean
 local function is_string_or_comment_type(t)
-  if not t then return false end
+  if not t then
+    return false
+  end
   return t:find("string", 1, true) ~= nil or t:find("comment", 1, true) ~= nil
 end
 
@@ -32,7 +34,9 @@ end
 function M.is_in_string_or_comment(path, content, row0, col0)
   local ok, result = pcall(function()
     local ft = vim.filetype.match({ filename = path })
-    if not ft or ft == "" then return false end
+    if not ft or ft == "" then
+      return false
+    end
 
     local lang = ft
     if vim.treesitter.language.get_lang then
@@ -40,20 +44,28 @@ function M.is_in_string_or_comment(path, content, row0, col0)
     end
 
     local ok_parser, parser = pcall(vim.treesitter.get_string_parser, content, lang)
-    if not ok_parser or not parser then return false end
+    if not ok_parser or not parser then
+      return false
+    end
 
     local trees = parser:parse()
     local tree = trees and trees[1]
-    if not tree then return false end
+    if not tree then
+      return false
+    end
 
     local node = tree:root():named_descendant_for_range(row0, col0, row0, col0)
     while node do
-      if is_string_or_comment_type(node:type()) then return true end
+      if is_string_or_comment_type(node:type()) then
+        return true
+      end
       node = node:parent()
     end
     return false
   end)
-  if not ok then return false end
+  if not ok then
+    return false
+  end
   return result == true
 end
 

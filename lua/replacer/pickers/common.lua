@@ -51,7 +51,9 @@ function M.preview_lines_with_pos(it, ctx)
   ---@type string[]
   local file = {}
   for s in fh:lines() do
-    if #file == 0 then s = encoding.strip_bom(s) end
+    if #file == 0 then
+      s = encoding.strip_bom(s)
+    end
     file[#file + 1] = encoding.strip_cr(s)
   end
   fh:close()
@@ -59,7 +61,7 @@ function M.preview_lines_with_pos(it, ctx)
   -- Clamp window to available lines
   local pad = (type(ctx) == "number" and ctx >= 0) and ctx or 2
   local start = math.max(1, it.lnum - pad)
-  local stop  = math.min(#file, it.lnum + pad)
+  local stop = math.min(#file, it.lnum + pad)
 
   ---@type string[]
   local out = {}
@@ -123,7 +125,9 @@ end
 --- @param entries { lhs: string, desc: string, modes?: string[] }[]
 function M.register_which_key(bufnr, entries)
   local ok, wk = pcall(require, "which-key")
-  if not ok or type(wk.add) ~= "function" then return end
+  if not ok or type(wk.add) ~= "function" then
+    return
+  end
 
   local spec = {}
   for _, e in ipairs(entries) do

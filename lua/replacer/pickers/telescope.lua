@@ -18,7 +18,6 @@ local common = require("replacer.pickers.common")
 local notify = require("replacer.util.notify")
 local confirm = require("lib.nvim.ui.kit.confirm")
 
-
 --------------------------------------------------------------------------------
 -- Implementation
 --------------------------------------------------------------------------------
@@ -45,7 +44,9 @@ local function run(items, new_text, cfg, apply_func)
   local conf_ok, conf = pcall(require, "telescope.config")
   local actions_ok, actions = pcall(require, "telescope.actions")
   local action_state_ok, action_state = pcall(require, "telescope.actions.state")
-  if not (pickers_ok and finders_ok and previewers_ok and conf_ok and actions_ok and action_state_ok) then
+  if
+    not (pickers_ok and finders_ok and previewers_ok and conf_ok and actions_ok and action_state_ok)
+  then
     notify.error("telescope submodules missing")
     return
   end
@@ -107,7 +108,9 @@ local function run(items, new_text, cfg, apply_func)
     attach_mappings = function(prompt_bufnr, map)
       local function apply_selected_or_one()
         local sel = action_state.get_selected_entry()
-        if not sel then return end
+        if not sel then
+          return
+        end
 
         local cur_picker = action_state.get_current_picker(prompt_bufnr)
         local multi = (cur_picker and cur_picker:get_multi_selection()) or {}
@@ -116,13 +119,17 @@ local function run(items, new_text, cfg, apply_func)
           ---@type RP_Match[]
           local chosen = {}
           for _, e in ipairs(multi) do
-            if e and e.value then chosen[#chosen + 1] = e.value end
+            if e and e.value then
+              chosen[#chosen + 1] = e.value
+            end
           end
           local files, spots = apply_func(chosen, new_text, cfg.write_changes)
           common.notify_result(files, spots, cfg)
           actions.close(prompt_bufnr)
         else
-          if not sel.value then return end
+          if not sel.value then
+            return
+          end
           ---@cast sel { value: RP_Match }
           local files, spots = apply_func({ sel.value }, new_text, cfg.write_changes)
           common.notify_result(files, spots, cfg)
@@ -147,8 +154,10 @@ local function run(items, new_text, cfg, apply_func)
       end
       local key_next = keys.toggle_select or "<Tab>"
       local key_prev = keys.toggle_select_prev or "<S-Tab>"
-      map("i", key_next, toggle_next);  map("n", key_next, toggle_next)
-      map("i", key_prev, toggle_prev); map("n", key_prev, toggle_prev)
+      map("i", key_next, toggle_next)
+      map("n", key_next, toggle_next)
+      map("i", key_prev, toggle_prev)
+      map("n", key_prev, toggle_prev)
 
       -- apply_all: replace ALL matches with optional confirmation
       local function do_all()
@@ -163,7 +172,9 @@ local function run(items, new_text, cfg, apply_func)
           confirm.open({
             question = msg,
             on_answer = function(yes)
-              if not yes then return end
+              if not yes then
+                return
+              end
               local files, spots = apply_func(items, new_text, cfg.write_changes)
               common.notify_result(files, spots, cfg)
             end,
@@ -175,14 +186,17 @@ local function run(items, new_text, cfg, apply_func)
         actions.close(prompt_bufnr)
       end
       local key_all = keys.apply_all or "<C-a>"
-      map("i", key_all, do_all); map("n", key_all, do_all)
+      map("i", key_all, do_all)
+      map("n", key_all, do_all)
 
       -- replace_and_reopen: apply the entry under cursor, reopen the picker
       -- with the rest. A modifier key by design (see config default) so it
       -- never swallows a character typed into the live query line.
       local function do_reopen()
         local sel = action_state.get_selected_entry()
-        if not sel or not sel.value then return end
+        if not sel or not sel.value then
+          return
+        end
         local it = sel.value ---@type RP_Match
 
         actions.close(prompt_bufnr)
@@ -192,28 +206,39 @@ local function run(items, new_text, cfg, apply_func)
 
         local remaining = {} ---@type RP_Match[]
         for _, other in ipairs(items) do
-          if other.id ~= it.id then remaining[#remaining + 1] = other end
+          if other.id ~= it.id then
+            remaining[#remaining + 1] = other
+          end
         end
         if #remaining == 0 then
           notify.info("no more matches")
           return
         end
-        vim.schedule(function() run(remaining, new_text, cfg, apply_func) end)
+        vim.schedule(function()
+          run(remaining, new_text, cfg, apply_func)
+        end)
       end
       local key_reopen = keys.replace_and_reopen or "<C-r>"
-      map("i", key_reopen, do_reopen); map("n", key_reopen, do_reopen)
+      map("i", key_reopen, do_reopen)
+      map("n", key_reopen, do_reopen)
 
       -- Double-escape: 1st <Esc> leaves insert -> Telescope normal mode,
       -- 2nd (normal mode, "quit" key) closes the picker.
       local key_quit = keys.quit or "<Esc>"
-      map("i", key_quit, function() vim.cmd("stopinsert") end)
+      map("i", key_quit, function()
+        vim.cmd("stopinsert")
+      end)
       map("n", key_quit, actions.close)
 
       common.register_which_key(prompt_bufnr, {
         { lhs = key_next, desc = "replacer: toggle select + next", modes = { "n", "i" } },
         { lhs = key_prev, desc = "replacer: toggle select + previous", modes = { "n", "i" } },
         { lhs = key_all, desc = "replacer: apply to ALL matches", modes = { "n", "i" } },
-        { lhs = key_reopen, desc = "replacer: apply under cursor, reopen with the rest", modes = { "n", "i" } },
+        {
+          lhs = key_reopen,
+          desc = "replacer: apply under cursor, reopen with the rest",
+          modes = { "n", "i" },
+        },
         { lhs = key_quit, desc = "replacer: close picker", modes = { "n" } },
       })
 

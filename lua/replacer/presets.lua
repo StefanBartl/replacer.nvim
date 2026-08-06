@@ -19,9 +19,13 @@ end
 ---@return table<string, table>
 function M.load()
   local ok, lines = pcall(vim.fn.readfile, presets_path())
-  if not ok or type(lines) ~= "table" or #lines == 0 then return {} end
+  if not ok or type(lines) ~= "table" or #lines == 0 then
+    return {}
+  end
   local ok_json, data = pcall(vim.json.decode, table.concat(lines, "\n"))
-  if not ok_json or type(data) ~= "table" then return {} end
+  if not ok_json or type(data) ~= "table" then
+    return {}
+  end
   return data
 end
 
@@ -38,7 +42,9 @@ end
 function M.save(name, request)
   local presets = M.load()
   presets[name] = {
-    old = request.old, new = request.new, scope = request.scope,
+    old = request.old,
+    new = request.new,
+    scope = request.scope,
     all = request.all and true or false,
     overrides = request.overrides or {},
     filters = request.filters or { file_types = {}, globs = {}, exclude = {} },
@@ -51,10 +57,17 @@ end
 ---@return RP_Request|nil
 function M.as_request(name)
   local p = M.load()[name]
-  if not p then return nil end
+  if not p then
+    return nil
+  end
   return {
-    old = p.old, new = p.new, scope = p.scope or "",
-    all = p.all and true or false, dry = false, export = nil, line_range = nil,
+    old = p.old,
+    new = p.new,
+    scope = p.scope or "",
+    all = p.all and true or false,
+    dry = false,
+    export = nil,
+    line_range = nil,
     overrides = p.overrides or {},
     filters = p.filters or { file_types = {}, globs = {}, exclude = {} },
   }
@@ -65,7 +78,9 @@ end
 ---@return nil
 function M.delete(name)
   local presets = M.load()
-  if presets[name] == nil then return end
+  if presets[name] == nil then
+    return
+  end
   presets[name] = nil
   save(presets)
 end
@@ -74,7 +89,9 @@ end
 ---@return string[]
 function M.names()
   local names = {}
-  for name in pairs(M.load()) do names[#names + 1] = name end
+  for name in pairs(M.load()) do
+    names[#names + 1] = name
+  end
   table.sort(names)
   return names
 end
@@ -107,8 +124,15 @@ function M.register(run_fun)
 
     ---@type RP_Request
     local req = {
-      old = "", new = "", scope = "", all = false, dry = false, export = nil,
-      line_range = nil, overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+      old = "",
+      new = "",
+      scope = "",
+      all = false,
+      dry = false,
+      export = nil,
+      line_range = nil,
+      overrides = {},
+      filters = { file_types = {}, globs = {}, exclude = {} },
     }
     local positionals, err = command.apply_tokens(tokens, req)
     if not positionals then
@@ -139,7 +163,9 @@ function M.register(run_fun)
     run_fun(req)
   end, {
     nargs = 1,
-    complete = function() return M.names() end,
+    complete = function()
+      return M.names()
+    end,
     desc = "Run a saved preset: :ReplacePreset {name}",
   })
 end

@@ -78,7 +78,9 @@ end
 ---@return RP_BatchPair[]|nil pairs, string|nil err
 function M.parse(content)
   local trimmed = vim.trim(content or "")
-  if trimmed == "" then return nil, "batch: empty input" end
+  if trimmed == "" then
+    return nil, "batch: empty input"
+  end
   if trimmed:sub(1, 1) == "[" then
     return parse_json(trimmed)
   end
@@ -104,16 +106,22 @@ local function read_source(source)
   if lc == "qf" or lc == "quickfix" then
     local qf = vim.fn.getqflist()
     local lines = {}
-    for _, e in ipairs(qf) do lines[#lines + 1] = e.text end
+    for _, e in ipairs(qf) do
+      lines[#lines + 1] = e.text
+    end
     return table.concat(lines, "\n"), nil
   end
   if vim.fn.filereadable(source) == 1 then
     local ok, lines = pcall(vim.fn.readfile, source)
-    if not ok then return nil, "batch: failed to read " .. source end
+    if not ok then
+      return nil, "batch: failed to read " .. source
+    end
     return table.concat(lines, "\n"), nil
   end
-  return nil, "batch: source not found — expected a file path, 'clipboard'/'+', " ..
-    "'unnamed'/'\"', or 'qf'/'quickfix', got: " .. source
+  return nil,
+    "batch: source not found — expected a file path, 'clipboard'/'+', "
+      .. "'unnamed'/'\"', or 'qf'/'quickfix', got: "
+      .. source
 end
 
 --------------------------------------------------------------------------------
@@ -163,8 +171,8 @@ end
 -- :ReplaceBatch
 --------------------------------------------------------------------------------
 
-local USAGE = "Usage: :ReplaceBatch[!] {source} [scope] [--flags]   " ..
-  "(source: file path, clipboard/+, unnamed/\", or qf/quickfix)"
+local USAGE = "Usage: :ReplaceBatch[!] {source} [scope] [--flags]   "
+  .. '(source: file path, clipboard/+, unnamed/", or qf/quickfix)'
 
 --- Register :ReplaceBatch.
 ---@param run_fun fun(request: RP_Request): nil
@@ -183,10 +191,15 @@ function M.register(run_fun)
 
     ---@type RP_Request
     local req = {
-      old = "", new = "", scope = "",
+      old = "",
+      new = "",
+      scope = "",
       all = opts.bang and true or false,
-      dry = false, export = nil, line_range = nil,
-      overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+      dry = false,
+      export = nil,
+      line_range = nil,
+      overrides = {},
+      filters = { file_types = {}, globs = {}, exclude = {} },
     }
     local positionals, err = command.apply_tokens(tokens, req)
     if not positionals then

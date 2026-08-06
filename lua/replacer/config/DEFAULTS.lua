@@ -75,8 +75,8 @@ return {
 
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }
-  globs = {},      -- include glob patterns, e.g. { "*.lua" }
-  exclude = {},    -- path/glob patterns to exclude, e.g. { "node_modules", "*.min.js" }
+  globs = {}, -- include glob patterns, e.g. { "*.lua" }
+  exclude = {}, -- path/glob patterns to exclude, e.g. { "node_modules", "*.min.js" }
 
   fzf = { winopts = { width = 0.85, height = 0.70 } },
   telescope = { layout_config = { width = 0.85, height = 0.70 } },
@@ -85,10 +85,10 @@ return {
   -- Picker keymaps (buffer-local, set inside the picker window only).
   -- Match the previously hardcoded values, so existing setups are unaffected.
   keymaps = {
-    toggle_select = "<Tab>",      -- multi-select + move to next
+    toggle_select = "<Tab>", -- multi-select + move to next
     toggle_select_prev = "<S-Tab>", -- multi-select + move to previous
-    apply_all = "<C-a>",          -- replace ALL matches (respects confirm_all)
-    quit = "<Esc>",               -- close the picker (double-<Esc> in fzf's terminal)
+    apply_all = "<C-a>", -- replace ALL matches (respects confirm_all)
+    quit = "<Esc>", -- close the picker (double-<Esc> in fzf's terminal)
     -- Apply the entry under cursor, reopen with the rest. A modifier key by
     -- design (not a bare letter): both pickers' query line is live text
     -- input, so a bare letter would swallow that character instead of

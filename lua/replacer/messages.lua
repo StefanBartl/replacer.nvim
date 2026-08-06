@@ -14,12 +14,12 @@ local M = {}
 
 ---@type table<string, string>
 M.DEFAULTS = {
-  confirm_all       = "Apply ALL %d spot(s) across %d file(s)?",
+  confirm_all = "Apply ALL %d spot(s) across %d file(s)?",
   confirm_all_short = "Apply replacement to ALL %d spot(s)?", -- no file count available at the call site
-  cancelled         = "cancelled",
-  result            = "%d spot(s) in %d file(s)",
-  no_matches        = "no matches found",
-  surround_prompt   = "Surround with: ",
+  cancelled = "cancelled",
+  result = "%d spot(s) in %d file(s)",
+  no_matches = "no matches found",
+  surround_prompt = "Surround with: ",
   surround_cancelled = "Surround: cancelled (no delimiter)",
 }
 
@@ -33,9 +33,13 @@ M.DEFAULTS = {
 ---@return string
 function M.fmt(cfg, key, ...)
   local template = (cfg and cfg.messages and cfg.messages[key]) or M.DEFAULTS[key] or key
-  if select("#", ...) == 0 then return template end
+  if select("#", ...) == 0 then
+    return template
+  end
   local ok, result = pcall(string.format, template, ...)
-  if ok then return result end
+  if ok then
+    return result
+  end
   return template
 end
 
@@ -44,7 +48,9 @@ end
 ---@param msg string
 ---@return nil
 function M.info(cfg, msg)
-  if cfg and cfg.quiet then return end
+  if cfg and cfg.quiet then
+    return
+  end
   notify.info(msg)
 end
 
