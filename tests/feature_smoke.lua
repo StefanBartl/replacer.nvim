@@ -466,11 +466,18 @@ do
   check("history: newest entry is first", loaded[1].old == "__hist_test_old__", loaded[1].old)
   check("history: files/spots recorded", loaded[1].files == 2 and loaded[1].spots == 5)
 
+  -- history.pick() now selects via lib.nvim.ui.kit.select (on_select(item, idx))
+  -- instead of the old blocking vim.ui.select(items, opts, on_choice); stub the
+  -- kit module and force a reload so history.lua picks up the stub.
   local picked
-  local orig_select = vim.ui.select
-  vim.ui.select = function(items, _opts, on_choice) on_choice(items[1]) end
-  history.pick(function(r) picked = r end)
-  vim.ui.select = orig_select
+  package.loaded["lib.nvim.ui.kit"] = {
+    select = function(opts) opts.on_select(opts.items[1], 1) end,
+  }
+  package.loaded["replacer.history"] = nil
+  local history_stubbed = require("replacer.history")
+  history_stubbed.pick(function(r) picked = r end)
+  package.loaded["lib.nvim.ui.kit"] = nil
+  package.loaded["replacer.history"] = nil
   check("history: pick() re-runs the newest entry", picked ~= nil
     and picked.old == "__hist_test_old__" and picked.new == "__hist_test_new__")
 end
