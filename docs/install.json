@@ -1,0 +1,20 @@
+{
+  "tools": [
+    {
+      "bin": "rg",
+      "required": false,
+      "why": "Powers fast project-wide search-and-replace. Without it, replacer.nvim falls back to a slower built-in search path.",
+      "pkg": {
+        "apt": "ripgrep",
+        "dnf": "ripgrep",
+        "pacman": "ripgrep",
+        "zypper": "ripgrep",
+        "apk": "ripgrep",
+        "brew": "ripgrep",
+        "winget": "BurntSushi.ripgrep.MSVC",
+        "scoop": "ripgrep",
+        "choco": "ripgrep"
+      }
+    }
+  ]
+}
