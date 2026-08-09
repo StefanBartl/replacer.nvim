@@ -310,6 +310,15 @@ function M.check()
   check_utf8(health)
   check_optional(health)
 
+  -- Declared tools (lib.nvim.deps) — same rg check_ripgrep() already does,
+  -- but with the declared `why` and a pointer to `:Lib deps show`. Does
+  -- nothing if lib.nvim.deps is unavailable (older lib.nvim).
+  local ok_deps, deps_health = pcall(require, "lib.nvim.deps.health")
+  if ok_deps then
+    health.start("replacer.nvim: declared tools (lib.nvim.deps)")
+    deps_health.report_for("replacer.nvim")
+  end
+
   -- Summary
   health.start("Summary")
   health.info("Usage: :[range]Replace[!] {old} {new} [scope] [--flags]")
