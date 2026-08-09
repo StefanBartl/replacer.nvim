@@ -374,8 +374,9 @@ ______________________________________________________________________
 
 ## Roadmap
 
-See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the maintained, up-to-date list
-of shipped features and what's next.
+See [`docs/FEATURES.md`](docs/FEATURES.md) for what shipped and where it
+lives in the codebase, and [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's
+still planned.
 
 ______________________________________________________________________
 

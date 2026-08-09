@@ -116,7 +116,7 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                    cwd     - current working directory
                    .       - alias for cwd
                    root    - auto-detected project root, see |:ReplaceRoot|
-                             and *replacer-root-detection*
+                             and |replacer-root-detection|
                    <path>  - explicit file or directory
         [range]  A line range (e.g. :'<,'>Replace) restricts matching to the
                  selected lines of the current buffer.
@@ -192,7 +192,7 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                                                                *:ReplaceRoot*
 :ReplaceRoot[!] {old} {new} [--flags]
     Like |:Replace|, but the scope is always an auto-detected project root
-    instead of a positional argument (see *replacer-root-detection*).
+    instead of a positional argument (see |replacer-root-detection|).
     Prompts with |vim.ui.select()| when detection finds more than one
     candidate directory. The bang form is shorthand for --all.
 
@@ -374,11 +374,29 @@ Default configuration: >lua
       -- Preview
       preview_context = 3,               -- context lines in preview
 
+      -- ALL-mode confirmation / safety
+      confirm_per_file = false,          -- see |replacer-confirm-per-file|
+      checkpoint = false,                -- see |replacer-checkpoint|
+
+      -- Extensibility
+      hooks = {},                        -- see |replacer-hooks|
+      lsp = false,                       -- see |replacer-soft-lsp-integration|
+      stream = false,                    -- see |replacer-streaming|
+      deps_popup = true,                 -- see |replacer-config-deps_popup|
+
+      -- Picker keymaps (buffer-local); see |replacer-mappings|
+      keymaps = {},
+
       -- Picker-specific options
       fzf = {},                          -- extra fzf-lua options
       telescope = {},                    -- extra telescope options
     })
 <
+This example is not exhaustive of every default value (e.g. |messages| and
+|quiet| are omitted above since their defaults are `{}`/`false` respectively
+with nothing interesting to show inline) — see the per-option entries below
+and the relevant |replacer-advanced| subsection for anything not spelled out
+here.
 
 The native "vimgrep" backend has no external dependency and is used as an
 automatic fallback when ripgrep is not installed. In that mode |file_types|
@@ -547,6 +565,54 @@ file_types~ globs~ exclude~
         file_types  restrict to ripgrep --type values, e.g. { "lua", "md" }
         globs       include glob patterns, e.g. { "*.lua" }
         exclude     exclude path/glob patterns, e.g. { "node_modules" }
+
+The following options are documented in full under |replacer-advanced| (each
+tag below jumps straight to its subsection) rather than repeated here:
+
+                                          *replacer-config-confirm_per_file*
+confirm_per_file~
+    Type: boolean · Default: false · See |replacer-confirm-per-file|.
+
+                                                *replacer-config-checkpoint*
+checkpoint~
+    Type: boolean · Default: false · See |replacer-checkpoint|.
+
+                                                     *replacer-config-hooks*
+hooks~
+    Type: table · Default: {} · See |replacer-hooks|.
+
+                                                       *replacer-config-lsp*
+lsp~
+    Type: boolean · Default: false · See |replacer-soft-lsp-integration|.
+
+                                                    *replacer-config-stream*
+stream~
+    Type: boolean · Default: false · See |replacer-streaming|.
+
+                                                 *replacer-config-keymaps*
+keymaps~
+    Type: table · Default: see |replacer-mappings| · See |replacer-mappings|.
+
+                                                     *replacer-config-quiet*
+quiet~
+    Type: boolean · Default: false · See |replacer-i18n-messages|.
+
+                                                  *replacer-config-messages*
+messages~
+    Type: table · Default: {} · See |replacer-i18n-messages|.
+
+                                              *replacer-config-deps_popup*
+deps_popup~
+    Type: boolean
+    Default: true
+
+    Whether the one-time "which CLI tools does this plugin want, and why"
+    popup shows on first setup() after install. Backed by lib.nvim's `deps`
+    module (declared in docs/install.json); also repeatable via `:Lib deps
+    show replacer.nvim` and folded into |:checkhealth| replacer. Disabling
+    it here only affects this plugin — `vim.g.lib_nvim_deps_disable_first_run`
+    / `vim.g.lib_nvim_deps_disabled_plugins` (see README) disable it more
+    broadly without touching any plugin's own config.
 
 ==============================================================================
 7. PROGRESS INDICATOR                                    *replacer-progress*
@@ -1031,6 +1097,8 @@ require("replacer.config").get()
 
 Project: https://github.com/StefanBartl/replacer.nvim
 Issues:  https://github.com/StefanBartl/replacer.nvim/issues
+Features reference (what shipped, and where): docs/FEATURES.md
+Roadmap (what's still planned): docs/ROADMAP.md
 
 Maintainer: Stefan Bartl
 
