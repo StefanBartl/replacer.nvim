@@ -216,6 +216,7 @@ local function validate(cfg)
   out.quiet = pick_bool(cfg.quiet, out.quiet)
   out.lsp = pick_bool(cfg.lsp, out.lsp)
   out.stream = pick_bool(cfg.stream, out.stream)
+  out.deps_popup = pick_bool(cfg.deps_popup, out.deps_popup)
 
   if type(cfg.default_scope) == "string" and cfg.default_scope ~= "" then
     out.default_scope = cfg.default_scope

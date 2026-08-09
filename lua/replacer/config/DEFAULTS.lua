@@ -73,6 +73,12 @@ return {
   -- collect_streaming docstring.
   stream = false,
 
+  -- One-time "which CLI tools does this plugin want, and why" popup on
+  -- first setup() after install (via lib.nvim.deps). false disables it for
+  -- this plugin specifically, right here in the spec passed to setup() —
+  -- no vim.g needed. See README.
+  deps_popup = true,
+
   -- Filters (also overridable per-run via command flags).
   file_types = {}, -- ripgrep --type values, e.g. { "lua", "md" }
   globs = {}, -- include glob patterns, e.g. { "*.lua" }

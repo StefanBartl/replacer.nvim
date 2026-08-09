@@ -63,6 +63,7 @@
 ---@field quiet?                boolean     -- suppress routine info-level notifications (warnings/errors still show)
 ---@field lsp?                  boolean     -- soft LSP rename for identifier-shaped matches, see replacer.lsp_rename
 ---@field stream?               boolean     -- incremental rg parsing for smoother progress, see rg.collect_streaming
+---@field deps_popup?           boolean     -- lib.nvim.deps "declared tools" popup once, ever, on first setup() after install (default true; needs lib.nvim.deps — a no-op without it)
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil
