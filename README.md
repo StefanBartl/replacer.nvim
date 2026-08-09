@@ -612,7 +612,7 @@ ______________________________________________________________________
 - Each occurrence is verified against the original text before editing; mismatches are skipped and reported.
 - When `write_changes = false`, buffers stay modified—review and `:write` manually or use VCS hunk staging.
 - Literal mode is the default; for regex, use `--regex` (or set `literal = false`).
-- ripgrep is recommended; if it is not on `PATH`, the native `vimgrep` backend is used automatically (no `.gitignore`/rich `--type` support in that mode). Declared in [`docs/install.json`](docs/install.json), parsed by lib.nvim's [`deps` module](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md) — a popup explains this on first `setup()` after installing, `:Lib deps show replacer.nvim` repeats it, also folded into `:checkhealth replacer`.
+- ripgrep is recommended; if it is not on `PATH`, the native `vimgrep` backend is used automatically (no `.gitignore`/rich `--type` support in that mode). Declared in [`docs/install.json`](docs/install.json), parsed by lib.nvim's [`deps` module](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md) — a popup explains this on first `setup()` after installing, `:Lib deps show replacer.nvim` repeats it, also folded into `:checkhealth replacer`. Opt out with `vim.g.lib_nvim_deps_disable_first_run = true` (every plugin) or `vim.g.lib_nvim_deps_disabled_plugins = { "replacer.nvim" }` (just this one), set anywhere in your config.
 
 ______________________________________________________________________
 
