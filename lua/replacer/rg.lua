@@ -18,6 +18,7 @@
 
 local notify = require("replacer.util.notify")
 local encoding = require("replacer.encoding")
+local spawn_env = require("lib.nvim.cross.run.env")
 
 local M = {}
 
@@ -327,7 +328,7 @@ end
 local function collect_ripgrep(old, roots, cfg)
   local args = build_rg_args(old, roots, cfg)
   if vim.system then
-    local obj = vim.system(args, { text = true }):wait()
+    local obj = vim.system(args, spawn_env.apply({ text = true })):wait()
     local code = obj and obj.code or 1
     if code ~= 0 and code ~= 1 then
       return {}, require("replacer.error").search_error("rg failed", obj and obj.stderr or nil)
@@ -366,7 +367,7 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
   local match_count = 0
   local last_update_ms = 0
 
-  local proc = vim.system(args, {
+  local proc = vim.system(args, spawn_env.apply({
     text = true,
     stdout = function(_, data)
       if not data then
@@ -389,7 +390,7 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
         end)
       end
     end,
-  }, function(obj)
+  }), function(obj)
     -- on_exit runs off the main loop; re-enter it before any vim.* work.
     vim.schedule(function()
       local code = obj and obj.code or 1
@@ -960,7 +961,7 @@ function M.collect_streaming(old, roots, cfg, on_batch, on_done)
     on_batch(batch)
   end
 
-  local proc = vim.system(args, {
+  local proc = vim.system(args, spawn_env.apply({
     text = true,
     stdout = function(_, data)
       if not data then
@@ -973,7 +974,7 @@ function M.collect_streaming(old, roots, cfg, on_batch, on_done)
         end
       end)
     end,
-  }, function(obj)
+  }), function(obj)
     vim.schedule(function()
       if buf_tail ~= "" then
         feed("\n")

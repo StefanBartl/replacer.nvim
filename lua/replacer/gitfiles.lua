@@ -2,6 +2,8 @@
 --- Changed-files-only mode: resolve the git-modified/staged/untracked file
 --- list, backing --changed[=modified,staged,untracked].
 
+local spawn_env = require("lib.nvim.cross.run.env")
+
 local M = {}
 
 ---@internal
@@ -13,7 +15,7 @@ local function git_lines(cwd, args)
   local cmd = { "git", "-C", cwd }
   vim.list_extend(cmd, args)
   if vim.system then
-    local obj = vim.system(cmd, { text = true }):wait()
+    local obj = vim.system(cmd, spawn_env.apply({ text = true })):wait()
     if not obj or obj.code ~= 0 then
       return {}, false
     end
