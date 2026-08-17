@@ -194,6 +194,22 @@ positional (scope is always the detected root):
 Both are stored as JSON under `stdpath("data")/replacer/` (`history.json`,
 `presets.json`).
 
+### Checkpoints & Undo
+
+`--checkpoint` snapshots every file an ALL-mode apply is about to touch
+(byte-exact, current buffer content preferred over disk) into
+`stdpath("data")/replacer/checkpoints/<id>/` before writing. `:ReplaceUndo
+[id]` restores from a checkpoint afterward — most recent when `[id]` is
+omitted, `<Tab>` completes over existing checkpoint ids. This is a plain
+file snapshot (not a git stash), so it never touches unrelated
+uncommitted work in the same repo.
+
+```sh
+:Replace foo bar cwd --all --checkpoint   # snapshot, then apply everywhere
+:ReplaceUndo                              # restore the most recent checkpoint
+:ReplaceUndo 20240131-101530-4821         # restore a specific one
+```
+
 ### Batch Replaces
 
 `:ReplaceBatch[!] {source} [scope] [--flags]` runs multiple `{old → new}`
@@ -361,6 +377,7 @@ ______________________________________________________________________
 - Replace only the selected occurrences; or replace all at once
 - **Dry-run** (`--dry`) with a stats summary and a diff preview — no writes
 - **Export** the planned change as a git-applyable `.patch` or `.json` (`--export=`)
+- **`--checkpoint` / `:ReplaceUndo`** — snapshot touched files before an ALL apply, restore them afterward
 - Per-run **flags** (`--regex`, `--type=`, `--glob=`, `--exclude=`, …) and config defaults
 - **Range** support: `:'<,'>Replace` limits to the selected lines
 - **`:Surround` / `:Wrap`** — wrap every match with a delimiter (backticks, quotes, `**`, brackets, …)
