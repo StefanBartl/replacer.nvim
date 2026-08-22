@@ -329,73 +329,82 @@ function M.run(request, new_text, scope, all)
   end
   ---@cast roots string[]
 
+  -- Collection is wrapped so both paths -- plain scope and --changed, whose
+  -- git lookup is asynchronous now -- reach it the same way.
+  ---@param collect_roots string[]
+  ---@param collect_single boolean
+  local function collect(collect_roots, collect_single)
+    -- 2) Collect matches asynchronously (ripgrep is non-blocking; vimgrep is sync),
+    --    then 3) dispatch to plan / ALL / picker inside the callback.
+    local function on_collected(items, err)
+      if err then
+        notify.error(require("replacer.error").format(err))
+        return
+      end
+      if not items or #items == 0 then
+        local messages = require("replacer.messages")
+        messages.info(cfg, messages.fmt(cfg, "no_matches"))
+        return
+      end
+      -- Optional post-collection filter (e.g. :Surround skipping already-wrapped
+      -- matches). Applied here so plan/ALL/picker all see the same reduced set.
+      if request.filter then
+        local kept = vim.tbl_filter(request.filter, items)
+        if #kept == 0 then
+          notify.info(request.filter_empty_msg or "no matches left after filtering")
+          return
+        end
+        items = kept
+      end
+      dispatch(request, cfg, collect_single, items)
+    end
+
+    if cfg.stream then
+      -- --stream: incremental ripgrep parsing for smoother, filter-aware
+      -- progress as matches are found. The picker itself still only opens
+      -- once collection finishes (on_batch is reserved for future live
+      -- picker fill) -- see rg.collect_streaming's docstring.
+      rg.collect_streaming(request.old, collect_roots, cfg, function(_new_batch) end, on_collected)
+    else
+      rg.collect_async(request.old, collect_roots, cfg, on_collected)
+    end
+  end
+
   -- 1b) --changed: restrict roots to git changed/staged/untracked files,
   -- intersected with the resolved scope (a specific dir/file still narrows
   -- the git file list, it doesn't widen it).
   if cfg._changed_only then
     local gitfiles = require("replacer.gitfiles")
     local start_dir = single_file and vim.fn.fnamemodify(roots[1], ":h") or roots[1]
-    local files, top = gitfiles.list(start_dir, cfg._changed_only)
-    if not top then
-      notify.warn("--changed: not inside a git repository")
-      return
-    end
-    -- git always reports forward-slash paths regardless of OS; normalize
-    -- the scope prefix the same way before comparing (fnamemodify keeps
-    -- native backslashes on Windows).
-    local prefix = vim.fn.fnamemodify(roots[1], ":p"):gsub("\\", "/"):gsub("/+$", "")
-    local filtered = {}
-    for _, f in ipairs(files) do
-      if single_file then
-        if f == prefix then
-          filtered[#filtered + 1] = f
-        end
-      elseif f == prefix or f:sub(1, #prefix + 1) == prefix .. "/" then
-        filtered[#filtered + 1] = f
-      end
-    end
-    if #filtered == 0 then
-      notify.info("--changed: no changed files match the current scope")
-      return
-    end
-    roots = filtered
-    single_file = false
-  end
-
-  -- 2) Collect matches asynchronously (ripgrep is non-blocking; vimgrep is sync),
-  --    then 3) dispatch to plan / ALL / picker inside the callback.
-  local function on_collected(items, err)
-    if err then
-      notify.error(require("replacer.error").format(err))
-      return
-    end
-    if not items or #items == 0 then
-      local messages = require("replacer.messages")
-      messages.info(cfg, messages.fmt(cfg, "no_matches"))
-      return
-    end
-    -- Optional post-collection filter (e.g. :Surround skipping already-wrapped
-    -- matches). Applied here so plan/ALL/picker all see the same reduced set.
-    if request.filter then
-      local kept = vim.tbl_filter(request.filter, items)
-      if #kept == 0 then
-        notify.info(request.filter_empty_msg or "no matches left after filtering")
+    gitfiles.list(start_dir, cfg._changed_only, function(files, top)
+      if not top then
+        notify.warn("--changed: not inside a git repository")
         return
       end
-      items = kept
-    end
-    dispatch(request, cfg, single_file, items)
+      -- git always reports forward-slash paths regardless of OS; normalize
+      -- the scope prefix the same way before comparing (fnamemodify keeps
+      -- native backslashes on Windows).
+      local prefix = vim.fn.fnamemodify(roots[1], ":p"):gsub("\\", "/"):gsub("/+$", "")
+      local filtered = {}
+      for _, f in ipairs(files) do
+        if single_file then
+          if f == prefix then
+            filtered[#filtered + 1] = f
+          end
+        elseif f == prefix or f:sub(1, #prefix + 1) == prefix .. "/" then
+          filtered[#filtered + 1] = f
+        end
+      end
+      if #filtered == 0 then
+        notify.info("--changed: no changed files match the current scope")
+        return
+      end
+      collect(filtered, false)
+    end)
+    return
   end
 
-  if cfg.stream then
-    -- --stream: incremental ripgrep parsing for smoother, filter-aware
-    -- progress as matches are found. The picker itself still only opens
-    -- once collection finishes (on_batch is reserved for future live
-    -- picker fill) -- see rg.collect_streaming's docstring.
-    rg.collect_streaming(request.old, roots, cfg, function(_new_batch) end, on_collected)
-  else
-    rg.collect_async(request.old, roots, cfg, on_collected)
-  end
+  collect(roots, single_file)
 end
 
 return M
