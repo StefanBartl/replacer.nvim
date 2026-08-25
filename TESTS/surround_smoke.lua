@@ -1,11 +1,11 @@
 -- Headless smoke test for the :Surround convenience layer.
--- Run:  nvim -l tests/surround_smoke.lua
+-- Run:  nvim -l TESTS/surround_smoke.lua
 -- Covers delimiter resolution, the shared tokenizer/flag helpers, the real
 -- :Surround user command, and an end-to-end wrap across buffer/dir scopes.
 
 vim.opt.runtimepath:append(vim.fn.getcwd())
 
--- lib.nvim lives outside this repo, so `nvim -l tests/<suite>.lua` starts
+-- lib.nvim lives outside this repo, so `nvim -l TESTS/<suite>.lua` starts
 -- without it on the path and every require of replacer.* dies on
 -- "module 'lib.nvim.notify' not found". Resolve it first. Pattern A from
 -- lib.nvim/templates/README.md (hard dependency: replacer.notify and

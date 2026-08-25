@@ -1,6 +1,6 @@
--- tests/resolve_lib_nvim.lua — copied from lib.nvim/templates/resolve_lib_nvim.lua.
+-- TESTS/resolve_lib_nvim.lua — copied from lib.nvim/templates/resolve_lib_nvim.lua.
 --
--- `nvim -l tests/<suite>.lua` starts with lib.nvim absent from both
+-- `nvim -l TESTS/<suite>.lua` starts with lib.nvim absent from both
 -- `runtimepath` and `package.path`, so every module that hard-requires
 -- `lib.nvim.*` (replacer.notify, replacer.gitfiles, ...) dies on the first
 -- require. This puts lib.nvim on the path before any suite requires replacer.

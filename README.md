@@ -292,7 +292,7 @@ still running.
 finishes — true live picker fill (select matches while ripgrep is still
 running) is not implemented yet. This flag ships the collection-layer
 infrastructure for it (proven equivalent to the non-streaming collector by
-test, see `tests/feature_smoke.lua`); wiring it into the pickers themselves
+test, see `TESTS/feature_smoke.lua`); wiring it into the pickers themselves
 is a follow-up, deliberately deferred given the integration risk of
 terminal-UI live-population code that can't be verified by an automated
 test suite. See `lua/replacer/rg.lua`'s `collect_streaming` docstring.
@@ -653,7 +653,7 @@ on the runtimepath (the plugin's hard dependency), e.g.:
 
 ```sh
 nvim --headless -u NONE -c "set rtp+=." -c "set rtp+=/path/to/lib.nvim" \
-  -c "luafile tests/feature_smoke.lua" -c "qa"
+  -c "luafile TESTS/feature_smoke.lua" -c "qa"
 ```
 
 ______________________________________________________________________

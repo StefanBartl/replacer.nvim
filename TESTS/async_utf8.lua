@@ -1,9 +1,9 @@
 -- Headless test for the async ripgrep path and UTF-8 (multi-byte) correctness.
--- Run:  nvim -l tests/async_utf8.lua
+-- Run:  nvim -l TESTS/async_utf8.lua
 
 vim.opt.runtimepath:append(vim.fn.getcwd())
 
--- lib.nvim lives outside this repo, so `nvim -l tests/<suite>.lua` starts
+-- lib.nvim lives outside this repo, so `nvim -l TESTS/<suite>.lua` starts
 -- without it on the path and every require of replacer.* dies on
 -- "module 'lib.nvim.notify' not found". Resolve it first. Pattern A from
 -- lib.nvim/templates/README.md (hard dependency: replacer.notify and

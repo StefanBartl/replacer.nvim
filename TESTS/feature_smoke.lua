@@ -1,12 +1,12 @@
 -- Headless smoke test for the replacer feature set.
--- Run:  nvim -l tests/feature_smoke.lua
+-- Run:  nvim -l TESTS/feature_smoke.lua
 -- Exercises engine-agnostic paths (no fzf-lua/telescope required):
 --   request parsing, error messages, range, native (vimgrep) search,
 --   multi-occurrence-per-line, pure edit computation, dry-run, export, real apply.
 
 vim.opt.runtimepath:append(vim.fn.getcwd())
 
--- lib.nvim lives outside this repo, so `nvim -l tests/<suite>.lua` starts
+-- lib.nvim lives outside this repo, so `nvim -l TESTS/<suite>.lua` starts
 -- without it on the path and every require of replacer.* dies on
 -- "module 'lib.nvim.notify' not found". Resolve it first. Pattern A from
 -- lib.nvim/templates/README.md (hard dependency: replacer.notify and

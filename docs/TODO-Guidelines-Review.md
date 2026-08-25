@@ -1,6 +1,6 @@
 # TODO – Richtlinien-Review `replacer`
 
-**Status: alle 10 Punkte implementiert & via `tests/feature_smoke.lua` verifiziert (22/22).**
+**Status: alle 10 Punkte implementiert & via `TESTS/feature_smoke.lua` verifiziert (22/22).**
 
 - [x] 1. Mehrfach-Vorkommen pro Zeile → je ein eigener Picker-Eintrag (ripgrep & vimgrep). *(rg.lua `find_all_occurrences`)*
 - [x] 2. `--literal` / `--no-literal` / `--regex` (+ weitere Optionen) als Command-Flags. *(command.lua)*
@@ -41,8 +41,8 @@ zerstört → Backslash-Escape nur noch vor Quotes/Space/Backslash.
 
 - [x] 🟡 **`apply` als reine Funktion.** `apply.compute_file_edits(lines, matches, new)` ist seiteneffektfrei
   und unit-getestet; reale Buffer-Anwendung getrennt in `apply_matches`.
-- [x] 🟡 **Test-Harness.** [tests/feature_smoke.lua](../tests/feature_smoke.lua) (22) +
-  [tests/async_utf8.lua](../tests/async_utf8.lua) (7), `make test`, CI-Workflow. Lauf via `nvim -l`.
+- [x] 🟡 **Test-Harness.** [TESTS/feature_smoke.lua](../tests/feature_smoke.lua) (22) +
+  [TESTS/async_utf8.lua](../tests/async_utf8.lua) (7), `make test`, CI-Workflow. Lauf via `nvim -l`.
 - [ ] 🟢 **`/config`-Struktur (DEFAULTS.lua).** Bewusst zurückgestellt — geringer Nutzen, Defaults sind
   bereits sauber in `config.lua` gekapselt.
 
@@ -79,7 +79,7 @@ zerstört → Backslash-Escape nur noch vor Quotes/Space/Backslash.
   eine parallele Count-Map. Bounded Per-File-Schleifen unverändert gelassen.
 
 ### Cross-Plattform & Korrektheit
-- [x] 🟡 **UTF-8-Regression geprüft.** [tests/async_utf8.lua](../tests/async_utf8.lua) testet Umlaute + Emoji
+- [x] 🟡 **UTF-8-Regression geprüft.** [TESTS/async_utf8.lua](../tests/async_utf8.lua) testet Umlaute + Emoji
   (`Grüße Müller 😀 Müller` → `Mueller`), Byte-Offsets korrekt, keine Regression.
 - [x] 🟢 **Windows-Pfade/Backslash.** `vim.system` (Arg-Vektor, keine Shell) ist der Standardpfad;
   `shellescape` nur Legacy-Fallback. Zusätzlich Tokenizer-Fix für `\` in Pfaden. Auf Windows verifiziert.
