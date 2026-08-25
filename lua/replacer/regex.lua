@@ -145,20 +145,16 @@ function M.open_test_panel(pattern, sample)
     title_pos = "center",
   })
 
-  vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
-    buffer = buf,
-    callback = function()
-      highlight_test_buffer(buf)
-    end,
-  })
+  -- Both hooks live in `replacer.bindings` -- see that module's header for why
+  -- the wiring is kept apart from the highlighting it drives.
+  require("replacer.bindings.autocmds").attach_test_panel(buf, highlight_test_buffer)
 
   local function close()
     if vim.api.nvim_win_is_valid(win) then
       vim.api.nvim_win_close(win, true)
     end
   end
-  vim.keymap.set({ "n" }, "<Esc>", close, { buffer = buf, nowait = true, silent = true })
-  vim.keymap.set({ "n" }, "q", close, { buffer = buf, nowait = true, silent = true })
+  require("replacer.bindings.keymaps").attach_test_panel(buf, close)
 
   vim.api.nvim_win_set_cursor(win, { 1, #(pattern or "") })
   highlight_test_buffer(buf)
