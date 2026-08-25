@@ -592,13 +592,13 @@ end
 **Performance:** ⚡⚡⚡ (LSP-Call Overhead)
 **Priorität:** 🅲️ NICE-TO-HAVE (aber komplex)
 
-**Beschreibung:**
+**What it does:**
 ```vim
 :Replace MyClass NewClass . --lsp
-" Wenn MyClass ein Symbol ist:
-"   → Nutze LSP rename
-" Sonst:
-"   → Fallback auf Text-Replace
+" If MyClass is a symbol:
+"   -> use the LSP rename
+" Otherwise:
+"   -> fall back to a text replace
 ```
 
 **Herausforderungen:**
