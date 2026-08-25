@@ -23,6 +23,25 @@ of a single global override.
 - **Usercmds:** `:[range]Replace[!] {old} {new} [scope] [--flags]` (see
   [BINDINGS.md](../BINDINGS.md#user-commands))
 
+## `<Tab>` completion on `:Replace`
+
+Every slot of `:Replace`/`:Replacer`/`:Surround`/`:Wrap` completes: the scope
+keywords, all 41 flag names (43 on `:Surround`) at a bare `--`, and the values
+of the four flags that have one — `--type=` (ripgrep's own type names, read
+live from `rg --type-list` and cached per session, so a type added by the
+user's own `--type-add` is offered too), `--changed=` (comma-joinable kinds,
+with kinds already named dropped from the candidates), `--engine=`, and
+`--export=`.
+
+`--glob=`/`--exclude=` deliberately do not complete: they take *patterns*, so
+offering an existing path would be a candidate that is accepted, matches that
+one file, and silently narrows the replacement. `--context=`/`--max-filesize=`
+are integers. `{old}`/`{new}` are free text.
+
+- **Module:** `argtypes.lua` (`RP_RG_TYPE`, `RP_CHANGED_KINDS`), `command.lua`
+  (`M.FLAGS` types, `M.register` calling `argtypes.register()`)
+- **Docs:** [BINDINGS.md](../BINDINGS.md#user-commands), `:help replacer-completion`
+
 ## Picker engine auto-detection
 
 `engine = "auto"` picks fzf-lua when installed, else Telescope — set
