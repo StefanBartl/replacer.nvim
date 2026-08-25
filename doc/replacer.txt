@@ -175,6 +175,24 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
         --export=<path>                      write the planned diff (or .json) to a file
                                              (implies --dry; .json -> JSON, else patch)
 
+    Completion:~
+                                              *replacer-completion*
+        <Tab> completes the scope, every flag name (type "--" and press
+        <Tab> for the full list), and the values of the four flags that
+        have one:
+
+            --type=       ripgrep's own type names, read live from
+                          `rg --type-list` -- so a type added by your own
+                          --type-add is offered too
+            --changed=    modified|staged|untracked, comma-joinable; after
+                          a comma only the kinds not yet named are offered
+            --engine=     fzf|telescope
+            --export=     file paths
+
+        --glob= and --exclude= deliberately do NOT complete: they take
+        patterns, not paths, and offering an existing file would suggest
+        a candidate that is accepted but matches only that one file.
+
     Examples:~
         :Replace foo bar %
         :Replace "test.*" new cwd --regex

@@ -34,6 +34,7 @@
 local uv = vim.uv or vim.loop
 local notify = require("replacer.util.notify")
 local composer = require("lib.nvim.usercmd.composer")
+local argtypes = require("replacer.argtypes")
 
 local M = {}
 
@@ -569,17 +570,22 @@ M.FLAGS = {
   { name = "no-lsp", bool = true },
   { name = "stream", bool = true },
   { name = "no-stream", bool = true },
-  { name = "changed", type = "STRING" },
+  -- `optional_value`, not a plain value flag: bare `--changed` means "all
+  -- kinds" and must not swallow the token after it, which may be the scope
+  -- positional (`:Replace a b --changed cwd`). Matches what apply_tokens has
+  -- always done -- before this, composer rejected the bare form outright
+  -- with "flag '--changed' requires a value", never reaching apply_tokens.
+  { name = "changed", type = "RP_CHANGED_KINDS", optional_value = true },
   { name = "confirm-per-file", bool = true },
   { name = "no-confirm-per-file", bool = true },
   { name = "checkpoint", bool = true },
   { name = "no-checkpoint", bool = true },
-  { name = "type", type = "STRING", repeatable = true },
+  { name = "type", type = "RP_RG_TYPE", repeatable = true },
   { name = "glob", type = "STRING", repeatable = true },
   { name = "exclude", type = "STRING", repeatable = true },
   { name = "engine", type = "STRING", enum = { "fzf", "telescope" } },
   { name = "context", type = "INT" },
-  { name = "export", type = "STRING" },
+  { name = "export", type = "PATH" },
 }
 
 --- Register :Replace and :Replacer user commands, built via
@@ -595,6 +601,11 @@ M.FLAGS = {
 ---@param run_fun fun(request: RP_Request): nil
 ---@return nil
 function M.register(run_fun)
+  -- Value completion for --type/--changed. Flag *names* need no help: they
+  -- come out of M.FLAGS below for free. See replacer.argtypes for which flags
+  -- deliberately stay uncompleted, and why.
+  argtypes.register()
+
   local function handler(opts)
     local raw = (type(opts.args) == "string") and opts.args or ""
     local ok, request, err = M.parse_request(raw, {

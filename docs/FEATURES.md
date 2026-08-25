@@ -56,6 +56,7 @@ place to check instead of re-reading the whole module tree.
 | Configurable picker keymaps + which-key labels | `keymaps.*` config — see [`docs/BINDINGS.md`](BINDINGS.md) |
 | Specific, actionable parse errors (not a generic failure) | [`error.lua`](../lua/replacer/error.lua) + [`messages.lua`](../lua/replacer/messages.lua) |
 | Overridable message templates, quiet mode | `messages`/`quiet` config, [`messages.lua`](../lua/replacer/messages.lua) |
+| `<Tab>` completion on every `:Replace` slot | Scope + all 41 flag names from the composer route; flag *values* for `--type=` (live `rg --type-list`), `--changed=` (comma-joinable kinds), `--engine=`, `--export=` — [`argtypes.lua`](../lua/replacer/argtypes.lua), [`docs/BINDINGS.md`](BINDINGS.md) |
 | `:help replacer` | [`doc/replacer.txt`](../doc/replacer.txt) |
 
 ## Known loose end

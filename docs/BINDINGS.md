@@ -26,6 +26,25 @@ place.
 
 All support `[range]` and the bang form (`!`) where documented in `:help replacer-commands`.
 
+### `<Tab>` completion on `:Replace`/`:Replacer`/`:Surround`/`:Wrap`
+
+| Position | Completes to |
+| --- | --- |
+| `{scope}` | `%`, `cwd`, `.`, `root` |
+| `--` | every one of the 41 flags (43 on `:Surround`) |
+| `--type=` | ripgrep's own type names, read live from `rg --type-list` |
+| `--changed=` | `modified`/`staged`/`untracked`, comma-joinable — a second `<Tab>` after a comma offers only the kinds not yet named |
+| `--engine=` | `fzf`, `telescope` |
+| `--export=` | file paths |
+
+`{old}`/`{new}` are arbitrary text and have nothing to complete against.
+`--glob=`/`--exclude=` deliberately do not complete: they take *patterns*, and
+offering existing paths would suggest `lua/replacer/command.lua` where the flag
+wants `**/*.lua` — a candidate that is accepted, matches a single file, and
+silently narrows the replacement. `--context=`/`--max-filesize=` are integers.
+
+See [`lua/replacer/argtypes.lua`](../lua/replacer/argtypes.lua).
+
 ---
 
 ## Picker keymaps
