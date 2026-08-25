@@ -75,6 +75,15 @@ end
 ---@param on_done fun(files: string[], top: string|nil)
 ---@return nil
 function M.list(start_dir, kinds, on_done)
+  -- `list` is asynchronous and returns nothing: without this guard a caller
+  -- still using the old synchronous two-return form gets a bare nil back and
+  -- only notices several frames later, where it indexes it. Fail here, at the
+  -- call site that is actually wrong.
+  if type(on_done) ~= "function" then
+    local msg = "replacer.gitfiles.list: on_done must be a function, got " .. type(on_done)
+    error(msg, 2)
+  end
+
   local top = toplevel(start_dir)
   if not top then
     return on_done({}, nil)

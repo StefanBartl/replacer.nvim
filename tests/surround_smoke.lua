@@ -5,6 +5,20 @@
 
 vim.opt.runtimepath:append(vim.fn.getcwd())
 
+-- lib.nvim lives outside this repo, so `nvim -l tests/<suite>.lua` starts
+-- without it on the path and every require of replacer.* dies on
+-- "module 'lib.nvim.notify' not found". Resolve it first. Pattern A from
+-- lib.nvim/templates/README.md (hard dependency: replacer.notify and
+-- replacer.gitfiles require lib.nvim unconditionally, so nothing loads
+-- without it) -- fail the whole suite rather than reporting phantom passes.
+local this_file = debug.getinfo(1, "S").source:sub(2):gsub("\\", "/")
+local add_lib_nvim = dofile((this_file:match("^(.*)/[^/]+$") or ".") .. "/resolve_lib_nvim.lua")
+if not add_lib_nvim() then
+  print("FAIL  cannot locate lib.nvim (a runtime dependency of replacer.nvim).")
+  print("      Set $LIB_NVIM_PATH, or check it out next to this repo.")
+  os.exit(1)
+end
+
 local replacer = require("replacer")
 local command  = require("replacer.command")
 local surround = require("replacer.surround")

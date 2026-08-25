@@ -6,6 +6,20 @@
 
 vim.opt.runtimepath:append(vim.fn.getcwd())
 
+-- lib.nvim lives outside this repo, so `nvim -l tests/<suite>.lua` starts
+-- without it on the path and every require of replacer.* dies on
+-- "module 'lib.nvim.notify' not found". Resolve it first. Pattern A from
+-- lib.nvim/templates/README.md (hard dependency: replacer.notify and
+-- replacer.gitfiles require lib.nvim unconditionally, so nothing loads
+-- without it) -- fail the whole suite rather than reporting phantom passes.
+local this_file = debug.getinfo(1, "S").source:sub(2):gsub("\\", "/")
+local add_lib_nvim = dofile((this_file:match("^(.*)/[^/]+$") or ".") .. "/resolve_lib_nvim.lua")
+if not add_lib_nvim() then
+  print("FAIL  cannot locate lib.nvim (a runtime dependency of replacer.nvim).")
+  print("      Set $LIB_NVIM_PATH, or check it out next to this repo.")
+  os.exit(1)
+end
+
 local ok_mod, replacer = pcall(require, "replacer")
 assert(ok_mod, "failed to require replacer: " .. tostring(replacer))
 local command = require("replacer.command")
@@ -263,18 +277,35 @@ if vim.fn.executable("git") == 1 then
   local f2 = repo .. "/untracked.txt"
   do local fh = assert(io.open(f2, "w")); fh:write("foo two\n"); fh:close() end
 
-  local modified_only = gitfiles.list(repo, { "modified" })
+  -- gitfiles.list is asynchronous (it chains vim.system spawns); pump the loop
+  -- until the callback fires so the assertions below stay readable.
+  local function list_sync(dir, kinds)
+    local files, top, done
+    gitfiles.list(dir, kinds, function(f, t)
+      files, top, done = f, t, true
+    end)
+    if not vim.wait(10000, function() return done end) then
+      error("gitfiles.list did not call back within 10s for " .. vim.inspect(kinds))
+    end
+    return files, top
+  end
+
+  local no_cb = select(2, pcall(gitfiles.list, repo, { "modified" }))
+  check("gitfiles: calling list without a callback errors loudly",
+    type(no_cb) == "string" and no_cb:find("on_done must be a function", 1, true) ~= nil, no_cb)
+
+  local modified_only = list_sync(repo, { "modified" })
   check("gitfiles: modified-only lists the tracked file", #modified_only == 1
     and modified_only[1]:find("tracked.txt", 1, true) ~= nil, vim.inspect(modified_only))
 
-  local untracked_only = gitfiles.list(repo, { "untracked" })
+  local untracked_only = list_sync(repo, { "untracked" })
   check("gitfiles: untracked-only lists the new file", #untracked_only == 1
     and untracked_only[1]:find("untracked.txt", 1, true) ~= nil, vim.inspect(untracked_only))
 
-  local both = gitfiles.list(repo, { "modified", "untracked" })
+  local both = list_sync(repo, { "modified", "untracked" })
   check("gitfiles: combined kinds lists both files", #both == 2, #both)
 
-  local not_repo, no_top = gitfiles.list(tmp, { "modified" })
+  local not_repo, no_top = list_sync(tmp, { "modified" })
   check("gitfiles: outside a repo -> nil top, empty list", no_top == nil and #not_repo == 0)
 
   -- End-to-end via replacer.run: --changed restricts to only the modified
