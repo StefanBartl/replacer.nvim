@@ -367,57 +367,61 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
   local match_count = 0
   local last_update_ms = 0
 
-  local proc = vim.system(args, spawn_env.apply({
-    text = true,
-    stdout = function(_, data)
-      if not data then
-        return
-      end
-      n_chunks = n_chunks + 1
-      chunks[n_chunks] = data
-      if not h then
-        return
-      end
-      for _ in data:gmatch('"type":"match"') do
-        match_count = match_count + 1
-      end
-      local uv = vim.uv or vim.loop
-      local now = uv.now()
-      if now - last_update_ms >= PROGRESS_THROTTLE_MS then
-        last_update_ms = now
-        vim.schedule(function()
-          h:update({ text = string.format("%d match(es) found…", match_count) })
-        end)
-      end
-    end,
-  }), function(obj)
-    -- on_exit runs off the main loop; re-enter it before any vim.* work.
-    vim.schedule(function()
-      local code = obj and obj.code or 1
-      if code ~= 0 and code ~= 1 then
-        local err = (h and h.cancelled)
-            and require("replacer.error").search_error("search cancelled")
-          or require("replacer.error").search_error("ripgrep failed", obj and obj.stderr or nil)
-        if h then
-          h:cancel("search failed")
+  local proc = vim.system(
+    args,
+    spawn_env.apply({
+      text = true,
+      stdout = function(_, data)
+        if not data then
+          return
         end
-        on_done(nil, err)
-        return
-      end
-      local items = parse_rg_json(table.concat(chunks), old, cfg)
-      if h then
-        local files, n_files = {}, 0
-        for _, it in ipairs(items) do
-          if not files[it.path] then
-            files[it.path] = true
-            n_files = n_files + 1
+        n_chunks = n_chunks + 1
+        chunks[n_chunks] = data
+        if not h then
+          return
+        end
+        for _ in data:gmatch('"type":"match"') do
+          match_count = match_count + 1
+        end
+        local uv = vim.uv or vim.loop
+        local now = uv.now()
+        if now - last_update_ms >= PROGRESS_THROTTLE_MS then
+          last_update_ms = now
+          vim.schedule(function()
+            h:update({ text = string.format("%d match(es) found…", match_count) })
+          end)
+        end
+      end,
+    }),
+    function(obj)
+      -- on_exit runs off the main loop; re-enter it before any vim.* work.
+      vim.schedule(function()
+        local code = obj and obj.code or 1
+        if code ~= 0 and code ~= 1 then
+          local err = (h and h.cancelled)
+              and require("replacer.error").search_error("search cancelled")
+            or require("replacer.error").search_error("ripgrep failed", obj and obj.stderr or nil)
+          if h then
+            h:cancel("search failed")
           end
+          on_done(nil, err)
+          return
         end
-        h:finish(string.format("%d match(es) in %d file(s)", #items, n_files))
-      end
-      on_done(items, nil)
-    end)
-  end)
+        local items = parse_rg_json(table.concat(chunks), old, cfg)
+        if h then
+          local files, n_files = {}, 0
+          for _, it in ipairs(items) do
+            if not files[it.path] then
+              files[it.path] = true
+              n_files = n_files + 1
+            end
+          end
+          h:finish(string.format("%d match(es) in %d file(s)", #items, n_files))
+        end
+        on_done(items, nil)
+      end)
+    end
+  )
 
   if h then
     h:on_cancel(function()
@@ -961,50 +965,54 @@ function M.collect_streaming(old, roots, cfg, on_batch, on_done)
     on_batch(batch)
   end
 
-  local proc = vim.system(args, spawn_env.apply({
-    text = true,
-    stdout = function(_, data)
-      if not data then
-        return
-      end
-      vim.schedule(function()
-        feed(data)
-        if h then
-          h:update({ text = string.format("%d match(es) found…", #all_items) })
+  local proc = vim.system(
+    args,
+    spawn_env.apply({
+      text = true,
+      stdout = function(_, data)
+        if not data then
+          return
         end
-      end)
-    end,
-  }), function(obj)
-    vim.schedule(function()
-      if buf_tail ~= "" then
-        feed("\n")
-      end -- flush a trailing line with no final newline
-
-      local code = obj and obj.code or 1
-      if code ~= 0 and code ~= 1 then
-        local err = (h and h.cancelled)
-            and require("replacer.error").search_error("search cancelled")
-          or require("replacer.error").search_error("ripgrep failed", obj and obj.stderr or nil)
-        if h then
-          h:cancel("search failed")
-        end
-        on_done(nil, err)
-        return
-      end
-
-      if h then
-        local files, n_files = {}, 0
-        for _, it in ipairs(all_items) do
-          if not files[it.path] then
-            files[it.path] = true
-            n_files = n_files + 1
+        vim.schedule(function()
+          feed(data)
+          if h then
+            h:update({ text = string.format("%d match(es) found…", #all_items) })
           end
+        end)
+      end,
+    }),
+    function(obj)
+      vim.schedule(function()
+        if buf_tail ~= "" then
+          feed("\n")
+        end -- flush a trailing line with no final newline
+
+        local code = obj and obj.code or 1
+        if code ~= 0 and code ~= 1 then
+          local err = (h and h.cancelled)
+              and require("replacer.error").search_error("search cancelled")
+            or require("replacer.error").search_error("ripgrep failed", obj and obj.stderr or nil)
+          if h then
+            h:cancel("search failed")
+          end
+          on_done(nil, err)
+          return
         end
-        h:finish(string.format("%d match(es) in %d file(s)", #all_items, n_files))
-      end
-      on_done(all_items, nil)
-    end)
-  end)
+
+        if h then
+          local files, n_files = {}, 0
+          for _, it in ipairs(all_items) do
+            if not files[it.path] then
+              files[it.path] = true
+              n_files = n_files + 1
+            end
+          end
+          h:finish(string.format("%d match(es) in %d file(s)", #all_items, n_files))
+        end
+        on_done(all_items, nil)
+      end)
+    end
+  )
 
   if h then
     h:on_cancel(function()
