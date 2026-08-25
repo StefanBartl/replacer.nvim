@@ -317,9 +317,21 @@ if vim.fn.executable("git") == 1 then
     filters = { file_types = {}, globs = {}, exclude = {} },
   }
   replacer.run(req)
-  vim.wait(200)
-  local c1 = assert(io.open(f1, "r")):read("*a")
-  local c2 = assert(io.open(f2, "r")):read("*a")
+  -- Wait on the outcome, not on a stopwatch. Since --changed became
+  -- asynchronous (it spawns git to resolve the file list before replacing),
+  -- a flat `vim.wait(200)` was a race: it passed most of the time and failed
+  -- roughly one run in six on Windows, where process spawn is slower. Polling
+  -- for the write both removes the flake and returns as soon as it lands.
+  local function read_file(path)
+    return assert(io.open(path, "r")):read("*a")
+  end
+  if not vim.wait(10000, function()
+    return read_file(f1):match("XXX") ~= nil
+  end, 20) then
+    print("NOTE  --changed did not write within 10s; asserting on what is there")
+  end
+  local c1 = read_file(f1)
+  local c2 = read_file(f2)
   check("changed: modified file was updated", c1:match("XXX") ~= nil, c1)
   check("changed: untracked file left alone (not in 'modified' kind)", c2:match("foo") ~= nil, c2)
 else
