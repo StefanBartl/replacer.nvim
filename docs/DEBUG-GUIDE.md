@@ -2,7 +2,7 @@
 
 ## Quick Diagnosis
 
-### Szenario 1: "Alle Matches werden übersprungen"
+### Scenario 1: "all matches are skipped"
 
 ```vim
 " Symptom:
@@ -10,38 +10,38 @@
 [replacer] skip changed spot: file.lua:42:5
 [replacer] 0 spot(s) in 1 file(s)
 
-" Diagnose:
+" Diagnosis:
 :ReplaceDebug on
 :ReplaceDebug inspect
 :Replace "your-pattern" "new-text" %
 
-" Häufige Ursachen:
-" 1. Datei wurde zwischenzeitlich geändert
-" 2. UTF-8 Encoding-Problem
-" 3. Ripgrep findet Pattern, aber Offsets stimmen nicht
+" Common causes:
+" 1. The file changed in the meantime
+" 2. A UTF-8 encoding problem
+" 3. Ripgrep finds the pattern, but the offsets are wrong
 ```
 
-**Lösung:**
+**Solution:**
 ```lua
--- In setup(), temporär aktivieren:
+-- In setup(), enable temporarily:
 ext_highlight_opts = {
-  debug = true,  -- Zeigt hex dumps
+  debug = true,  -- shows hex dumps
 }
 ```
 
 ---
 
-### Szenario 2: "Nur erste Occurrence wird gefunden"
+### Scenario 2: "only the first occurrence is found"
 
 ```vim
 " Symptom:
-" Zeile hat "test test test", aber nur 1 Match im Picker
+" The line has "test test test", but only 1 match in the picker
 
-" Diagnose:
+" Diagnosis:
 :ReplaceDebug analyze 45 "test"
 ```
 
-**Erwartete Ausgabe:**
+**Expected output:**
 ```
 === Analyzing line 45 ===
 Pattern: 'test'
@@ -55,38 +55,38 @@ Occurrences:
   #3: bytes [10:13] chars [10:14] text='test'
 ```
 
-**Wenn nur 1 Occurrence angezeigt wird:**
-→ Ripgrep liefert unvollständige Submatches
-→ Fixed: Fallback-Scan in `rg.lua` aktiviert
+**If only 1 occurrence is shown:**
+→ ripgrep delivers incomplete submatches
+→ Fixed: the fallback scan in `rg.lua` kicks in
 
 ---
 
-### Szenario 3: "UTF-8 Zeichen (Umlaute, Emoji) falsch"
+### Scenario 3: "UTF-8 characters (umlauts, emoji) are wrong"
 
 ```vim
 " Symptom:
 :Replace "Müller" "Mueller" %
 [replacer] skip (mismatch): expected 'Müller', got 'M?ller'
 
-" Oder:
+" Or:
 [replacer] skip (out of range): s=15 e=19 len=18
 ```
 
-**Diagnose:**
+**Diagnosis:**
 ```vim
 :ReplaceDebug analyze 45 "Müller"
 ```
 
-**Erwartete Ausgabe (korrekt):**
+**Expected output (correct):**
 ```
 Occurrences:
   #1: bytes [0:6] chars [0:6] text='Müller'
        ^ ü = 2 bytes (C3 BC)
 ```
 
-**Wenn bytes/chars nicht passen:**
-→ File Encoding prüfen: `:set fileencoding?`
-→ Sollte `utf-8` sein
+**If bytes/chars do not line up:**
+→ check the file encoding: `:set fileencoding?`
+→ it should be `utf-8`
 
 **Fix:**
 ```vim
@@ -97,95 +97,95 @@ Occurrences:
 
 ---
 
-### Szenario 4: "Pattern funktioniert in ripgrep, aber nicht im Plugin"
+### Scenario 4: "the pattern works in ripgrep, but not in the plugin"
 
 ```bash
-# Terminal: funktioniert
+# Terminal: works
 $ rg --json "test" file.lua
 {"type":"match","data":{...}}
 
-# Plugin: findet nichts
+# Plugin: finds nothing
 :Replace "test" "new" %
 [replacer] no matches found
 ```
 
-**Diagnose:**
+**Diagnosis:**
 ```vim
 :ReplaceDebug on
 :Replace "test" "new" %
 ```
 
-**Mögliche Ausgaben:**
+**Possible outputs:**
 
-**Fall A: Ripgrep Fehler**
+**Case A: a ripgrep error**
 ```
 [replacer] rg failed: <error message>
 ```
-→ Check ripgrep args in Config
+→ check the ripgrep args in the config
 
-**Fall B: JSON Parse Error**
+**Case B: a JSON parse error**
 ```
-" Nichts in debug output
+" Nothing in the debug output
 ```
-→ Ripgrep gibt kein valides JSON zurück
-→ Check: `rg --version` (min. 11.0)
+→ ripgrep returns no valid JSON
+→ check: `rg --version` (11.0 minimum)
 
-**Fall C: Submatches leer**
+**Case C: empty submatches**
 ```
 [replacer] Found 0 match(es)
 ```
-→ Ripgrep findet matches, aber submatches array ist leer
-→ Fallback-Scan sollte aktivieren (bereits in Fix)
+→ ripgrep finds matches, but the submatches array is empty
+→ the fallback scan should kick in (already in the fix)
 
 ---
 
-### Szenario 5: "Replacement funktioniert, aber wird nicht gespeichert"
+### Scenario 5: "the replacement works, but is not saved"
 
 ```vim
 :Replace "old" "new" %
 [replacer] 5 spot(s) in 1 file(s)
 
-" Aber Datei ist unverändert
+" But the file is unchanged
 ```
 
-**Check Config:**
+**Check the config:**
 ```lua
 require("replacer").setup({
-  write_changes = true,  -- Muss true sein!
+  write_changes = true,  -- has to be true!
 })
 ```
 
-**Oder manuell speichern:**
+**Or save manually:**
 ```vim
 :w
 ```
 
 ---
 
-### Szenario 6: "Performance: Replacement dauert ewig"
+### Scenario 6: "performance: the replacement takes forever"
 
 ```vim
-" Bei großen Dateien (>10k Zeilen)
+" On large files (>10k lines)
 :Replace "common-word" "new" cwd
-" ... hängt ...
+" ... hangs ...
 ```
 
-**Diagnose:**
+**Diagnosis:**
 ```vim
 :ReplaceDebug inspect
 " Check: line_count
 
-" Wenn > 10.000:
+" If > 10,000:
 ```
 
 **Optimization:**
 ```lua
--- Scope einschränken
-:Replace "word" "new" %  -- nur aktueller buffer
-:Replace "word" "new" src/  -- nur src/ directory
+-- Narrow the scope
+:Replace "word" "new" %  -- only the current buffer
+:Replace "word" "new" src/  -- only the src/ directory
 ```
 
-**Oder Ripgrep Optionen:**
+**Or ripgrep options:**
 ```lua
 require("replacer").setup({
   exclude_git_dir = true,  -- Skip .git/
@@ -195,13 +195,13 @@ require("replacer").setup({
 
 ---
 
-## Test-Suite Interpretieren
+## Interpreting the test suite
 
 ```vim
 :ReplaceDebug test
 ```
 
-**Alle Tests pass:**
+**All tests pass:**
 ```
 ✓ ASCII baseline
 ✓ UTF-8 offsets
@@ -212,18 +212,18 @@ require("replacer").setup({
 
 === Results: 6 passed, 0 failed ===
 ```
-→ **Plugin funktioniert korrekt**
+→ **the plugin works correctly**
 
-**Test Failure:**
+**A test failure:**
 ```
 ✗ UTF-8 offsets FAILED: assertion failed
 ```
-→ **Neovim/Lua UTF-8 Support Problem**
-→ Check Neovim Version (min. 0.9)
+→ **a Neovim/Lua UTF-8 support problem**
+→ check the Neovim version (0.9 minimum)
 
 ---
 
-## Mismatch Hex Dump verstehen
+## Understanding the mismatch hex dump
 
 ```vim
 :ReplaceDebug on
@@ -238,7 +238,7 @@ require("replacer").setup({
 ```
 'Müller'
  M  ü  l  l  e  r
- 4D C3BC 6C 6C 65 72  (Bytes)
+ 4D C3BC 6C 6C 65 72  (bytes)
     ^^^^
     ü = C3 BC (2 bytes UTF-8)
 
@@ -249,17 +249,17 @@ require("replacer").setup({
     u = 75 (1 byte ASCII)
 ```
 
-**Bedeutung:**
-- Datei hat "Muller" (ohne Umlaut)
-- Du suchst "Müller" (mit Umlaut)
-→ **Pattern passt nicht**
+**Meaning:**
+- The file has "Muller" (without the umlaut)
+- You are searching for "Müller" (with the umlaut)
+→ **the pattern does not match**
 
 **Fix:**
 ```vim
-" Entweder:
-:Replace "Muller" "Mueller" %  " Ohne Umlaut suchen
+" Either:
+:Replace "Muller" "Mueller" %  " search without the umlaut
 
-" Oder Datei korrigieren:
+" Or correct the file:
 :%s/Muller/Müller/g
 :w
 :Replace "Müller" "Mueller" %
@@ -274,97 +274,97 @@ require("replacer").setup({
 ```lua
 -- Default: Literal (fixed-strings)
 :Replace "test.*" "new" %
-" Findet: "test.*" (literal dot-star)
+" Finds: "test.*" (a literal dot-star)
 
 -- Regex Mode:
 require("replacer").setup({
   literal = false,
 })
 :Replace "test.*" "new" %
-" Findet: "test" + beliebige chars
+" Finds: "test" + arbitrary chars
 ```
 
 ### 2. Smart Case
 
 ```lua
--- Mit smart_case = true (default):
+-- With smart_case = true (default):
 :Replace "Test" "new" %
-" Findet: "Test", "TEST", "test"
+" Finds: "Test", "TEST", "test"
 
 :Replace "test" "new" %
-" Findet nur: "test" (all lowercase)
+" Finds only: "test" (all lowercase)
 ```
 
 ### 3. Scope Confusion
 
 ```vim
-" Aktueller Buffer:
+" The current buffer:
 :Replace "old" "new" %
 
 " Current Working Directory:
 :Replace "old" "new" cwd
 
-" Spezifischer Path:
+" A specific path:
 :Replace "old" "new" /path/to/project
 
-" NICHT verwechseln mit:
-:Replace "old" "new"  " → default ist cwd!
+" Do NOT confuse it with:
+:Replace "old" "new"  " → the default is cwd!
 ```
 
 ---
 
-## Debug-Modus Best Practices
+## Debug-mode best practices
 
-1. **Nur temporär aktivieren** (Verbose Output!)
+1. **Enable it only temporarily** (verbose output!)
    ```vim
    :ReplaceDebug on
    " ... debug session ...
    :ReplaceDebug off
    ```
 
-2. **Inspect vor Replace** (Check Buffer State)
+2. **Inspect before replacing** (check the buffer state)
    ```vim
    :ReplaceDebug inspect
    :Replace "pattern" "new" %
    ```
 
-3. **Analyze bei Mismatches** (Understand Offsets)
+3. **Analyze on mismatches** (understand the offsets)
    ```vim
-   " Bei skip warnings:
+   " On skip warnings:
    :ReplaceDebug analyze <line> "<pattern>"
    ```
 
-4. **Test vor großen Replacements**
+4. **Test before large replacements**
    ```vim
-   :ReplaceDebug test  " Verify Plugin funktioniert
-   :Replace "pattern" "new" .  " Dann actual replace
+   :ReplaceDebug test  " verify the plugin works
+   :Replace "pattern" "new" .  " then the actual replace
    ```
 
 ---
 
 ## Reporting Bugs
 
-Bei anhaltenden Problemen, folgende Infos sammeln:
+If the problems persist, collect the following info:
 
 ```vim
 :ReplaceDebug on
 :ReplaceDebug inspect
 :Replace "your-pattern" "new" scope
 
-" Copy output und berichte:
-" 1. Neovim Version
+" Copy the output and report:
+" 1. Neovim version
 :version
 
-" 2. Ripgrep Version
+" 2. Ripgrep version
 :!rg --version
 
-" 3. File Encoding
+" 3. File encoding
 :set fileencoding?
 
 " 4. Config
 :lua print(vim.inspect(require("replacer").options))
 
-" 5. Debug Output (siehe Buffer)
+" 5. Debug output (see the buffer)
 ```
 
 **GitHub Issue Template:**
@@ -401,25 +401,25 @@ require("replacer").setup({
 
 ---
 
-## Zusammenfassung: Debug-Workflow
+## Summary: the debug workflow
 
 ```mermaid
 graph TD
-    A[Problem] --> B{Art des Problems?}
-    B -->|Alle Skips| C[ReplaceDebug inspect]
-    B -->|Teilweise Skips| D[ReplaceDebug analyze LINE PATTERN]
-    B -->|Keine Matches| E[Check Ripgrep direkt]
-    B -->|Langsam| F[Scope einschränken]
+    A[Problem] --> B{Kind of problem?}
+    B -->|All skipped| C[ReplaceDebug inspect]
+    B -->|Some skipped| D[ReplaceDebug analyze LINE PATTERN]
+    B -->|No matches| E[Check ripgrep directly]
+    B -->|Slow| F[Narrow the scope]
 
     C --> G[ReplaceDebug on]
     D --> G
     E --> H[rg --json PATTERN FILE]
-    F --> I[Replace mit kleinerem Scope]
+    F --> I[Replace with a smaller scope]
 
-    G --> J[Replace ausführen]
-    J --> K[Output analysieren]
-    K --> L{Problem gelöst?}
+    G --> J[Run the replace]
+    J --> K[Analyse the output]
+    K --> L{Problem solved?}
 
-    L -->|Ja| M[ReplaceDebug off]
-    L -->|Nein| N[GitHub Issue mit Debug Output]
+    L -->|Yes| M[ReplaceDebug off]
+    L -->|No| N[GitHub issue with the debug output]
 ```

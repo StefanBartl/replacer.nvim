@@ -1,86 +1,85 @@
-# TODO – Richtlinien-Review `replacer`
+# TODO – guidelines review of `replacer`
 
-**Status: alle 10 Punkte implementiert & via `TESTS/feature_smoke.lua` verifiziert (22/22).**
+**Status: all 10 points implemented & verified via `TESTS/feature_smoke.lua` (22/22).**
 
-- [x] 1. Mehrfach-Vorkommen pro Zeile → je ein eigener Picker-Eintrag (ripgrep & vimgrep). *(rg.lua `find_all_occurrences`)*
-- [x] 2. `--literal` / `--no-literal` / `--regex` (+ weitere Optionen) als Command-Flags. *(command.lua)*
-- [x] 3. Kommentare/Doku: alle neuen Module ausführlich annotiert; README + `doc/replacer.txt` aktualisiert.
-- [x] 4. `search_engine = "ripgrep"|"vimgrep"|"auto"`; vimgrep als automatischer Fallback wenn `rg` fehlt. *(rg.lua `pick_backend`)*
-- [x] 5. Picker-Auto-Detect: `engine="auto"` → fzf-lua falls vorhanden, sonst telescope. *(init.lua `pick_picker`)*
-- [x] 6. Range-Support: `:'<,'>Replace` beschränkt auf Zeilenbereich. *(command.lua `range=true`)*
-- [x] 7. Klare Fehlermeldungen (missing / too many / unknown option), deferred notify. *(command.lua)*
-- [x] 8. Filter als Argumente `--type=` / `--glob=` / `--exclude=` + in Config (`file_types`/`globs`/`exclude`).
-- [x] 9. `--dry` (Plan-only) mit Statistik (Treffer/Dateien) + `--export=` (Patch/JSON). *(export.lua, init.lua)*
-- [x] 10. Patch-Export: git-applybare unified diff (`vim.diff`) oder JSON. *(export.lua)*
+- [x] 1. Multiple occurrences per line → one picker entry each (ripgrep & vimgrep). *(rg.lua `find_all_occurrences`)*
+- [x] 2. `--literal` / `--no-literal` / `--regex` (+ further options) as command flags. *(command.lua)*
+- [x] 3. Comments/docs: all new modules annotated in detail; README + `doc/replacer.txt` updated.
+- [x] 4. `search_engine = "ripgrep"|"vimgrep"|"auto"`; vimgrep as the automatic fallback when `rg` is missing. *(rg.lua `pick_backend`)*
+- [x] 5. Picker auto-detect: `engine="auto"` → fzf-lua if present, otherwise telescope. *(init.lua `pick_picker`)*
+- [x] 6. Range support: `:'<,'>Replace` limited to the line range. *(command.lua `range=true`)*
+- [x] 7. Clear error messages (missing / too many / unknown option), deferred notify. *(command.lua)*
+- [x] 8. Filters as arguments `--type=` / `--glob=` / `--exclude=` + in the config (`file_types`/`globs`/`exclude`).
+- [x] 9. `--dry` (plan only) with statistics (hits/files) + `--export=` (patch/JSON). *(export.lua, init.lua)*
+- [x] 10. Patch export: a git-applyable unified diff (`vim.diff`) or JSON. *(export.lua)*
 
-Zusätzlich behoben: `confirm_all=false` wurde durch `as_bool(x) or default` verschluckt
-(Lua-`false`-Falle) → `pick_bool` eingeführt; Windows-Pfade mit `\` wurden vom Tokenizer
-zerstört → Backslash-Escape nur noch vor Quotes/Space/Backslash.
-
----
-
-## 1. Aufräumen der restlichen Merge-Reste
-
-- [x] 🔴 **Tote Picker-Duplikate entfernt.** `pickers/fzf/` & `pickers/telescope/` (~620 LOC, von
-  niemandem require't) gelöscht; `init.lua` nutzt die monolithischen `fzf.lua`/`telescope.lua`.
-- [x] 🔴 **`health.lua` auf neue Config-API umgestellt.** Nutzt jetzt `require("replacer.config").get()`,
-  kennt `engine="auto"`/`search_engine`/Filter, meldet vimgrep-Fallback statt rg-Hard-Error.
-
-## 2. Sicherheit & Fehlerbehandlung (Regel 1, 3, 7)
-
-- [x] 🔴 **API-Guards + `pcall` in `apply.lua`.** `bufadd`/`bufload`/`nvim_buf_set_text`/`write` jetzt
-  `pcall`-gekapselt + `nvim_buf_is_valid`/`is_loaded`-Checks; Fehler werden gesammelt statt zu werfen.
-- [x] 🔴 **Strukturierte Fehler statt stiller Fehler.** Neues Modul [error.lua](../lua/replacer/error.lua)
-  (`safe_call` + `WriteError`/`SearchError`/`InvalidScopeError`); `apply_matches` gibt `RP_Error[]` zurück,
-  rg-Suchfehler fließen via `err` an die Aufrufschicht; stiller `fzf.lua`-pcall als optional kommentiert.
-- [x] 🟡 **`notify()` im Low-Level reduziert.** Apply sammelt Fehler & gibt sie zurück; rg-Suchfehler
-  (async) werden in `init.run` per `err` notifyt. Verbleibende Notifies sind rein informativ
-  (Buffer-Scan-Hinweis, vimgrep-Fallback-Warnung) — bewusst beibehalten.
-
-## 3. Architektur & Testbarkeit (Regel 2, 6)
-
-- [x] 🟡 **`apply` als reine Funktion.** `apply.compute_file_edits(lines, matches, new)` ist seiteneffektfrei
-  und unit-getestet; reale Buffer-Anwendung getrennt in `apply_matches`.
-- [x] 🟡 **Test-Harness.** [TESTS/feature_smoke.lua](../tests/feature_smoke.lua) (22) +
-  [TESTS/async_utf8.lua](../tests/async_utf8.lua) (7), `make test`, CI-Workflow. Lauf via `nvim -l`.
-- [ ] 🟢 **`/config`-Struktur (DEFAULTS.lua).** Bewusst zurückgestellt — geringer Nutzen, Defaults sind
-  bereits sauber in `config.lua` gekapselt.
-
-## 4. Dokumentation & Annotationen (Regel 5)
-
-- [x] 🟡 **Doku-Drift behoben.** `README.md` + `doc/replacer.txt` vollständig aktualisiert (neue Flags,
-  `engine="auto"`, `search_engine`, Filter, Dry-run/Export); alle `ext_highlight_opts`/`:ReplaceDebug`/
-  `replacer.options`-Verweise entfernt.
-- [~] 🟡 **Datei-/Funktions-Tags.** Alle neuen/überarbeiteten Module ausführlich annotiert
-  (`@param`/`@return`/`@class`). Vollständiger `@brief`-Sweep über *alle* Altdateien noch offen.
-
-## 5. Tooling (Checklist Abschnitt 7)
-
-- [x] 🟡 **`stylua.toml` + `.luacheckrc` + CI.** Angelegt + `Makefile` (`fmt`/`lint`/`test`/`check`) +
-  GitHub-Actions-Workflow ([.github/workflows/ci.yml](../.github/workflows/ci.yml)).
-- [x] 🟡 **`.luarc.json`** mit `diagnostics.globals=["vim"]`, Workspace-Library, Hints.
+Also fixed: `confirm_all=false` was swallowed by `as_bool(x) or default`
+(the Lua `false` trap) → `pick_bool` introduced; Windows paths with `\` were
+destroyed by the tokenizer → backslash escaping now only before quotes/space/backslash.
 
 ---
 
-## 6. Zusätzliche Vorschläge (über die Checklisten hinaus)
+## 1. Clearing up the remaining merge leftovers
 
-### Sicherheit
-- [x] 🔴 **`confirm_wide_scope` erzwungen.** `:Replace … cwd --all` löst bei Nicht-Buffer-Scope einen
-  Bestätigungsdialog aus (`init.lua` `dispatch`, `wide`-Check).
-- [x] 🟡 **Multi-File-Replace nicht atomar — dokumentiert.** Hinweis in README (Safety) und
-  `doc/replacer.txt` (*replacer-troubleshooting-not-atomic*) inkl. Dry-run/Export als Review-Weg.
+- [x] 🔴 **Dead picker duplicates removed.** `pickers/fzf/` & `pickers/telescope/` (~620 LOC, required by
+  nobody) deleted; `init.lua` uses the monolithic `fzf.lua`/`telescope.lua`.
+- [x] 🔴 **`health.lua` switched to the new config API.** It now uses `require("replacer.config").get()`,
+  knows `engine="auto"`/`search_engine`/filters, and reports the vimgrep fallback instead of a hard rg error.
+
+## 2. Safety & error handling (rules 1, 3, 7)
+
+- [x] 🔴 **API guards + `pcall` in `apply.lua`.** `bufadd`/`bufload`/`nvim_buf_set_text`/`write` are now
+  wrapped in `pcall` + `nvim_buf_is_valid`/`is_loaded` checks; errors are collected instead of thrown.
+- [x] 🔴 **Structured errors instead of silent ones.** A new module [error.lua](../lua/replacer/error.lua)
+  (`safe_call` + `WriteError`/`SearchError`/`InvalidScopeError`); `apply_matches` returns `RP_Error[]`,
+  rg search errors flow to the calling layer via `err`; the silent `fzf.lua` pcall is commented as optional.
+- [x] 🟡 **`notify()` reduced in low-level code.** Apply collects errors & returns them; rg search errors
+  (async) are notified in `init.run` via `err`. The remaining notifies are purely informational
+  (a buffer-scan hint, the vimgrep fallback warning) — deliberately kept.
+
+## 3. Architecture & testability (rules 2, 6)
+
+- [x] 🟡 **`apply` as a pure function.** `apply.compute_file_edits(lines, matches, new)` is side-effect free
+  and unit-tested; the real buffer application is separated into `apply_matches`.
+- [x] 🟡 **Test harness.** [TESTS/feature_smoke.lua](../tests/feature_smoke.lua) (22) +
+  [TESTS/async_utf8.lua](../tests/async_utf8.lua) (7), `make test`, a CI workflow. Run via `nvim -l`.
+- [ ] 🟢 **A `/config` structure (DEFAULTS.lua).** Deliberately deferred — little benefit, the defaults are
+  already cleanly encapsulated in `config.lua`.
+
+## 4. Documentation & annotations (rule 5)
+
+- [x] 🟡 **Doc drift fixed.** `README.md` + `doc/replacer.txt` fully updated (new flags,
+  `engine="auto"`, `search_engine`, filters, dry run/export); all `ext_highlight_opts`/`:ReplaceDebug`/
+  `replacer.options` references removed.
+- [~] 🟡 **File/function tags.** All new/reworked modules annotated in detail
+  (`@param`/`@return`/`@class`). A complete `@brief` sweep over *all* legacy files is still open.
+
+## 5. Tooling (checklist section 7)
+
+- [x] 🟡 **`stylua.toml` + `.luacheckrc` + CI.** Created + a `Makefile` (`fmt`/`lint`/`test`/`check`) +
+  a GitHub Actions workflow ([.github/workflows/ci.yml](../.github/workflows/ci.yml)).
+- [x] 🟡 **`.luarc.json`** with `diagnostics.globals=["vim"]`, a workspace library, hints.
+
+---
+
+## 6. Additional proposals (beyond the checklists)
+
+### Safety
+- [x] 🔴 **`confirm_wide_scope` enforced.** `:Replace … cwd --all` triggers a confirmation dialog for a
+  non-buffer scope (`init.lua` `dispatch`, the `wide` check).
+- [x] 🟡 **Multi-file replace is not atomic — documented.** A note in the README (Safety) and in
+  `doc/replacer.txt` (*replacer-troubleshooting-not-atomic*), including dry run/export as the review route.
 
 ### Performance
-- [x] 🟡 **`rg` läuft jetzt async.** `rg.collect_async` nutzt `vim.system(..., on_exit)` + `vim.schedule`;
-  vimgrep/Buffer-Pfad bleibt synchron. `init.run` dispatcht im Callback. Kein UI-Block mehr bei großen Repos.
-- [x] 🟢 Tabellenaufbau-Mikro-Opt (`t[#t+1]` → `t[i]=v`). Heiße Flat-List-Schleifen
+- [x] 🟡 **`rg` now runs async.** `rg.collect_async` uses `vim.system(..., on_exit)` + `vim.schedule`;
+  the vimgrep/buffer path stays synchronous. `init.run` dispatches in the callback. No more UI blocking on large repos.
+- [x] 🟢 Table-building micro-optimisation (`t[#t+1]` → `t[i]=v`). The hot flat-list loops
   (`find_all_occurrences`, `parse_rg_json`, `collect_from_buffer`, `scan_file`, `list_files`,
-  `apply_line_range`, `read_lines`) nutzen jetzt einen expliziten Index-Zähler; `group_by_path`-Buckets
-  eine parallele Count-Map. Bounded Per-File-Schleifen unverändert gelassen.
+  `apply_line_range`, `read_lines`) now use an explicit index counter; the `group_by_path` buckets use
+  a parallel count map. Bounded per-file loops were left unchanged.
 
-### Cross-Plattform & Korrektheit
-- [x] 🟡 **UTF-8-Regression geprüft.** [TESTS/async_utf8.lua](../tests/async_utf8.lua) testet Umlaute + Emoji
-  (`Grüße Müller 😀 Müller` → `Mueller`), Byte-Offsets korrekt, keine Regression.
-- [x] 🟢 **Windows-Pfade/Backslash.** `vim.system` (Arg-Vektor, keine Shell) ist der Standardpfad;
-  `shellescape` nur Legacy-Fallback. Zusätzlich Tokenizer-Fix für `\` in Pfaden. Auf Windows verifiziert.
-
+### Cross-platform & correctness
+- [x] 🟡 **UTF-8 regression checked.** [TESTS/async_utf8.lua](../tests/async_utf8.lua) tests umlauts + emoji
+  (`Grüße Müller 😀 Müller` → `Mueller`), byte offsets correct, no regression.
+- [x] 🟢 **Windows paths/backslashes.** `vim.system` (an argument vector, no shell) is the standard path;
+  `shellescape` is only a legacy fallback. Plus a tokenizer fix for `\` in paths. Verified on Windows.

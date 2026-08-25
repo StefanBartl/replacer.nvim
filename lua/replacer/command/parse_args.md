@@ -1,30 +1,30 @@
 
-Man kann das wie bei Shells handhaben: entweder unterschiedliche Quote-Arten kombinieren oder Backslash-Escapes verwenden. Übliche, einfache Regeln:
+This can be handled the way shells do: either combine different quote types or use backslash escapes. The usual, simple rules:
 
-* Verwende unterschiedliche Quote-Arten, um Escapes zu vermeiden:
+* Use different quote types to avoid escapes:
 
-  * `:Replace '"test"' ok %`  — token ist `"test"` inklusive doppelter Anführungszeichen
-  * `:Replace "'test'" ok %`  — token ist `'test'` inklusive einfacher Anführungszeichen
-* Wenn man innerhalb derselben Quote-Art Anführungszeichen braucht, escapen mit `\`:
+  * `:Replace '"test"' ok %`  — the token is `"test"` including the double quotes
+  * `:Replace "'test'" ok %`  — the token is `'test'` including the single quotes
+* When you need quotes inside the same quote type, escape them with `\`:
 
-  * `:Replace "\"test\"" ok %`  — token ist `"test"` (doppelte Quotes sind Teil des Tokens)
-  * `:Replace '\''test'\'' ok %` — (Beispiel mit verschachteltem Escape)
-* Unquoted ist weiterhin möglich:
+  * `:Replace "\"test\"" ok %`  — the token is `"test"` (the double quotes are part of the token)
+  * `:Replace '\''test'\'' ok %` — (an example with a nested escape)
+* Unquoted is still possible:
 
   * `:Replace DAS DAS %`
-  * `:Replace DAS "DAS mit leer" %`
+  * `:Replace DAS "DAS with a space" %`
 
-Vorteile / Empfehlungen:
+Advantages / recommendations:
 
-* Am einfachsten und am ehesten erwartbar für Nutzer ist die Shell-artige Variante: erlauben `"` und `'` als Umgrenzung und `\` als Escape innerhalb von Quotes.
-* Zusätzlich kann man Backslash als Escape auch *außerhalb* von Quotes akzeptieren (z. B. `:\"test\"` oder `\"test\"`), damit Nutzer `:Replace \"test\" ok %` schreiben können, falls sie es so gewohnt sind.
+* The simplest and most predictable variant for users is the shell-like one: allow `"` and `'` as delimiters and `\` as an escape inside quotes.
+* In addition, a backslash can be accepted as an escape *outside* quotes too (e.g. `:\"test\"` or `\"test\"`), so that users can write `:Replace \"test\" ok %` if that is what they are used to.
 
-Implementationsvorschlag — minimaler Parser-Patch:
+Implementation proposal — a minimal parser patch:
 
-* Der vorhandene `parse_args` unterstützt bereits escapes **innerhalb** von Quotes.
-* Man kann ergänzen, dass ein Backslash auch außerhalb von Quotes das nächste Zeichen nimmt (also `\` als allgemeines Escape), damit `\"test\"` als ein Token erkannt wird, selbst wenn der Nutzer nicht in einer Quote startet.
+* The existing `parse_args` already supports escapes **inside** quotes.
+* It can be extended so that a backslash outside quotes also takes the next character (i.e. `\` as a general escape), so that `\"test\"` is recognised as one token even when the user does not start inside a quote.
 
-Beispiel: angepasster `parse_args`-Abschnitt (nur die relevante Ergänzung). Die Kommentare sind in Englisch (wie gewünscht) and the code is ready to drop into the existing parser.
+Example: the adapted `parse_args` section (only the relevant addition). The comments are in English (as wanted) and the code is ready to drop into the existing parser.
 
 ```lua
 -- Extend tokenizer so backslash escapes are honored even outside of quotes.
@@ -88,18 +88,18 @@ local function parse_args(s)
 end
 ```
 
-Praxis-Beispiele (wie der Parser die Tokens liefert):
+Practical examples (what the parser yields as tokens):
 
-* Eingabe: `:Replace "test" "ok" %` → Tokens: `{"test", "ok", "%"}`
-* Eingabe: `:Replace "\"test\"" ok %` → Tokens: `{"\"test\"", "ok", "%"}` (erstes Token enthält die doppelten Anführungszeichen als Teil des Texts)
-* Eingabe: `:Replace '"test"' ok %` → Tokens: `{"\"test\"", "ok", "%"}`
-* Eingabe: `:Replace \'test\' test %` → Tokens: `{"'test'", "test", "%"}`
+* Input: `:Replace "test" "ok" %` → tokens: `{"test", "ok", "%"}`
+* Input: `:Replace "\"test\"" ok %` → tokens: `{"\"test\"", "ok", "%"}` (the first token contains the double quotes as part of the text)
+* Input: `:Replace '"test"' ok %` → tokens: `{"\"test\"", "ok", "%"}`
+* Input: `:Replace \'test\' test %` → tokens: `{"'test'", "test", "%"}`
 
-Weiteres Feature, das man optional anbieten kann:
+A further feature that could optionally be offered:
 
-* Ein kleiner "quote mode" Flag (z. B. `--raw` oder `--q`), der sagt: „Interpret tokens exakt wie eingegeben, ohne Neovim/cli-Interpolation“ — hilfreich, falls man noch weitere Sonderfälle abfangen will. Meist reicht aber die kombinierte Strategie: different quote types + backslash escape + die Parser-Erweiterung oben.
+* A small "quote mode" flag (e.g. `--raw` or `--q`) meaning: "interpret the tokens exactly as entered, without Neovim/CLI interpolation" — helpful if further special cases need catching. Usually the combined strategy is enough, though: different quote types + backslash escapes + the parser extension above.
 
-Empfehlung:
+Recommendation:
 
-* Man kann die parser-Erweiterung wie oben einbauen (Backslash outside quotes). Danach dokumentieren, wie Nutzer Anführungszeichen ersetzen: Beispiele in der README (mit `:Replace "\"from\"" "to"` und mit `:Replace '"from"' 'to'`).
-* Tests hinzufügen, die `parse_args` direkt mit typischen Eingaben prüfen (unit tests), um Regressionen zu vermeiden.
+* The parser extension above can be built in as described (a backslash outside quotes). Then document how users replace quotes: examples in the README (with `:Replace "\"from\"" "to"` and with `:Replace '"from"' 'to'`).
+* Add tests that check `parse_args` directly with typical inputs (unit tests) in order to avoid regressions.

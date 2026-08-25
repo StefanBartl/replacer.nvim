@@ -1,31 +1,31 @@
 # Replacer Feature Implementation Matrix
 
-## Bewertungskriterien
-- **Umfang:** ⭐ (1 Tag) bis ⭐⭐⭐⭐⭐ (>10 Tage)
-- **Nutzen:** 🔥 (gering) bis 🔥🔥🔥🔥🔥 (hoch)
-- **Performance-Impact:** ⚡ (neutral) bis ⚡⚡⚡⚡⚡ (kritisch)
-- **Priorität:** 🅰️ (must-have) 🅱️ (should-have) 🅲️ (nice-to-have) 🅳️ (maybe)
+## Rating criteria
+- **Scope:** ⭐ (1 day) to ⭐⭐⭐⭐⭐ (>10 days)
+- **Benefit:** 🔥 (low) to 🔥🔥🔥🔥🔥 (high)
+- **Performance impact:** ⚡ (neutral) to ⚡⚡⚡⚡⚡ (critical)
+- **Priority:** 🅰️ (must-have) 🅱️ (should-have) 🅲️ (nice-to-have) 🅳️ (maybe)
 
 ---
 
-## Kategorie: Core Features
+## Category: core features
 
-### 1. File-Scopes & Filter
+### 1. File scopes & filters
 
-**Umfang:** ⭐⭐⭐ (3-4 Tage)
-**Nutzen:** 🔥🔥🔥🔥 (sehr hoch)
-**Performance:** ⚡⚡ (moderate Auswirkung)
-**Priorität:** 🅱️ SHOULD-HAVE
+**Scope:** ⭐⭐⭐ (3-4 days)
+**Benefit:** 🔥🔥🔥🔥 (very high)
+**Performance:** ⚡⚡ (moderate impact)
+**Priority:** 🅱️ SHOULD-HAVE
 
-**Beschreibung:**
-Erweiterte Filterung beim Replace-Aufruf:
+**Description:**
+Extended filtering on the replace call:
 ```vim
 :Replace pattern new cwd --type lua --size <1M --exclude test/
 :Replace pattern new . --git-status modified,staged
 :Replace pattern new . --glob "src/**/*.ts" --exclude "*.spec.ts"
 ```
 
-**Implementierung:**
+**Implementation:**
 ```lua
 -- lua/replacer/command.lua
 ---@class RP_Filters
@@ -61,39 +61,39 @@ local function apply_filters(files, filters)
 end
 ```
 
-**Aufwand-Detail:**
-- Argument Parsing: 0.5 Tage
-- Ripgrep `--type` Integration: 0.5 Tage
-- Git-Status Filter (via `git status --porcelain`): 1 Tag
-- Glob/Exclude Patterns: 1 Tag
-- Tests & Docs: 1 Tag
+**Effort breakdown:**
+- Argument parsing: 0.5 days
+- Ripgrep `--type` integration: 0.5 days
+- Git status filter (via `git status --porcelain`): 1 day
+- Glob/exclude patterns: 1 day
+- Tests & docs: 1 day
 
-**Performance-Impact:**
-- Git-Status-Check: +50-200ms (einmalig)
-- Glob-Matching: +10-50ms pro 1000 Dateien
-- Gesamt: Akzeptabel
+**Performance impact:**
+- Git status check: +50-200 ms (one-off)
+- Glob matching: +10-50 ms per 1000 files
+- Overall: acceptable
 
 ---
 
 ### 2. History & Presets
 
-**Umfang:** ⭐⭐⭐ (3-4 Tage)
-**Nutzen:** 🔥🔥🔥 (hoch)
+**Scope:** ⭐⭐⭐ (3-4 days)
+**Benefit:** 🔥🔥🔥 (high)
 **Performance:** ⚡ (neutral)
-**Priorität:** 🅱️ SHOULD-HAVE
+**Priority:** 🅱️ SHOULD-HAVE
 
-**Beschreibung:**
+**Description:**
 ```vim
 " History
-:ReplaceHistory         " Picker mit letzten 50 Replacements
-<CR> auf Eintrag        " Re-run mit gleichen Parametern
+:ReplaceHistory         " Picker with the last 50 replacements
+<CR> on an entry       " Re-run with the same parameters
 
 " Presets
 :ReplaceSavePreset refactor_imports old="import X" new="import Y" scope=src/
 :ReplacePreset refactor_imports
 ```
 
-**Implementierung:**
+**Implementation:**
 ```lua
 -- lua/replacer/history.lua
 local M = {}
@@ -164,33 +164,33 @@ function M.run_preset(name)
 end
 ```
 
-**Aufwand:**
-- History Storage: 1 Tag
-- History Picker UI: 1 Tag
-- Presets Storage & Commands: 1 Tag
-- Tests & Docs: 1 Tag
+**Effort:**
+- History storage: 1 day
+- History picker UI: 1 day
+- Preset storage & commands: 1 day
+- Tests & docs: 1 day
 
-**Performance:** Keine, Disk-IO minimal (<10ms)
+**Performance:** none, disk I/O is minimal (<10 ms)
 
 ---
 
-### 3. Plan/Review ohne Apply (Dry-Run)
+### 3. Plan/review without applying (dry run)
 
-**Umfang:** ⭐⭐ (2 Tage)
-**Nutzen:** 🔥🔥🔥🔥 (sehr hoch)
+**Scope:** ⭐⭐ (2 days)
+**Benefit:** 🔥🔥🔥🔥 (very high)
 **Performance:** ⚡ (neutral)
-**Priorität:** 🅱️ SHOULD-HAVE
+**Priority:** 🅱️ SHOULD-HAVE
 
-**Beschreibung:**
+**Description:**
 ```vim
 :Replace pattern new . --dry-run
-" Zeigt:
+" Shows:
 " - 145 matches across 23 files
 " - Grouped by file with counts
 " - Export as patch/JSON
 ```
 
-**Implementierung:**
+**Implementation:**
 ```lua
 -- In command.lua: detect --dry-run flag
 function M.run(old, new_text, scope, all, opts)
@@ -228,31 +228,31 @@ function run_dry_run(old, new_text, scope)
 end
 ```
 
-**Aufwand:**
-- Dry-Run Logic: 0.5 Tage
-- Summary Formatting: 0.5 Tage
-- Patch Export: 0.5 Tage (unified diff format)
-- JSON Export: 0.25 Tage
-- Tests: 0.25 Tage
+**Effort:**
+- Dry-run logic: 0.5 days
+- Summary formatting: 0.5 days
+- Patch export: 0.5 days (unified diff format)
+- JSON export: 0.25 days
+- Tests: 0.25 days
 
 ---
 
 ### 4. Quickfix/Loclist Export
 
-**Umfang:** ⭐ (1 Tag)
-**Nutzen:** 🔥🔥🔥 (hoch)
+**Scope:** ⭐ (1 day)
+**Benefit:** 🔥🔥🔥 (high)
 **Performance:** ⚡ (neutral)
-**Priorität:** 🅱️ SHOULD-HAVE
+**Priority:** 🅱️ SHOULD-HAVE
 
-**Beschreibung:**
+**Description:**
 ```vim
 :Replace pattern new . --to-quickfix
-" Sendet Matches in Quickfix-Liste
-:copen  " Zeigt Treffer
-:cfdo %s/old/new/g | w  " Apply via Vim-Makro
+" Sends the matches into the quickfix list
+:copen  " Shows the hits
+:cfdo %s/old/new/g | w  " Apply via a Vim macro
 ```
 
-**Implementierung:**
+**Implementation:**
 ```lua
 function export_to_quickfix(items)
   local qf_list = vim.tbl_map(function(it)
@@ -271,18 +271,18 @@ function export_to_quickfix(items)
 end
 ```
 
-**Aufwand:** 1 Tag (inkl. loclist variant + docs)
+**Effort:** 1 day (including the loclist variant + docs)
 
 ---
 
-### 5. Per-File-Bestätigung
+### 5. Per-file confirmation
 
-**Umfang:** ⭐⭐ (2 Tage)
-**Nutzen:** 🔥🔥🔥 (hoch)
+**Scope:** ⭐⭐ (2 days)
+**Benefit:** 🔥🔥🔥 (high)
 **Performance:** ⚡ (neutral)
-**Priorität:** 🅲️ NICE-TO-HAVE
+**Priority:** 🅲️ NICE-TO-HAVE
 
-**Beschreibung:**
+**Description:**
 ```vim
 :Replace pattern new . --confirm-per-file
 " For each file:
@@ -290,7 +290,7 @@ end
 "   [A]ll | [S]kip | [O]nly selected | [Q]uit
 ```
 
-**Implementierung:**
+**Implementation:**
 ```lua
 function apply_with_file_confirmation(items, new_text, cfg)
   local by_file = group_by_file(items)
@@ -316,18 +316,18 @@ function apply_with_file_confirmation(items, new_text, cfg)
 end
 ```
 
-**Aufwand:** 2 Tage
+**Effort:** 2 days
 
 ---
 
 ### 6. Undo-Checkpoint
 
-**Umfang:** ⭐⭐ (2 Tage)
-**Nutzen:** 🔥🔥🔥🔥🔥 (kritisch)
+**Scope:** ⭐⭐ (2 days)
+**Benefit:** 🔥🔥🔥🔥🔥 (critical)
 **Performance:** ⚡⚡ (moderate)
-**Priorität:** 🅰️ MUST-HAVE
+**Priority:** 🅰️ MUST-HAVE
 
-**Beschreibung:**
+**Description:**
 ```vim
 :Replace pattern new . --checkpoint
 " Before apply:
@@ -337,7 +337,7 @@ end
 :ReplaceUndo  " Rollback last operation
 ```
 
-**Implementierung:**
+**Implementation:**
 ```lua
 -- lua/replacer/checkpoint.lua
 local M = {}
@@ -361,20 +361,20 @@ function M.rollback(strategy)
 end
 ```
 
-**Aufwand:** 2 Tage (Git integration, Buffer-State persistence)
+**Effort:** 2 days (git integration, buffer-state persistence)
 
 ---
 
-## Kategorie: UI/UX Features
+## Category: UI/UX features
 
 ### 7. Status/Progress
 
-**Umfang:** ⭐⭐ (2 Tage)
-**Nutzen:** 🔥🔥🔥 (hoch)
-**Performance:** ⚡⚡ (moderate - muss async sein)
-**Priorität:** 🅱️ SHOULD-HAVE
+**Scope:** ⭐⭐ (2 days)
+**Benefit:** 🔥🔥🔥 (high)
+**Performance:** ⚡⚡ (moderate - has to be async)
+**Priority:** 🅱️ SHOULD-HAVE
 
-**Beschreibung:**
+**Description:**
 ```vim
 " During search:
 Replacer: Scanning 1234/5000 files (24%)...
@@ -382,7 +382,7 @@ Replacer: Scanning 1234/5000 files (24%)...
 Replacer: Applying 45/145 matches (31%)...
 ```
 
-**Implementierung:**
+**Implementation:**
 ```lua
 -- lua/replacer/progress.lua
 local M = {}
@@ -411,18 +411,18 @@ function collect_with_progress(pattern, roots, cfg)
 end
 ```
 
-**Aufwand:** 2 Tage (async integration, fidget.nvim compat)
+**Effort:** 2 days (async integration, fidget.nvim compatibility)
 
 ---
 
-### 8. Preserves-Whitespace Option
+### 8. Preserve-whitespace option
 
-**Umfang:** ⭐ (1 Tag)
-**Nutzen:** 🔥🔥 (mittel)
+**Scope:** ⭐ (1 day)
+**Benefit:** 🔥🔥 (medium)
 **Performance:** ⚡ (neutral)
-**Priorität:** 🅲️ NICE-TO-HAVE
+**Priority:** 🅲️ NICE-TO-HAVE
 
-**Beschreibung:**
+**Description:**
 ```lua
 -- Before:
 "  function old()"
@@ -432,7 +432,7 @@ end
 "  function new()"  -- same indentation
 ```
 
-**Implementierung:**
+**Implementation:**
 ```lua
 -- In apply.lua
 if cfg.preserve_whitespace then
@@ -449,18 +449,18 @@ else
 end
 ```
 
-**Aufwand:** 1 Tag
+**Effort:** 1 day
 
 ---
 
-### 9. Safe-Mode: Nur lesbare Dateien
+### 9. Safe mode: writable files only
 
-**Umfang:** ⭐ (0.5 Tage)
-**Nutzen:** 🔥🔥🔥🔥 (sehr hoch - Sicherheit)
+**Scope:** ⭐ (0.5 days)
+**Benefit:** 🔥🔥🔥🔥 (very high - safety)
 **Performance:** ⚡ (neutral)
-**Priorität:** 🅰️ MUST-HAVE
+**Priority:** 🅰️ MUST-HAVE
 
-**Implementierung:**
+**Implementation:**
 ```lua
 -- In config.lua
 ---@class RP_Config
@@ -503,18 +503,18 @@ function is_binary(path)
 end
 ```
 
-**Aufwand:** 0.5 Tage
+**Effort:** 0.5 days
 
 ---
 
 ### 10. Patch-Export
 
-**Umfang:** ⭐⭐ (1.5 Tage)
-**Nutzen:** 🔥🔥🔥 (hoch)
+**Scope:** ⭐⭐ (1.5 days)
+**Benefit:** 🔥🔥🔥 (high)
 **Performance:** ⚡ (neutral)
-**Priorität:** 🅲️ NICE-TO-HAVE
+**Priority:** 🅲️ NICE-TO-HAVE
 
-**Implementierung:**
+**Implementation:**
 ```lua
 function export_patch(items, new_text, output_file)
   local by_file = group_by_file(items)
@@ -544,27 +544,27 @@ function export_patch(items, new_text, output_file)
 end
 ```
 
-**Aufwand:** 1.5 Tage (inkl. proper unified diff)
+**Effort:** 1.5 days (including a proper unified diff)
 
 ---
 
-## Kategorie: Advanced Features (Ideas)
+## Category: advanced features (ideas)
 
 ### 11. Case-Preserving Replace
 
-**Umfang:** ⭐⭐ (2 Tage)
-**Nutzen:** 🔥🔥🔥 (hoch)
+**Scope:** ⭐⭐ (2 days)
+**Benefit:** 🔥🔥🔥 (high)
 **Performance:** ⚡ (neutral)
-**Priorität:** 🅲️ NICE-TO-HAVE
+**Priority:** 🅲️ NICE-TO-HAVE
 
-**Beispiel:**
+**Example:**
 ```
 foo → bar
 Foo → Bar
 FOO → BAR
 ```
 
-**Implementierung:**
+**Implementation:**
 ```lua
 function apply_case_preserving(old, new, match_text)
   local case_style = detect_case(match_text)
@@ -581,16 +581,16 @@ function apply_case_preserving(old, new, match_text)
 end
 ```
 
-**Aufwand:** 2 Tage (complex case detection)
+**Effort:** 2 days (complex case detection)
 
 ---
 
 ### 12. LSP-Integration
 
-**Umfang:** ⭐⭐⭐⭐ (4-5 Tage)
-**Nutzen:** 🔥🔥🔥🔥 (sehr hoch für Code)
-**Performance:** ⚡⚡⚡ (LSP-Call Overhead)
-**Priorität:** 🅲️ NICE-TO-HAVE (aber komplex)
+**Scope:** ⭐⭐⭐⭐ (4-5 days)
+**Benefit:** 🔥🔥🔥🔥 (very high for code)
+**Performance:** ⚡⚡⚡ (LSP call overhead)
+**Priority:** 🅲️ NICE-TO-HAVE (but complex)
 
 **What it does:**
 ```vim
@@ -601,28 +601,28 @@ end
 "   -> fall back to a text replace
 ```
 
-**Herausforderungen:**
-- LSP-Server möglicherweise nicht verfügbar
-- Cross-File-References müssen korrekt sein
-- Konflikte bei gleichzeitigem Text-Replace
+**Challenges:**
+- The LSP server may not be available
+- Cross-file references have to be correct
+- Conflicts with a simultaneous text replace
 
-**Aufwand:** 4-5 Tage (LSP-Integration, Fallback-Logic, Tests)
+**Effort:** 4-5 days (LSP integration, fallback logic, tests)
 
 ---
 
-### 13. Streaming-Suche
+### 13. Streaming search
 
-**Umfang:** ⭐⭐⭐⭐ (4 Tage)
-**Nutzen:** 🔥🔥🔥 (hoch bei großen Projekten)
-**Performance:** ⚡⚡⚡⚡ (kritisch - muss effizient sein)
-**Priorität:** 🅳️ MAYBE (komplex)
+**Scope:** ⭐⭐⭐⭐ (4 days)
+**Benefit:** 🔥🔥🔥 (high on large projects)
+**Performance:** ⚡⚡⚡⚡ (critical - has to be efficient)
+**Priority:** 🅳️ MAYBE (complex)
 
-**Beschreibung:**
-- Ripgrep-Output streamen
-- Picker progressiv füllen
-- Nutzer kann schon selektieren während Suche läuft
+**Description:**
+- Stream the ripgrep output
+- Fill the picker progressively
+- The user can already select while the search runs
 
-**Implementierung:**
+**Implementation:**
 ```lua
 function collect_streaming(pattern, roots, cfg, callback)
   local stdout = vim.loop.new_pipe()
@@ -653,18 +653,18 @@ function collect_streaming(pattern, roots, cfg, callback)
 end
 ```
 
-**Herausforderungen:**
-- Picker-API muss incremental updates unterstützen
-- Race conditions bei früher Selektion
-- Progress-Reporting komplex
+**Challenges:**
+- The picker API has to support incremental updates
+- Race conditions on an early selection
+- Progress reporting is complex
 
-**Aufwand:** 4 Tage
+**Effort:** 4 days
 
 ---
 
-## Feature-Prioritäts-Matrix
+## Feature priority matrix
 
-| Feature | Umfang | Nutzen | Performance | Priorität | Empfehlung |
+| Feature | Scope | Benefit | Performance | Priority | Recommendation |
 |---------|--------|--------|-------------|-----------|------------|
 | **Help & Health** | ⭐⭐ | 🔥🔥🔥🔥🔥 | ⚡ | 🅰️ | ✅ IMPLEMENT |
 | **Safe-Mode** | ⭐ | 🔥🔥🔥🔥 | ⚡ | 🅰️ | ✅ IMPLEMENT |
@@ -682,27 +682,27 @@ end
 | **Streaming** | ⭐⭐⭐⭐ | 🔥🔥🔥 | ⚡⚡⚡⚡ | 🅳️ | ❌ SKIP |
 | **Vimgrep** | ⭐⭐⭐⭐ | 🔥 | ⚡⚡⚡⚡⚡ | 🅳️ | ❌ SKIP |
 
-## Implementierungs-Roadmap
+## Implementation roadmap
 
-### Phase 1: Critical (1-2 Wochen)
-1. ✅ Help Documentation (2 Tage) - DONE
-2. ✅ Health Check (1 Tag) - DONE
-3. Safe-Mode (0.5 Tage)
-4. Undo-Checkpoint (2 Tage)
+### Phase 1: critical (1-2 weeks)
+1. ✅ Help documentation (2 days) - DONE
+2. ✅ Health check (1 day) - DONE
+3. Safe mode (0.5 days)
+4. Undo checkpoint (2 days)
 
-### Phase 2: High-Value (2-3 Wochen)
-5. Dry-Run (2 Tage)
-6. Quickfix Export (1 Tag)
-7. File-Scopes & Filter (3-4 Tage)
-8. Progress Reporting (2 Tage)
+### Phase 2: high value (2-3 weeks)
+5. Dry run (2 days)
+6. Quickfix export (1 day)
+7. File scopes & filters (3-4 days)
+8. Progress reporting (2 days)
 
-### Phase 3: Enhancement (2-3 Wochen)
-9. History & Presets (3-4 Tage)
-10. Patch Export (1.5 Tage)
-11. Per-File Confirmation (2 Tage)
+### Phase 3: enhancement (2-3 weeks)
+9. History & presets (3-4 days)
+10. Patch export (1.5 days)
+11. Per-file confirmation (2 days)
 
-### Phase 4: Polish (1-2 Wochen)
-12. Preserve-Whitespace (1 Tag)
-13. Case-Preserving (2 Tage)
+### Phase 4: polish (1-2 weeks)
+12. Preserve whitespace (1 day)
+13. Case preserving (2 days)
 
-**Total: 8-10 Wochen für alle High-Priority Features**
+**Total: 8-10 weeks for all high-priority features**
