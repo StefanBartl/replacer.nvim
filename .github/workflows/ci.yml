@@ -38,6 +38,12 @@ jobs:
   test:
     name: headless test suite
     runs-on: ubuntu-latest
+    # tests/resolve_lib_nvim.lua looks for a *sibling* checkout
+    # (<repo>/../lib.nvim), but this job checks lib.nvim out *inside* the
+    # workspace so `set rtp+=./lib.nvim` works. $LIB_NVIM_PATH is the
+    # resolver's own first-priority override, meant for exactly this case.
+    env:
+      LIB_NVIM_PATH: ${{ github.workspace }}/lib.nvim
     steps:
       - uses: actions/checkout@v4
 
