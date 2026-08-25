@@ -132,13 +132,13 @@ local function check_ripgrep(health)
       test_ok = obj.code == 0 or obj.code == 1 -- 0 = match, 1 = no match (both OK)
       test_result = obj.stdout or ""
     else
-      -- Fallback for older Neovim
-      local handle = io.popen("echo test | rg --json -e test 2>&1")
-      if handle then
-        test_result = handle:read("*a")
-        handle:close()
-        test_ok = test_result:match('"type"') ~= nil
-      end
+      -- Fallback for older Neovim (pre-vim.system). Argv form with stdin, not
+      -- io.popen: the shell string this used to run was a POSIX pipeline
+      -- (`echo test | rg ... 2>&1`), which is not the same command under
+      -- cmd.exe -- `echo test |` there feeds "test " with the space before the
+      -- pipe included. vim.fn.system involves no shell at all.
+      test_result = vim.fn.system({ "rg", "--json", "-e", "test" }, "test")
+      test_ok = test_result:match('"type"') ~= nil
     end
   end)
 
