@@ -413,14 +413,10 @@ ______________________________________________________________________
 
 ```lua
 {
-  "StefanBartl/replacer",
-  name = "replacer.nvim",
-  main = "replacer",
+  "StefanBartl/replacer.nvim",
   cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
   dependencies = { "StefanBartl/lib.nvim" },
-  opts = {
-    engine = "auto",           -- "auto" | "fzf" | "telescope"
-  },
+  opts = {}, -- engine already defaults to "auto" (fzf-lua first, then telescope)
 }
 ```
 
@@ -428,9 +424,7 @@ ______________________________________________________________________
 
 ```lua
 {
-  "StefanBartl/replacer",
-  name = "replacer.nvim",
-  main = "replacer",
+  "StefanBartl/replacer.nvim",
   cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
   dependencies = { "StefanBartl/lib.nvim" },
   opts = {
@@ -485,8 +479,7 @@ ______________________________________________________________________
 
 ```lua
 use({
-  "StefanBartl/replacer",
-  as = "replacer.nvim",
+  "StefanBartl/replacer.nvim",
   cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
   requires = { "StefanBartl/lib.nvim" }, -- required: command layer + progress indicator
   config = function()
