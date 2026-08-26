@@ -68,50 +68,74 @@ do
   check("parse: unknown flag -> error", (not ok4) and err4:match("unknown option"), err4)
 
   local ok5, req5 = command.parse_request(
-    'foo bar % --regex --type=lua --glob=*.x --exclude=node --dry --export=plan.json')
-  check("parse: flags collected", ok5
-    and req5.overrides.literal == false
-    and req5.dry == true
-    and req5.export == "plan.json"
-    and req5.filters.file_types[1] == "lua"
-    and req5.filters.globs[1] == "*.x"
-    and req5.filters.exclude[1] == "node",
-    req5 and vim.inspect(req5.filters))
+    "foo bar % --regex --type=lua --glob=*.x --exclude=node --dry --export=plan.json"
+  )
+  check(
+    "parse: flags collected",
+    ok5
+      and req5.overrides.literal == false
+      and req5.dry == true
+      and req5.export == "plan.json"
+      and req5.filters.file_types[1] == "lua"
+      and req5.filters.globs[1] == "*.x"
+      and req5.filters.exclude[1] == "node",
+    req5 and vim.inspect(req5.filters)
+  )
 
   local ok6, req6 = command.parse_request("foo bar --type lua")
   check("parse: space-separated value flag", ok6 and req6.filters.file_types[1] == "lua")
 
   local ok7, req7 = command.parse_request("foo bar", { range = 2, line1 = 5, line2 = 2 })
-  check("parse: range normalizes + forces buffer scope",
-    ok7 and req7.line_range[1] == 2 and req7.line_range[2] == 5 and req7.scope == "%")
+  check(
+    "parse: range normalizes + forces buffer scope",
+    ok7 and req7.line_range[1] == 2 and req7.line_range[2] == 5 and req7.scope == "%"
+  )
 
   local ok8, req8 = command.parse_request("foo bar baz", { bang = true })
   check("parse: bang -> all", ok8 and req8.all == true and req8.scope == "baz")
 
   local okc1, reqc1 = command.parse_request("foo bar --changed")
-  check("parse: bare --changed -> all three kinds", okc1
-    and #reqc1.overrides.changed_only == 3, reqc1 and reqc1.overrides.changed_only)
+  check(
+    "parse: bare --changed -> all three kinds",
+    okc1 and #reqc1.overrides.changed_only == 3,
+    reqc1 and reqc1.overrides.changed_only
+  )
 
   local okc2, reqc2 = command.parse_request("foo bar --changed=modified,staged")
-  check("parse: --changed=kinds -> specific subset", okc2
-    and #reqc2.overrides.changed_only == 2
-    and reqc2.overrides.changed_only[1] == "modified"
-    and reqc2.overrides.changed_only[2] == "staged")
+  check(
+    "parse: --changed=kinds -> specific subset",
+    okc2
+      and #reqc2.overrides.changed_only == 2
+      and reqc2.overrides.changed_only[1] == "modified"
+      and reqc2.overrides.changed_only[2] == "staged"
+  )
 
   local okc3, _, errc3 = command.parse_request("foo bar --changed=bogus")
-  check("parse: --changed invalid kind -> error",
-    (not okc3) and errc3:match("invalid %-%-changed kind"), errc3)
+  check(
+    "parse: --changed invalid kind -> error",
+    (not okc3) and errc3:match("invalid %-%-changed kind"),
+    errc3
+  )
 
   local okc4, reqc4 = command.parse_request("foo bar --changed cwd")
-  check("parse: --changed never swallows the next token", okc4
-    and reqc4.scope == "cwd" and #reqc4.overrides.changed_only == 3)
+  check(
+    "parse: --changed never swallows the next token",
+    okc4 and reqc4.scope == "cwd" and #reqc4.overrides.changed_only == 3
+  )
 
   local ok9, _, err9 = command.parse_request('"foo bar')
-  check("parse: unterminated quote -> specific error", (not ok9) and err9:match("unterminated quote"), err9)
+  check(
+    "parse: unterminated quote -> specific error",
+    (not ok9) and err9:match("unterminated quote"),
+    err9
+  )
 
   local ok10, _, err10 = command.parse_request("foo bar --dry=1")
-  check("parse: bool flag with value -> specific error",
-    (not ok10) and err10:match("does not take a value"), err10)
+  check(
+    "parse: bool flag with value -> specific error",
+    (not ok10) and err10:match("does not take a value"),
+    err10
+  )
 end
 
 --------------------------------------------------------------------------------
@@ -126,13 +150,23 @@ do
   fh:close()
 end
 
-local cfg = { literal = true, search_engine = "vimgrep", hidden = true,
-  file_types = {}, globs = {}, exclude = {} }
+local cfg = {
+  literal = true,
+  search_engine = "vimgrep",
+  hidden = true,
+  file_types = {},
+  globs = {},
+  exclude = {},
+}
 do
   local items = rg.collect("foo", { tmp }, cfg)
   check("search: 4 occurrences (3 on line1 + 1 on line2)", #items == 4, #items)
   local line1 = 0
-  for _, it in ipairs(items) do if it.lnum == 1 then line1 = line1 + 1 end end
+  for _, it in ipairs(items) do
+    if it.lnum == 1 then
+      line1 = line1 + 1
+    end
+  end
   check("search: line 1 yields 3 separate entries", line1 == 3, line1)
 end
 
@@ -145,15 +179,31 @@ do
   fh:write("foo foobar barfoo xfoox foo.bar\n")
   fh:close()
 
-  local wcfg = { literal = true, search_engine = "vimgrep", hidden = true, word_boundary = true,
-    file_types = {}, globs = {}, exclude = {} }
+  local wcfg = {
+    literal = true,
+    search_engine = "vimgrep",
+    hidden = true,
+    word_boundary = true,
+    file_types = {},
+    globs = {},
+    exclude = {},
+  }
   local witems = rg.collect("foo", { file_b }, wcfg)
   check("word_boundary: only whole-word 'foo' occurrences kept", #witems == 2, #witems)
 
   local plain_items = rg.collect("foo", { file_b }, {
-    literal = true, search_engine = "vimgrep", hidden = true,
-    file_types = {}, globs = {}, exclude = {} })
-  check("word_boundary: off by default finds every substring occurrence", #plain_items == 5, #plain_items)
+    literal = true,
+    search_engine = "vimgrep",
+    hidden = true,
+    file_types = {},
+    globs = {},
+    exclude = {},
+  })
+  check(
+    "word_boundary: off by default finds every substring occurrence",
+    #plain_items == 5,
+    #plain_items
+  )
 end
 
 --------------------------------------------------------------------------------
@@ -183,13 +233,27 @@ do
   end
 
   local safe_items = rg.collect("foo", { file_big, file_bin }, {
-    literal = true, search_engine = "vimgrep", hidden = true, safe_mode = true,
-    max_file_size = 50, skip_binary = true, file_types = {}, globs = {}, exclude = {} })
+    literal = true,
+    search_engine = "vimgrep",
+    hidden = true,
+    safe_mode = true,
+    max_file_size = 50,
+    skip_binary = true,
+    file_types = {},
+    globs = {},
+    exclude = {},
+  })
   check("safe_mode: oversized + binary files excluded", #safe_items == 0, #safe_items)
 
   local unsafe_items = rg.collect("foo", { file_big, file_bin }, {
-    literal = true, search_engine = "vimgrep", hidden = true, safe_mode = false,
-    file_types = {}, globs = {}, exclude = {} })
+    literal = true,
+    search_engine = "vimgrep",
+    hidden = true,
+    safe_mode = false,
+    file_types = {},
+    globs = {},
+    exclude = {},
+  })
   check("safe_mode: off by default finds matches in both files", #unsafe_items > 0, #unsafe_items)
 end
 
@@ -211,13 +275,23 @@ do
     fh:close()
   end
   local crlf_items = rg.collect("foo", { file_crlf }, {
-    literal = true, search_engine = "vimgrep", hidden = true,
-    file_types = {}, globs = {}, exclude = {} })
-  check("encoding: BOM stripped -> match on line 1 starts at col0 0",
-    crlf_items[1] and crlf_items[1].col0 == 0, crlf_items[1] and crlf_items[1].col0)
+    literal = true,
+    search_engine = "vimgrep",
+    hidden = true,
+    file_types = {},
+    globs = {},
+    exclude = {},
+  })
+  check(
+    "encoding: BOM stripped -> match on line 1 starts at col0 0",
+    crlf_items[1] and crlf_items[1].col0 == 0,
+    crlf_items[1] and crlf_items[1].col0
+  )
   local has_cr = false
   for _, it in ipairs(crlf_items) do
-    if it.line:find("\r", 1, true) then has_cr = true end
+    if it.line:find("\r", 1, true) then
+      has_cr = true
+    end
   end
   check("encoding: no stray \\r left in collected line text", not has_cr)
 end
@@ -237,8 +311,7 @@ do
   end
 
   local candidates = root.detect(mono .. "/pkg/src/deep")
-  check("root: finds both the package.json dir and the git root",
-    #candidates == 2, #candidates)
+  check("root: finds both the package.json dir and the git root", #candidates == 2, #candidates)
   check("root: nearest-first ordering", candidates[1] == mono .. "/pkg", candidates[1])
   check("root: farthest is the git root", candidates[2] == mono, candidates[2])
 
@@ -248,8 +321,7 @@ do
   local no_markers = tmp .. "/no_markers_here"
   vim.fn.mkdir(no_markers, "p")
   local empty_best, empty_candidates = root.detect_best(no_markers)
-  check("root: no markers found -> nil, empty list",
-    empty_best == nil and #empty_candidates == 0)
+  check("root: no markers found -> nil, empty list", empty_best == nil and #empty_candidates == 0)
 end
 
 --------------------------------------------------------------------------------
@@ -268,14 +340,26 @@ if vim.fn.executable("git") == 1 then
   git({ "config", "user.name", "test" })
 
   local f1 = repo .. "/tracked.txt"
-  do local fh = assert(io.open(f1, "w")); fh:write("foo one\n"); fh:close() end
+  do
+    local fh = assert(io.open(f1, "w"))
+    fh:write("foo one\n")
+    fh:close()
+  end
   git({ "add", "tracked.txt" })
   git({ "commit", "-q", "-m", "init" })
 
   -- Modify the tracked file (unstaged "modified") and add an untracked file.
-  do local fh = assert(io.open(f1, "w")); fh:write("foo one changed\n"); fh:close() end
+  do
+    local fh = assert(io.open(f1, "w"))
+    fh:write("foo one changed\n")
+    fh:close()
+  end
   local f2 = repo .. "/untracked.txt"
-  do local fh = assert(io.open(f2, "w")); fh:write("foo two\n"); fh:close() end
+  do
+    local fh = assert(io.open(f2, "w"))
+    fh:write("foo two\n")
+    fh:close()
+  end
 
   -- gitfiles.list is asynchronous (it chains vim.system spawns); pump the loop
   -- until the callback fires so the assertions below stay readable.
@@ -284,23 +368,34 @@ if vim.fn.executable("git") == 1 then
     gitfiles.list(dir, kinds, function(f, t)
       files, top, done = f, t, true
     end)
-    if not vim.wait(10000, function() return done end) then
+    if not vim.wait(10000, function()
+      return done
+    end) then
       error("gitfiles.list did not call back within 10s for " .. vim.inspect(kinds))
     end
     return files, top
   end
 
   local no_cb = select(2, pcall(gitfiles.list, repo, { "modified" }))
-  check("gitfiles: calling list without a callback errors loudly",
-    type(no_cb) == "string" and no_cb:find("on_done must be a function", 1, true) ~= nil, no_cb)
+  check(
+    "gitfiles: calling list without a callback errors loudly",
+    type(no_cb) == "string" and no_cb:find("on_done must be a function", 1, true) ~= nil,
+    no_cb
+  )
 
   local modified_only = list_sync(repo, { "modified" })
-  check("gitfiles: modified-only lists the tracked file", #modified_only == 1
-    and modified_only[1]:find("tracked.txt", 1, true) ~= nil, vim.inspect(modified_only))
+  check(
+    "gitfiles: modified-only lists the tracked file",
+    #modified_only == 1 and modified_only[1]:find("tracked.txt", 1, true) ~= nil,
+    vim.inspect(modified_only)
+  )
 
   local untracked_only = list_sync(repo, { "untracked" })
-  check("gitfiles: untracked-only lists the new file", #untracked_only == 1
-    and untracked_only[1]:find("untracked.txt", 1, true) ~= nil, vim.inspect(untracked_only))
+  check(
+    "gitfiles: untracked-only lists the new file",
+    #untracked_only == 1 and untracked_only[1]:find("untracked.txt", 1, true) ~= nil,
+    vim.inspect(untracked_only)
+  )
 
   local both = list_sync(repo, { "modified", "untracked" })
   check("gitfiles: combined kinds lists both files", #both == 2, #both)
@@ -312,8 +407,14 @@ if vim.fn.executable("git") == 1 then
   -- file, leaving untracked.txt's "foo" untouched.
   replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
   local req = {
-    old = "foo", new = "XXX", scope = repo, all = true, dry = false, export = nil,
-    line_range = nil, overrides = { changed_only = { "modified" } },
+    old = "foo",
+    new = "XXX",
+    scope = repo,
+    all = true,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = { changed_only = { "modified" } },
     filters = { file_types = {}, globs = {}, exclude = {} },
   }
   replacer.run(req)
@@ -373,7 +474,9 @@ do
     return 1, #list
   end
   local picked_files = {}
-  local function fake_pick(list) picked_files[#picked_files + 1] = list[1].path end
+  local function fake_pick(list)
+    picked_files[#picked_files + 1] = list[1].path
+  end
 
   local files, spots
   perfile_stubbed.run(items, "bar", true, fake_apply, fake_pick, function(f, s)
@@ -383,9 +486,16 @@ do
   package.loaded["lib.nvim.ui.kit.confirm"] = nil
   package.loaded["replacer.perfile"] = nil
 
-  check("perfile: only a.txt (All) got applied", #applied_paths == 1 and applied_paths[1] == "a.txt",
-    vim.inspect(applied_paths))
-  check("perfile: totals reflect only the applied file", files == 1 and spots == 1, files .. " " .. spots)
+  check(
+    "perfile: only a.txt (All) got applied",
+    #applied_paths == 1 and applied_paths[1] == "a.txt",
+    vim.inspect(applied_paths)
+  )
+  check(
+    "perfile: totals reflect only the applied file",
+    files == 1 and spots == 1,
+    files .. " " .. spots
+  )
   check("perfile: stops at Quit, c.txt never confirmed", call_n == 3, call_n)
   check("perfile: Only-some callback never triggered here", #picked_files == 0)
   check("perfile: on_done fired synchronously with the stubbed confirm", files ~= nil)
@@ -421,12 +531,17 @@ do
   check("checkpoint: undo restores exactly one file", restored == 1 and err == nil, err)
 
   local fh2 = assert(io.open(file_cp, "r"))
-  local content_after = fh2:read("*a"); fh2:close()
+  local content_after = fh2:read("*a")
+  fh2:close()
   check("checkpoint: content restored byte-exact", content_after == original, content_after)
 
   local list = checkpoint.list()
   local found = false
-  for _, cid in ipairs(list) do if cid == id then found = true end end
+  for _, cid in ipairs(list) do
+    if cid == id then
+      found = true
+    end
+  end
   check("checkpoint: list() includes the created id", found)
 
   local _, err2 = checkpoint.undo("does-not-exist")
@@ -439,35 +554,63 @@ end
 do
   local calls = {}
   local proceed = hooks.run("before_apply", { path = "x" }, {
-    hooks = { before_apply = function(ctx) calls[#calls + 1] = "cfg:" .. ctx.path end },
+    hooks = {
+      before_apply = function(ctx)
+        calls[#calls + 1] = "cfg:" .. ctx.path
+      end,
+    },
   })
-  check("hooks: config-declared hook fires", #calls == 1 and calls[1] == "cfg:x", vim.inspect(calls))
+  check(
+    "hooks: config-declared hook fires",
+    #calls == 1 and calls[1] == "cfg:x",
+    vim.inspect(calls)
+  )
   check("hooks: no veto -> proceed true", proceed == true)
 
   hooks.clear()
   calls = {}
-  hooks.on("before_apply", function(ctx) calls[#calls + 1] = "on:" .. ctx.path end)
+  hooks.on("before_apply", function(ctx)
+    calls[#calls + 1] = "on:" .. ctx.path
+  end)
   hooks.run("before_apply", { path = "y" }, nil)
-  check("hooks: M.on() programmatic hook fires without cfg.hooks",
-    #calls == 1 and calls[1] == "on:y", vim.inspect(calls))
+  check(
+    "hooks: M.on() programmatic hook fires without cfg.hooks",
+    #calls == 1 and calls[1] == "on:y",
+    vim.inspect(calls)
+  )
 
   hooks.clear()
-  hooks.on("before_apply", function() return false end)
+  hooks.on("before_apply", function()
+    return false
+  end)
   local proceed2 = hooks.run("before_apply", { path = "z" }, nil)
   check("hooks: before_apply returning false vetoes", proceed2 == false)
 
   hooks.clear()
-  hooks.on("before_apply", function() error("boom") end)
+  hooks.on("before_apply", function()
+    error("boom")
+  end)
   local ok_run, proceed3 = pcall(hooks.run, "before_apply", { path = "z" }, nil)
-  check("hooks: an erroring hook is caught, never aborts the caller", ok_run == true and proceed3 == true)
+  check(
+    "hooks: an erroring hook is caught, never aborts the caller",
+    ok_run == true and proceed3 == true
+  )
 
   hooks.clear()
 
   -- End-to-end: a before_apply hook vetoing one file via apply_matches.
   local file_h1 = tmp .. "/hook1.txt"
   local file_h2 = tmp .. "/hook2.txt"
-  do local fh = assert(io.open(file_h1, "w")); fh:write("foo\n"); fh:close() end
-  do local fh = assert(io.open(file_h2, "w")); fh:write("foo\n"); fh:close() end
+  do
+    local fh = assert(io.open(file_h1, "w"))
+    fh:write("foo\n")
+    fh:close()
+  end
+  do
+    local fh = assert(io.open(file_h2, "w"))
+    fh:write("foo\n")
+    fh:close()
+  end
 
   ---@diagnostic disable: missing-fields
   local hitems = {
@@ -476,11 +619,17 @@ do
   }
   ---@diagnostic enable: missing-fields
 
-  hooks.on("before_apply", function(ctx) return ctx.path ~= file_h2 end)
+  hooks.on("before_apply", function(ctx)
+    return ctx.path ~= file_h2
+  end)
   local hfiles, hspots = apply.apply_matches(hitems, "foo", "bar", true, {})
   hooks.clear()
 
-  check("hooks: veto'd file is skipped by apply_matches", hfiles == 1 and hspots == 1, hfiles .. " " .. hspots)
+  check(
+    "hooks: veto'd file is skipped by apply_matches",
+    hfiles == 1 and hspots == 1,
+    hfiles .. " " .. hspots
+  )
   local hc1 = assert(io.open(file_h1, "r")):read("*a")
   local hc2 = assert(io.open(file_h2, "r")):read("*a")
   check("hooks: non-vetoed file was updated", hc1:match("bar") ~= nil, hc1)
@@ -493,9 +642,15 @@ end
 do
   local before = #history.load()
   local req = {
-    old = "__hist_test_old__", new = "__hist_test_new__", scope = "%",
-    all = false, dry = false, export = nil, line_range = nil,
-    overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+    old = "__hist_test_old__",
+    new = "__hist_test_new__",
+    scope = "%",
+    all = false,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = {},
+    filters = { file_types = {}, globs = {}, exclude = {} },
   }
   history.add(req, { files = 2, spots = 5 })
   local loaded = history.load()
@@ -504,8 +659,11 @@ do
   -- adding one more keeps the list at 50 (oldest evicted) instead of
   -- growing it further -- assert "grew, or already at the cap" rather than
   -- an exact size delta.
-  check("history: add() grows the stored list (or is already at the 50-entry cap)",
-    #loaded == before + 1 or (#loaded == 50 and before >= 50), #loaded)
+  check(
+    "history: add() grows the stored list (or is already at the 50-entry cap)",
+    #loaded == before + 1 or (#loaded == 50 and before >= 50),
+    #loaded
+  )
   check("history: newest entry is first", loaded[1].old == "__hist_test_old__", loaded[1].old)
   check("history: files/spots recorded", loaded[1].files == 2 and loaded[1].spots == 5)
 
@@ -514,15 +672,21 @@ do
   -- kit module and force a reload so history.lua picks up the stub.
   local picked
   package.loaded["lib.nvim.ui.kit"] = {
-    select = function(opts) opts.on_select(opts.items[1], 1) end,
+    select = function(opts)
+      opts.on_select(opts.items[1], 1)
+    end,
   }
   package.loaded["replacer.history"] = nil
   local history_stubbed = require("replacer.history")
-  history_stubbed.pick(function(r) picked = r end)
+  history_stubbed.pick(function(r)
+    picked = r
+  end)
   package.loaded["lib.nvim.ui.kit"] = nil
   package.loaded["replacer.history"] = nil
-  check("history: pick() re-runs the newest entry", picked ~= nil
-    and picked.old == "__hist_test_old__" and picked.new == "__hist_test_new__")
+  check(
+    "history: pick() re-runs the newest entry",
+    picked ~= nil and picked.old == "__hist_test_old__" and picked.new == "__hist_test_new__"
+  )
 end
 
 --------------------------------------------------------------------------------
@@ -534,23 +698,42 @@ do
 
   ---@type RP_Request
   local req = {
-    old = "foo", new = "bar", scope = "cwd", all = true, dry = false, export = nil,
-    line_range = nil, overrides = { literal = false }, filters = { file_types = { "lua" }, globs = {}, exclude = {} },
+    old = "foo",
+    new = "bar",
+    scope = "cwd",
+    all = true,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = { literal = false },
+    filters = { file_types = { "lua" }, globs = {}, exclude = {} },
   }
   presets.save(name, req)
 
   local names = presets.names()
   local found = false
-  for _, n in ipairs(names) do if n == name then found = true end end
+  for _, n in ipairs(names) do
+    if n == name then
+      found = true
+    end
+  end
   check("presets: save() shows up in names()", found)
 
   local loaded_req = presets.as_request(name)
-  check("presets: as_request() round-trips old/new/scope/all",
-    loaded_req and loaded_req.old == "foo" and loaded_req.new == "bar"
-    and loaded_req.scope == "cwd" and loaded_req.all == true)
-  check("presets: as_request() round-trips overrides/filters",
-    loaded_req and loaded_req.overrides.literal == false
-    and loaded_req.filters.file_types[1] == "lua")
+  check(
+    "presets: as_request() round-trips old/new/scope/all",
+    loaded_req
+      and loaded_req.old == "foo"
+      and loaded_req.new == "bar"
+      and loaded_req.scope == "cwd"
+      and loaded_req.all == true
+  )
+  check(
+    "presets: as_request() round-trips overrides/filters",
+    loaded_req
+      and loaded_req.overrides.literal == false
+      and loaded_req.filters.file_types[1] == "lua"
+  )
 
   check("presets: unknown name -> nil", presets.as_request("__does_not_exist__") == nil)
 
@@ -580,8 +763,16 @@ do
   -- End-to-end: two pairs, two files, via M.run + a real run_fun.
   local file_b1 = tmp .. "/batch1.txt"
   local file_b2 = tmp .. "/batch2.txt"
-  do local fh = assert(io.open(file_b1, "w")); fh:write("alpha\n"); fh:close() end
-  do local fh = assert(io.open(file_b2, "w")); fh:write("beta\n"); fh:close() end
+  do
+    local fh = assert(io.open(file_b1, "w"))
+    fh:write("alpha\n")
+    fh:close()
+  end
+  do
+    local fh = assert(io.open(file_b2, "w"))
+    fh:write("beta\n")
+    fh:close()
+  end
 
   local batch_file = tmp .. "/batch_spec.txt"
   do
@@ -593,8 +784,15 @@ do
   replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
   ---@type RP_Request
   local btpl = {
-    old = "", new = "", scope = "", all = false, dry = false, export = nil,
-    line_range = nil, overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+    old = "",
+    new = "",
+    scope = "",
+    all = false,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = {},
+    filters = { file_types = {}, globs = {}, exclude = {} },
   }
   batch.run(batch_file, tmp, btpl, replacer.run)
   vim.wait(300)
@@ -610,7 +808,10 @@ end
 --------------------------------------------------------------------------------
 do
   check("messages: default template", messages.fmt(nil, "no_matches") == "no matches found")
-  check("messages: default with args", messages.fmt(nil, "result", 3, 2) == "3 spot(s) in 2 file(s)")
+  check(
+    "messages: default with args",
+    messages.fmt(nil, "result", 3, 2) == "3 spot(s) in 2 file(s)"
+  )
 
   local overridden = messages.fmt({ messages = { no_matches = "keine Treffer" } }, "no_matches")
   check("messages: cfg.messages overrides the template", overridden == "keine Treffer", overridden)
@@ -618,21 +819,31 @@ do
   local overridden2 = messages.fmt({ messages = { result = "%d/%d" } }, "result", 3, 2)
   check("messages: overridden template applies args", overridden2 == "3/2", overridden2)
 
-  local malformed = messages.fmt({ messages = { result = "%s %s %s (too many specifiers)" } }, "result", 3, 2)
-  check("messages: malformed override falls back to itself instead of erroring",
-    malformed == "%s %s %s (too many specifiers)", malformed)
+  local malformed =
+    messages.fmt({ messages = { result = "%s %s %s (too many specifiers)" } }, "result", 3, 2)
+  check(
+    "messages: malformed override falls back to itself instead of erroring",
+    malformed == "%s %s %s (too many specifiers)",
+    malformed
+  )
 
   local unknown = messages.fmt(nil, "not_a_real_key")
   check("messages: unknown key falls back to the key itself", unknown == "not_a_real_key")
 
   local infos = {}
   local orig_notify_info = require("replacer.util.notify").info
-  require("replacer.util.notify").info = function(msg) infos[#infos + 1] = msg end
+  require("replacer.util.notify").info = function(msg)
+    infos[#infos + 1] = msg
+  end
   messages.info({ quiet = true }, "should be suppressed")
   messages.info({ quiet = false }, "should show")
   messages.info(nil, "should also show")
   require("replacer.util.notify").info = orig_notify_info
-  check("messages: quiet=true suppresses info()", #infos == 2 and infos[1] == "should show", vim.inspect(infos))
+  check(
+    "messages: quiet=true suppresses info()",
+    #infos == 2 and infos[1] == "should show",
+    vim.inspect(infos)
+  )
 end
 
 --------------------------------------------------------------------------------
@@ -641,13 +852,19 @@ end
 do
   replacer.setup({}) -- reset to defaults after earlier setup() calls in this file
   local cfg1 = require("replacer.config").get()
-  check("config: replace_and_reopen defaults to <C-r>", cfg1.keymaps.replace_and_reopen == "<C-r>",
-    cfg1.keymaps.replace_and_reopen)
+  check(
+    "config: replace_and_reopen defaults to <C-r>",
+    cfg1.keymaps.replace_and_reopen == "<C-r>",
+    cfg1.keymaps.replace_and_reopen
+  )
 
   replacer.setup({ keymaps = { replace_and_reopen = "<leader>r" } })
   local cfg2 = require("replacer.config").get()
-  check("config: replace_and_reopen is overridable", cfg2.keymaps.replace_and_reopen == "<leader>r",
-    cfg2.keymaps.replace_and_reopen)
+  check(
+    "config: replace_and_reopen is overridable",
+    cfg2.keymaps.replace_and_reopen == "<leader>r",
+    cfg2.keymaps.replace_and_reopen
+  )
   replacer.setup({ keymaps = { replace_and_reopen = "<C-r>" } }) -- restore default for later tests
 end
 
@@ -657,30 +874,61 @@ end
 do
   local fn_root = tmp .. "/fn"
   vim.fn.mkdir(fn_root .. "/foo_dir", "p")
-  do local fh = assert(io.open(fn_root .. "/foo_dir/foo_inner.txt", "w")); fh:write("inner\n"); fh:close() end
-  do local fh = assert(io.open(fn_root .. "/foo_dir/plain.txt", "w")); fh:write("plain\n"); fh:close() end
-  do local fh = assert(io.open(fn_root .. "/foo_file.txt", "w")); fh:write("top\n"); fh:close() end
-  do local fh = assert(io.open(fn_root .. "/other.txt", "w")); fh:write("other\n"); fh:close() end
+  do
+    local fh = assert(io.open(fn_root .. "/foo_dir/foo_inner.txt", "w"))
+    fh:write("inner\n")
+    fh:close()
+  end
+  do
+    local fh = assert(io.open(fn_root .. "/foo_dir/plain.txt", "w"))
+    fh:write("plain\n")
+    fh:close()
+  end
+  do
+    local fh = assert(io.open(fn_root .. "/foo_file.txt", "w"))
+    fh:write("top\n")
+    fh:close()
+  end
+  do
+    local fh = assert(io.open(fn_root .. "/other.txt", "w"))
+    fh:write("other\n")
+    fh:close()
+  end
 
   local matches = fnames.collect("foo", "bar", fn_root, { hidden = true, exclude_git_dir = true })
   check("fnames: collect finds dir + nested file + top-level file", #matches == 3, #matches)
 
   local kept, skipped = fnames.filter_nested(matches)
-  check("fnames: nested match is filtered out", #kept == 2 and skipped == 1, #kept .. "/" .. skipped)
+  check(
+    "fnames: nested match is filtered out",
+    #kept == 2 and skipped == 1,
+    #kept .. "/" .. skipped
+  )
 
   local preview = fnames.build_preview(kept)
-  check("fnames: preview mentions both kept renames",
-    preview:find("foo_dir", 1, true) ~= nil and preview:find("foo_file.txt", 1, true) ~= nil, preview)
+  check(
+    "fnames: preview mentions both kept renames",
+    preview:find("foo_dir", 1, true) ~= nil and preview:find("foo_file.txt", 1, true) ~= nil,
+    preview
+  )
 
   local renamed, errors = fnames.apply(kept)
-  check("fnames: apply renamed both kept entries", renamed == 2 and #errors == 0, vim.inspect(errors))
+  check(
+    "fnames: apply renamed both kept entries",
+    renamed == 2 and #errors == 0,
+    vim.inspect(errors)
+  )
 
   check("fnames: old dir gone", vim.fn.isdirectory(fn_root .. "/foo_dir") == 0)
   check("fnames: new dir exists", vim.fn.isdirectory(fn_root .. "/bar_dir") == 1)
-  check("fnames: nested file moved along, basename untouched (not renamed this run)",
-    vim.fn.filereadable(fn_root .. "/bar_dir/foo_inner.txt") == 1)
-  check("fnames: sibling file inside the renamed dir also moved along",
-    vim.fn.filereadable(fn_root .. "/bar_dir/plain.txt") == 1)
+  check(
+    "fnames: nested file moved along, basename untouched (not renamed this run)",
+    vim.fn.filereadable(fn_root .. "/bar_dir/foo_inner.txt") == 1
+  )
+  check(
+    "fnames: sibling file inside the renamed dir also moved along",
+    vim.fn.filereadable(fn_root .. "/bar_dir/plain.txt") == 1
+  )
   check("fnames: old top-level file gone", vim.fn.filereadable(fn_root .. "/foo_file.txt") == 0)
   check("fnames: new top-level file exists", vim.fn.filereadable(fn_root .. "/bar_file.txt") == 1)
   check("fnames: unrelated file untouched", vim.fn.filereadable(fn_root .. "/other.txt") == 1)
@@ -695,7 +943,9 @@ do
   -- force a reload so rename_assist picks up the stub's `confirm.open`.
   local answer_with -- set per sub-test before calling maybe_rename
   package.loaded["lib.nvim.ui.kit.confirm"] = {
-    open = function(opts) opts.on_answer(answer_with) end,
+    open = function(opts)
+      opts.on_answer(answer_with)
+    end,
   }
   package.loaded["replacer.rename_assist"] = nil
   local rename_assist = require("replacer.rename_assist")
@@ -703,7 +953,11 @@ do
   local ra_dir = tmp .. "/ra"
   vim.fn.mkdir(ra_dir, "p")
   local old_file = ra_dir .. "/foo_widget.txt"
-  do local fh = assert(io.open(old_file, "w")); fh:write("foo content\n"); fh:close() end
+  do
+    local fh = assert(io.open(old_file, "w"))
+    fh:write("foo content\n")
+    fh:close()
+  end
 
   -- No match in the basename -> no-op, no prompt at all.
   local confirm_calls = 0
@@ -718,33 +972,56 @@ do
   -- Match + Yes -> renamed.
   answer_with = true
   rename_assist.maybe_rename(old_file, "foo", "bar", {})
-  check("rename_assist: match + Yes -> file renamed", confirm_calls == 1
-    and vim.fn.filereadable(ra_dir .. "/bar_widget.txt") == 1
-    and vim.fn.filereadable(old_file) == 0)
+  check(
+    "rename_assist: match + Yes -> file renamed",
+    confirm_calls == 1
+      and vim.fn.filereadable(ra_dir .. "/bar_widget.txt") == 1
+      and vim.fn.filereadable(old_file) == 0
+  )
 
   -- Match + No -> left alone.
   local old_file2 = ra_dir .. "/foo_second.txt"
-  do local fh = assert(io.open(old_file2, "w")); fh:write("x\n"); fh:close() end
+  do
+    local fh = assert(io.open(old_file2, "w"))
+    fh:write("x\n")
+    fh:close()
+  end
   answer_with = false
   rename_assist.maybe_rename(old_file2, "foo", "bar", {})
   check("rename_assist: match + No -> left alone", vim.fn.filereadable(old_file2) == 1)
 
   -- End-to-end via replacer.run with --also-rename-file, single-file scope.
   local content_file = ra_dir .. "/foo_target.txt"
-  do local fh = assert(io.open(content_file, "w")); fh:write("foo body\n"); fh:close() end
+  do
+    local fh = assert(io.open(content_file, "w"))
+    fh:write("foo body\n")
+    fh:close()
+  end
   answer_with = true
   replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
   local req = {
-    old = "foo", new = "bar", scope = content_file, all = true, dry = false, export = nil,
-    line_range = nil, overrides = { also_rename_file = true },
+    old = "foo",
+    new = "bar",
+    scope = content_file,
+    all = true,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = { also_rename_file = true },
     filters = { file_types = {}, globs = {}, exclude = {} },
   }
   replacer.run(req)
   vim.wait(300)
-  check("rename_assist: end-to-end via --also-rename-file renames the file",
-    vim.fn.filereadable(ra_dir .. "/bar_target.txt") == 1 and vim.fn.filereadable(content_file) == 0)
+  check(
+    "rename_assist: end-to-end via --also-rename-file renames the file",
+    vim.fn.filereadable(ra_dir .. "/bar_target.txt") == 1 and vim.fn.filereadable(content_file) == 0
+  )
   local final_content = assert(io.open(ra_dir .. "/bar_target.txt", "r")):read("*a")
-  check("rename_assist: content also replaced", final_content:match("bar body") ~= nil, final_content)
+  check(
+    "rename_assist: content also replaced",
+    final_content:match("bar body") ~= nil,
+    final_content
+  )
 
   package.loaded["lib.nvim.ui.kit.confirm"] = nil
   package.loaded["replacer.rename_assist"] = nil
@@ -761,7 +1038,11 @@ do
   check("lsp_rename: rejects nil", lsp_rename.looks_like_identifier(nil) == false)
 
   local file_lsp = tmp .. "/lsp.txt"
-  do local fh = assert(io.open(file_lsp, "w")); fh:write("foo\n"); fh:close() end
+  do
+    local fh = assert(io.open(file_lsp, "w"))
+    fh:write("foo\n")
+    fh:close()
+  end
 
   ---@diagnostic disable: missing-fields
   local litem = { id = 1, path = file_lsp, lnum = 1, col0 = 0, old = "foo" }
@@ -773,27 +1054,52 @@ do
   -- guarantee for a "soft" feature: normal operation must never regress
   -- when no LSP server is available.
   local done, ok_result = false, nil
-  lsp_rename.try_rename(litem, "bar", function(ok) done = true; ok_result = ok end)
-  vim.wait(500, function() return done end, 10)
-  check("lsp_rename: falls back (on_done(false)) with no attached client", done and ok_result == false)
+  lsp_rename.try_rename(litem, "bar", function(ok)
+    done = true
+    ok_result = ok
+  end)
+  vim.wait(500, function()
+    return done
+  end, 10)
+  check(
+    "lsp_rename: falls back (on_done(false)) with no attached client",
+    done and ok_result == false
+  )
 
   local lsp_renamed, fallback = lsp_rename.try_rename_batch({ litem }, "bar", 500)
-  check("lsp_rename: try_rename_batch routes to fallback with no client",
-    #lsp_renamed == 0 and #fallback == 1)
+  check(
+    "lsp_rename: try_rename_batch routes to fallback with no client",
+    #lsp_renamed == 0 and #fallback == 1
+  )
 
   -- End-to-end: cfg.lsp = true but no client attached -> normal plain-text
   -- apply still happens (the fallback path must never lose the edit).
-  replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true, lsp = true })
+  replacer.setup({
+    search_engine = "vimgrep",
+    confirm_all = false,
+    write_changes = true,
+    lsp = true,
+  })
   ---@type RP_Request
   local lreq = {
-    old = "foo", new = "bar", scope = file_lsp, all = true, dry = false, export = nil,
-    line_range = nil, overrides = { lsp = true }, filters = { file_types = {}, globs = {}, exclude = {} },
+    old = "foo",
+    new = "bar",
+    scope = file_lsp,
+    all = true,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = { lsp = true },
+    filters = { file_types = {}, globs = {}, exclude = {} },
   }
   replacer.run(lreq)
   vim.wait(500)
   local lcontent = assert(io.open(file_lsp, "r")):read("*a")
-  check("lsp_rename: --lsp with no client still applies the plain-text replace",
-    lcontent:match("bar") ~= nil, lcontent)
+  check(
+    "lsp_rename: --lsp with no client still applies the plain-text replace",
+    lcontent:match("bar") ~= nil,
+    lcontent
+  )
   replacer.setup({ lsp = false }) -- restore default for later tests
 end
 
@@ -809,37 +1115,61 @@ if vim.fn.executable("rg") == 1 then
     fh:close()
   end
 
-  local rcfg = { literal = true, search_engine = "ripgrep", hidden = true, smart_case = true,
-    file_types = {}, globs = {}, exclude = {} }
+  local rcfg = {
+    literal = true,
+    search_engine = "ripgrep",
+    hidden = true,
+    smart_case = true,
+    file_types = {},
+    globs = {},
+    exclude = {},
+  }
 
   local batches, batch_calls = {}, 0
   local streamed_items, streamed_err, streamed_done = nil, nil, false
-  rg.collect_streaming("needle", { stream_dir }, rcfg,
-    function(new_batch)
-      batch_calls = batch_calls + 1
-      for _, m in ipairs(new_batch) do batches[#batches + 1] = m end
-    end,
-    function(items, err)
-      streamed_items, streamed_err, streamed_done = items, err, true
-    end)
-  vim.wait(2000, function() return streamed_done end, 10)
+  rg.collect_streaming("needle", { stream_dir }, rcfg, function(new_batch)
+    batch_calls = batch_calls + 1
+    for _, m in ipairs(new_batch) do
+      batches[#batches + 1] = m
+    end
+  end, function(items, err)
+    streamed_items, streamed_err, streamed_done = items, err, true
+  end)
+  vim.wait(2000, function()
+    return streamed_done
+  end, 10)
 
   check("streaming: on_done eventually fires", streamed_done, streamed_done)
-  check("streaming: no error", streamed_err == nil, streamed_err and require("replacer.error").format(streamed_err))
+  check(
+    "streaming: no error",
+    streamed_err == nil,
+    streamed_err and require("replacer.error").format(streamed_err)
+  )
   check("streaming: at least one batch delivered", batch_calls >= 1, batch_calls)
-  check("streaming: batches sum to the same count as on_done's final list",
-    #batches == (streamed_items and #streamed_items or -1), #batches)
+  check(
+    "streaming: batches sum to the same count as on_done's final list",
+    #batches == (streamed_items and #streamed_items or -1),
+    #batches
+  )
 
   -- Cross-check against the non-streaming async collector: same search must
   -- produce the same match set (streaming's incremental parser must be
   -- semantically equivalent to the batch parser it was factored out of).
   local async_items, async_done = nil, false
-  rg.collect_async("needle", { stream_dir }, rcfg, function(items) async_items = items; async_done = true end)
-  vim.wait(2000, function() return async_done end, 10)
+  rg.collect_async("needle", { stream_dir }, rcfg, function(items)
+    async_items = items
+    async_done = true
+  end)
+  vim.wait(2000, function()
+    return async_done
+  end, 10)
 
-  check("streaming: same match count as the non-streaming collector",
+  check(
+    "streaming: same match count as the non-streaming collector",
     streamed_items and async_items and #streamed_items == #async_items,
-    streamed_items and #streamed_items, async_items and #async_items)
+    streamed_items and #streamed_items,
+    async_items and #async_items
+  )
 
   local function fingerprint(items)
     local keys = {}
@@ -849,8 +1179,10 @@ if vim.fn.executable("rg") == 1 then
     table.sort(keys)
     return table.concat(keys, "|")
   end
-  check("streaming: identical match set (path/line/col/text) as the non-streaming collector",
-    streamed_items and async_items and fingerprint(streamed_items) == fingerprint(async_items))
+  check(
+    "streaming: identical match set (path/line/col/text) as the non-streaming collector",
+    streamed_items and async_items and fingerprint(streamed_items) == fingerprint(async_items)
+  )
 
   -- End-to-end through the real pipeline: :Replace ... --stream --all must
   -- apply correctly, exercising init.lua's cfg.stream branch.
@@ -861,8 +1193,11 @@ if vim.fn.executable("rg") == 1 then
   replacer.run(sreq)
   vim.wait(2000)
   local sc1 = assert(io.open(stream_dir .. "/f1.txt", "r")):read("*a")
-  check("streaming: end-to-end :Replace --stream --all applies correctly",
-    sc1:match("NEEDLE") ~= nil and not sc1:match("needle"), sc1)
+  check(
+    "streaming: end-to-end :Replace --stream --all applies correctly",
+    sc1:match("NEEDLE") ~= nil and not sc1:match("needle"),
+    sc1
+  )
 else
   print("SKIP  rg.collect_streaming tests (ripgrep not on PATH)")
 end
@@ -873,9 +1208,11 @@ end
 do
   local items = rg.collect("foo", { file_a }, cfg)
   local by = {}
-  for _, it in ipairs(items) do by[#by + 1] = it end
-  local new_lines, spots, skipped = apply.compute_file_edits(
-    { "foo and foo and foo", "bar foo baz", "no match here" }, by, "X")
+  for _, it in ipairs(items) do
+    by[#by + 1] = it
+  end
+  local new_lines, spots, skipped =
+    apply.compute_file_edits({ "foo and foo and foo", "bar foo baz", "no match here" }, by, "X")
   check("compute: spots == 4", spots == 4, spots)
   check("compute: no skips", skipped == 0, skipped)
   check("compute: line1 rewritten", new_lines[1] == "X and X and X", new_lines[1])
@@ -887,16 +1224,27 @@ end
 --------------------------------------------------------------------------------
 do
   ---@diagnostic disable: missing-fields
-  local matches = { { id = 1, path = "x", lnum = 1, col0 = 3, old = "  foo  ", line = "___  foo  ___" } }
+  local matches =
+    { { id = 1, path = "x", lnum = 1, col0 = 3, old = "  foo  ", line = "___  foo  ___" } }
   ---@diagnostic enable: missing-fields
   local new_lines, spots = apply.compute_file_edits(
-    { "___  foo  ___" }, matches, "bar", { preserve_whitespace = true })
-  check("preserve_whitespace: sandwiches replacement in original ws",
-    spots == 1 and new_lines[1] == "___  bar  ___", new_lines[1])
+    { "___  foo  ___" },
+    matches,
+    "bar",
+    { preserve_whitespace = true }
+  )
+  check(
+    "preserve_whitespace: sandwiches replacement in original ws",
+    spots == 1 and new_lines[1] == "___  bar  ___",
+    new_lines[1]
+  )
 
   local new_lines2 = apply.compute_file_edits({ "___  foo  ___" }, matches, "bar", nil)
-  check("preserve_whitespace: off by default (cfg=nil) -> plain replace",
-    new_lines2[1] == "___bar___", new_lines2[1])
+  check(
+    "preserve_whitespace: off by default (cfg=nil) -> plain replace",
+    new_lines2[1] == "___bar___",
+    new_lines2[1]
+  )
 end
 
 --------------------------------------------------------------------------------
@@ -946,7 +1294,12 @@ do
   local m = { id = 1, path = "x", lnum = 1, col0 = 0, old = "foo=bar", line = "foo=bar" }
   ---@diagnostic enable: missing-fields
   local nl = apply.compute_file_edits(
-    { "foo=bar" }, { m }, "\\2_\\1", { literal = false }, capture_pattern)
+    { "foo=bar" },
+    { m },
+    "\\2_\\1",
+    { literal = false },
+    capture_pattern
+  )
   check("regex: backrefs wired through compute_file_edits", nl[1] == "bar_foo", nl[1])
 end
 
@@ -982,15 +1335,27 @@ end
 do
   replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
   local request = {
-    old = "foo", new = "XXX", scope = file_a, all = true, dry = false, export = nil,
-    line_range = nil, overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} },
+    old = "foo",
+    new = "XXX",
+    scope = file_a,
+    all = true,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = {},
+    filters = { file_types = {}, globs = {}, exclude = {} },
   }
   replacer.run(request)
 
   -- read file back
   local fh = assert(io.open(file_a, "r"))
-  local content = fh:read("*a"); fh:close()
-  check("apply: all 'foo' replaced with 'XXX'", not content:match("foo") and content:match("XXX"), content)
+  local content = fh:read("*a")
+  fh:close()
+  check(
+    "apply: all 'foo' replaced with 'XXX'",
+    not content:match("foo") and content:match("XXX"),
+    content
+  )
 end
 
 --------------------------------------------------------------------------------
@@ -1007,15 +1372,26 @@ do
   local items = rg.collect("foo", { file_qf }, cfg)
   local entries = export.to_qf_entries(items)
   check("qf: entry count matches items", #entries == #items, #entries)
-  check("qf: entry has filename/lnum/col/text", entries[1].filename == file_qf
-    and type(entries[1].lnum) == "number" and type(entries[1].col) == "number"
-    and type(entries[1].text) == "string")
+  check(
+    "qf: entry has filename/lnum/col/text",
+    entries[1].filename == file_qf
+      and type(entries[1].lnum) == "number"
+      and type(entries[1].col) == "number"
+      and type(entries[1].text) == "string"
+  )
 
   vim.fn.setqflist({}, "r")
   replacer.setup({ search_engine = "vimgrep", confirm_all = false, write_changes = true })
   local request = {
-    old = "foo", new = "XXX", scope = file_qf, all = false, dry = false, export = nil,
-    to_quickfix = true, line_range = nil, overrides = {},
+    old = "foo",
+    new = "XXX",
+    scope = file_qf,
+    all = false,
+    dry = false,
+    export = nil,
+    to_quickfix = true,
+    line_range = nil,
+    overrides = {},
     filters = { file_types = {}, globs = {}, exclude = {} },
   }
   replacer.run(request)
@@ -1024,10 +1400,13 @@ do
   check("qf: :Replace --to-quickfix populates the quickfix list", #qf > 0, #qf)
 
   local fh2 = assert(io.open(file_qf, "r"))
-  local content_after_qf = fh2:read("*a"); fh2:close()
+  local content_after_qf = fh2:read("*a")
+  fh2:close()
   check("qf: --to-quickfix never writes", content_after_qf:match("foo") ~= nil, content_after_qf)
 end
 
 --------------------------------------------------------------------------------
 print(string.format("\n=== %d passed, %d failed ===", pass, fail))
-if fail > 0 then vim.cmd("cquit 1") end
+if fail > 0 then
+  vim.cmd("cquit 1")
+end

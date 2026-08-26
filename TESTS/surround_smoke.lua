@@ -20,7 +20,7 @@ if not add_lib_nvim() then
 end
 
 local replacer = require("replacer")
-local command  = require("replacer.command")
+local command = require("replacer.command")
 local surround = require("replacer.surround")
 
 local pass, fail = 0, 0
@@ -37,17 +37,28 @@ end
 --------------------------------------------------------------------------------
 -- 1) Delimiter resolution (literal chars, aliases, bracket pairs)
 --------------------------------------------------------------------------------
-local function delim(tok) return surround.resolve_delim(tok) end
+local function delim(tok)
+  return surround.resolve_delim(tok)
+end
 do
-  local l, r = delim("`");    check("delim: backtick literal", l == "`" and r == "`")
-  l, r = delim("b");          check("delim: alias b -> backtick", l == "`" and r == "`")
-  l, r = delim("q");          check("delim: alias q -> dquote", l == '"' and r == '"')
-  l, r = delim("s");          check("delim: alias s -> squote", l == "'" and r == "'")
-  l, r = delim("**");         check("delim: ** symmetric", l == "**" and r == "**")
-  l, r = delim("bold");       check("delim: alias bold -> **", l == "**" and r == "**")
-  l, r = delim("(");          check("delim: bare ( -> ( )", l == "(" and r == ")")
-  l, r = delim("paren");      check("delim: alias paren -> ( )", l == "(" and r == ")")
-  l, r = delim("@@");         check("delim: unknown -> symmetric literal", l == "@@" and r == "@@")
+  local l, r = delim("`")
+  check("delim: backtick literal", l == "`" and r == "`")
+  l, r = delim("b")
+  check("delim: alias b -> backtick", l == "`" and r == "`")
+  l, r = delim("q")
+  check("delim: alias q -> dquote", l == '"' and r == '"')
+  l, r = delim("s")
+  check("delim: alias s -> squote", l == "'" and r == "'")
+  l, r = delim("**")
+  check("delim: ** symmetric", l == "**" and r == "**")
+  l, r = delim("bold")
+  check("delim: alias bold -> **", l == "**" and r == "**")
+  l, r = delim("(")
+  check("delim: bare ( -> ( )", l == "(" and r == ")")
+  l, r = delim("paren")
+  check("delim: alias paren -> ( )", l == "(" and r == ")")
+  l, r = delim("@@")
+  check("delim: unknown -> symmetric literal", l == "@@" and r == "@@")
 end
 
 --------------------------------------------------------------------------------
@@ -57,14 +68,33 @@ do
   local toks = command.tokenize('"foo bar" b cwd --all')
   check("tokenize: quote-aware split", #toks == 4 and toks[1] == "foo bar" and toks[2] == "b")
 
-  local req = { old = "", new = "", scope = "", all = false, dry = false, export = nil,
-    line_range = nil, overrides = {}, filters = { file_types = {}, globs = {}, exclude = {} } }
+  local req = {
+    old = "",
+    new = "",
+    scope = "",
+    all = false,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = {},
+    filters = { file_types = {}, globs = {}, exclude = {} },
+  }
   local pos = command.apply_tokens(toks, req)
-  check("apply_tokens: positionals + flag applied", pos and #pos == 3 and req.all == true, pos and #pos)
+  check(
+    "apply_tokens: positionals + flag applied",
+    pos and #pos == 3 and req.all == true,
+    pos and #pos
+  )
 
   local _, err = command.apply_tokens(command.tokenize("x --bogus"), {
-    old = "", new = "", scope = "", all = false, dry = false, overrides = {},
-    filters = { file_types = {}, globs = {}, exclude = {} } })
+    old = "",
+    new = "",
+    scope = "",
+    all = false,
+    dry = false,
+    overrides = {},
+    filters = { file_types = {}, globs = {}, exclude = {} },
+  })
   check("apply_tokens: unknown flag -> error", err and err:match("unknown option"), err)
 end
 
@@ -77,10 +107,13 @@ vim.cmd("source " .. vim.fn.getcwd() .. "/plugin/replacer.lua")
 check("register: :Surround exists", vim.fn.exists(":Surround") == 2)
 check("register: :Wrap exists", vim.fn.exists(":Wrap") == 2)
 
-local tmp = vim.fn.tempname(); vim.fn.mkdir(tmp, "p")
+local tmp = vim.fn.tempname()
+vim.fn.mkdir(tmp, "p")
 do
   local fa = tmp .. "/c.txt"
-  local fh = assert(io.open(fa, "w")); fh:write("alpha beta alpha\nalpha\n"); fh:close()
+  local fh = assert(io.open(fa, "w"))
+  fh:write("alpha beta alpha\nalpha\n")
+  fh:close()
   vim.cmd(string.format("Surround! alpha b %s", fa))
   vim.wait(300)
   local c = assert(io.open(fa, "r")):read("*a")
@@ -93,7 +126,9 @@ end
 --------------------------------------------------------------------------------
 do
   local fb = tmp .. "/b.md"
-  local fh = assert(io.open(fb, "w")); fh:write("TODO and TODO\n"); fh:close()
+  local fh = assert(io.open(fb, "w"))
+  fh:write("TODO and TODO\n")
+  fh:close()
   vim.cmd(string.format("Surround! TODO bold %s", tmp))
   vim.wait(300)
   local c = assert(io.open(fb, "r")):read("*a")
@@ -108,18 +143,23 @@ do
   -- Partial RP_Match doubles: the filter only reads col0/old/line.
   local keep = surround.skip_surrounded_filter("**", "**")
   -- "**test**": "test" starts at byte col 2 (0-based); flanked by ** on both sides.
-  check("filter: already **wrapped** is skipped",
-    keep({ col0 = 2, old = "test", line = "**test**" }) == false)
+  check(
+    "filter: already **wrapped** is skipped",
+    keep({ col0 = 2, old = "test", line = "**test**" }) == false
+  )
   -- Bare "test": not wrapped -> kept.
-  check("filter: bare match is kept",
-    keep({ col0 = 0, old = "test", line = "test" }) == true)
+  check("filter: bare match is kept", keep({ col0 = 0, old = "test", line = "test" }) == true)
   -- "*test*": flanked by single * (not the ** delimiter) -> kept.
-  check("filter: partial/other delimiter is kept",
-    keep({ col0 = 1, old = "test", line = "*test*" }) == true)
+  check(
+    "filter: partial/other delimiter is kept",
+    keep({ col0 = 1, old = "test", line = "*test*" }) == true
+  )
 
   local keepp = surround.skip_surrounded_filter("(", ")")
-  check("filter: already (wrapped) is skipped",
-    keepp({ col0 = 1, old = "x", line = "(x)" }) == false)
+  check(
+    "filter: already (wrapped) is skipped",
+    keepp({ col0 = 1, old = "x", line = "(x)" }) == false
+  )
   ---@diagnostic enable: missing-fields
 end
 
@@ -127,9 +167,12 @@ end
 -- 5b) :Surround with no delimiter arg asks kit.input, not a raw vim.ui.input
 --------------------------------------------------------------------------------
 do
-  local nodelim_dir = vim.fn.tempname(); vim.fn.mkdir(nodelim_dir, "p")
+  local nodelim_dir = vim.fn.tempname()
+  vim.fn.mkdir(nodelim_dir, "p")
   local fc = nodelim_dir .. "/d.txt"
-  local fh = assert(io.open(fc, "w")); fh:write("gamma delta gamma\n"); fh:close()
+  local fh = assert(io.open(fc, "w"))
+  fh:write("gamma delta gamma\n")
+  fh:close()
 
   local captured_title
   package.loaded["lib.nvim.ui.kit"] = {
@@ -143,7 +186,11 @@ do
   vim.cmd("Surround! gamma")
   vim.wait(300)
 
-  check("no-delim: kit.input was asked for the delimiter", captured_title ~= nil, tostring(captured_title))
+  check(
+    "no-delim: kit.input was asked for the delimiter",
+    captured_title ~= nil,
+    tostring(captured_title)
+  )
   local c = assert(io.open(fc, "r")):read("*a")
   check("no-delim: submitted '_' wraps the matches", select(2, c:gsub("_gamma_", "")) == 2, c)
 
@@ -156,7 +203,9 @@ end
 --------------------------------------------------------------------------------
 do
   local fc = tmp .. "/idem.md"
-  local fh = assert(io.open(fc, "w")); fh:write("test\n"); fh:close()
+  local fh = assert(io.open(fc, "w"))
+  fh:write("test\n")
+  fh:close()
 
   vim.cmd(string.format("Surround! test bold %s", fc))
   vim.wait(300)
@@ -173,10 +222,11 @@ do
   vim.cmd(string.format("Surround! test bold %s --nested", fc))
   vim.wait(300)
   local c3 = assert(io.open(fc, "r")):read("*a")
-  check("idem: --nested adds a layer -> ****test****",
-    c3:match("^%*%*%*%*test%*%*%*%*") ~= nil, c3)
+  check("idem: --nested adds a layer -> ****test****", c3:match("^%*%*%*%*test%*%*%*%*") ~= nil, c3)
 end
 
 --------------------------------------------------------------------------------
 print(string.format("\n=== %d passed, %d failed ===", pass, fail))
-if fail > 0 then vim.cmd("cquit 1") end
+if fail > 0 then
+  vim.cmd("cquit 1")
+end

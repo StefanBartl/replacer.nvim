@@ -13,7 +13,7 @@
 local common = require("replacer.pickers.common")
 local notify = require("replacer.util.notify")
 local confirm = require("lib.nvim.ui.kit.confirm")
-local map = require("lib.nvim.map")
+local map = require("lib.nvim.bindings.keymap")
 local window = require("lib.nvim.window")
 
 ---@internal

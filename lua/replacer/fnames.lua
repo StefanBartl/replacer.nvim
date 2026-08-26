@@ -221,7 +221,7 @@ local USAGE = "Usage: :ReplaceFNames[!] {old} {new} [scope] [--dry]"
 --- Register :ReplaceFNames.
 ---@return nil
 function M.register()
-  local usercmd = require("lib.nvim.usercmd")
+  local usercmd = require("lib.nvim.bindings.usercmd")
   local command = require("replacer.command")
   local confirm = require("lib.nvim.ui.kit.confirm")
 

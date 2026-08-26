@@ -33,7 +33,7 @@
 ---   M.parse_request(raw, o) parse a raw arg string -> ok, request, err (testable)
 local uv = vim.uv or vim.loop
 local notify = require("replacer.util.notify")
-local composer = require("lib.nvim.usercmd.composer")
+local composer = require("lib.nvim.bindings.usercmd.composer")
 local argtypes = require("replacer.argtypes")
 
 local M = {}
@@ -589,7 +589,7 @@ M.FLAGS = {
 }
 
 --- Register :Replace and :Replacer user commands, built via
---- lib.nvim.usercmd.composer. The route declares `args`/`flags` purely to
+--- lib.nvim.bindings.usercmd.composer. The route declares `args`/`flags` purely to
 --- drive <Tab> completion; dispatch bypasses composer's own bound
 --- ctx.args/ctx.flags entirely and calls the ORIGINAL handler(opts) with
 --- ctx.raw (composer's untouched nvim-callback opts table -- same .args

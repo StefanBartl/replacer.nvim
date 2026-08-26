@@ -33,7 +33,7 @@
 ---   :Surround! name q %         → "name"  everywhere in the buffer, no picker
 ---   :Surround word ** --nested  → wrap even already-**bold** occurrences
 
-local composer = require("lib.nvim.usercmd.composer")
+local composer = require("lib.nvim.bindings.usercmd.composer")
 local command = require("replacer.command")
 local notify = require("replacer.util.notify")
 
@@ -382,7 +382,7 @@ local FLAGS = vim.deepcopy(command.FLAGS)
 FLAGS[#FLAGS + 1] = { name = "nested", bool = true }
 FLAGS[#FLAGS + 1] = { name = "allow-nested", bool = true }
 
---- Register :Surround (and :Wrap alias), built via lib.nvim.usercmd.composer.
+--- Register :Surround (and :Wrap alias), built via lib.nvim.bindings.usercmd.composer.
 --- Same design as :Replace/:Replacer in command.lua: the route's args/flags
 --- exist only for <Tab> completion. Dispatch bypasses composer's own bound
 --- ctx.args/ctx.flags and calls the ORIGINAL handle(run_fun, opts) with

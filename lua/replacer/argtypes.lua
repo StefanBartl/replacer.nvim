@@ -21,7 +21,7 @@
 ---                                narrows the replacement. Worse than
 ---                                offering nothing.
 
-local composer = require("lib.nvim.usercmd.composer")
+local composer = require("lib.nvim.bindings.usercmd.composer")
 local job = require("lib.nvim.system.job")
 
 local M = {}

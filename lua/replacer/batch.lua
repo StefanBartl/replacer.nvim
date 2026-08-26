@@ -178,7 +178,7 @@ local USAGE = "Usage: :ReplaceBatch[!] {source} [scope] [--flags]   "
 ---@param run_fun fun(request: RP_Request): nil
 ---@return nil
 function M.register(run_fun)
-  local usercmd = require("lib.nvim.usercmd")
+  local usercmd = require("lib.nvim.bindings.usercmd")
   local command = require("replacer.command")
 
   usercmd.create("ReplaceBatch", function(opts)

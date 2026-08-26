@@ -167,7 +167,7 @@ end
 --- Register :ReplaceEscape and :ReplaceTest.
 ---@return nil
 function M.register()
-  local usercmd = require("lib.nvim.usercmd")
+  local usercmd = require("lib.nvim.bindings.usercmd")
   local tokenize = require("replacer.command").tokenize
 
   usercmd.create("ReplaceEscape", function(opts)

@@ -30,7 +30,8 @@ function M.diagnose()
 
   -- 3. Check health module location
   print("\n3. Health Module:")
-  local health_path = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h") .. "/lua/replacer/health.lua"
+  local health_path = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h")
+    .. "/lua/replacer/health.lua"
   print("   Expected path: " .. health_path)
 
   local health_ok, health = pcall(require, "replacer.health")

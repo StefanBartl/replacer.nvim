@@ -17,7 +17,7 @@
 ---     and a copy of them here could only ever be a second place to forget to
 ---     update. `config/DEFAULTS.lua` is where their defaults are documented.
 
-local map = require("lib.nvim.map")
+local map = require("lib.nvim.bindings.keymap")
 
 local M = {}
 

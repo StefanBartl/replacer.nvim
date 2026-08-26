@@ -24,7 +24,7 @@
 Project-wide search-and-replace with ripgrep, an interactive picker (fzf-lua or Telescope), live preview, and precise application of changes.
 
 > Requires [`lib.nvim`](https://github.com/StefanBartl/lib.nvim) — used for
-> the `:Replace`/`:Surround` command layer (`lib.nvim.usercmd.composer`),
+> the `:Replace`/`:Surround` command layer (`lib.nvim.bindings.usercmd.composer`),
 > notifications, the confirm dialog, file export, and the progress indicator.
 > One helper library shared across the author's plugins.
 

@@ -187,7 +187,7 @@ end
 --- Register :ReplaceUndo [id].
 ---@return nil
 function M.register()
-  local usercmd = require("lib.nvim.usercmd")
+  local usercmd = require("lib.nvim.bindings.usercmd")
   usercmd.create("ReplaceUndo", function(opts)
     local id = (type(opts.args) == "string" and opts.args ~= "") and opts.args or nil
     local restored, err = M.undo(id)

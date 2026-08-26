@@ -43,7 +43,7 @@ Replacer provides project-wide search-and-replace with:
   - telescope.nvim (+ plenary.nvim): https://github.com/nvim-telescope/telescope.nvim
   - fzf-lua: https://github.com/ibhagwan/fzf-lua
 • lib.nvim (https://github.com/StefanBartl/lib.nvim) — REQUIRED: the
-  :Replace/:Surround command layer (lib.nvim.usercmd.composer), notifications,
+  :Replace/:Surround command layer (lib.nvim.bindings.usercmd.composer), notifications,
   the confirm dialog, and file export all depend on it directly. The
   progress indicator specifically (see |replacer-progress|) stays optional
   on top of that — without lib.nvim, searches simply run without any

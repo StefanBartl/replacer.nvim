@@ -3,7 +3,7 @@
 --- Usage: :ReplaceDebug {on|off|status|test}
 
 local notify = require("replacer.util.notify")
-local usercmd = require("lib.nvim.usercmd")
+local usercmd = require("lib.nvim.bindings.usercmd")
 
 local M = {}
 

@@ -135,7 +135,7 @@ local USAGE = "Usage: :ReplaceRoot[!] {old} {new} [--flags]   (scope is auto-det
 ---@param run_fun fun(request: RP_Request): nil
 ---@return nil
 function M.register(run_fun)
-  local usercmd = require("lib.nvim.usercmd")
+  local usercmd = require("lib.nvim.bindings.usercmd")
   local command = require("replacer.command")
   local notify = require("replacer.util.notify")
 

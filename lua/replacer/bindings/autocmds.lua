@@ -10,7 +10,7 @@
 --- lookup, not a grep. `regex.lua` still owns the *highlighting*; this module
 --- owns the wiring.
 
-local autocmd = require("lib.nvim.autocmd")
+local autocmd = require("lib.nvim.bindings.autocmd")
 
 local M = {}
 

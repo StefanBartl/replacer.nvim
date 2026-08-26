@@ -106,7 +106,7 @@ local SAVE_USAGE = "Usage: :ReplaceSavePreset {name} {old} {new} [scope] [--flag
 ---@param run_fun fun(request: RP_Request): nil
 ---@return nil
 function M.register(run_fun)
-  local usercmd = require("lib.nvim.usercmd")
+  local usercmd = require("lib.nvim.bindings.usercmd")
   local command = require("replacer.command")
 
   usercmd.create("ReplaceSavePreset", function(opts)

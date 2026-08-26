@@ -72,14 +72,14 @@ end
 
 ---@internal
 --- Check lib.nvim: required for the :Replace/:Replacer/:Surround/:Wrap
---- command layer (lib.nvim.usercmd.composer). Notify/confirm/export also
+--- command layer (lib.nvim.bindings.usercmd.composer). Notify/confirm/export also
 --- depend on it directly; only progress_style (see check_optional) stays
 --- genuinely soft.
 ---@param health table vim.health module
 local function check_lib_nvim(health)
   health.start("lib.nvim")
 
-  if pcall(require, "lib.nvim.usercmd.composer") then
+  if pcall(require, "lib.nvim.bindings.usercmd.composer") then
     health.ok("lib.nvim detected (:Replace/:Surround command layer available)")
   else
     health.error(
@@ -325,8 +325,8 @@ function M.check()
   health.info("See :help replacer for documentation")
 
   -- Composer route pre-flight (:Replace, :Surround)
-  require("lib.nvim.usercmd.composer").checkhealth("Replace")
-  require("lib.nvim.usercmd.composer").checkhealth("Surround")
+  require("lib.nvim.bindings.usercmd.composer").checkhealth("Replace")
+  require("lib.nvim.bindings.usercmd.composer").checkhealth("Surround")
 end
 
 return M
