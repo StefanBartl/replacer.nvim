@@ -213,6 +213,30 @@ every `require("old_module")` reference): content replace with
 scope-wide `:Replace` (no `--also-rename-file`, since the other files aren't
 being renamed) for the `require(...)` references elsewhere.
 
+## Tab at a bare `--` is the fastest way through forty-one flags
+
+Flag names complete, including at a bare `--`, which is the one keystroke where
+*what does this take?* is the actual question. Three values complete too:
+
+- **`--type=`** offers ripgrep's own type names, probed once per session from
+  `rg --type-list`. Validation accepts anything you type, deliberately —
+  checking against the probed list would reject a type from your own
+  `--type-add`.
+- **`--changed=`** offers comma-joinable kinds and drops the ones already
+  named, so a second `<Tab>` cannot produce `staged,staged`.
+- **`--export=`** completes as a path rather than as a file, because it names
+  an output file that normally does not exist yet.
+
+**`--glob=` and `--exclude=` stay uncompleted on purpose.** They take patterns,
+so offering an existing path would suggest `lua/replacer/command.lua` where the
+flag wants `**/*.lua` — a candidate that is accepted, matches one file, and
+silently narrows the replacement. That is worse than no completion.
+
+`:Replace a b --changed` in its bare form (documented as "all kinds") works
+again; it used to be rejected before it reached the apply path, and the bare
+form is guaranteed not to swallow a following scope positional. `:Surround` and
+`:Wrap` inherit all of this — they copy the same flag table.
+
 ## Composing scope, filters, and safety flags without fighting each other
 
 A few flags look like they'd conflict but are designed to stack:
