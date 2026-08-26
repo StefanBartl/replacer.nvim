@@ -59,6 +59,9 @@ single-file replaces only — a directory tree is `:ReplaceFNames`' job.
 The repository's description and topics on GitHub are filled in, so the
 repo is discoverable and self-describing outside the plugin's own docs.
 
+- **Module:** none — repository metadata, not plugin code
+- **Config:** none
+
 ## CI workflow
 
 `.github/workflows/ci.yml` runs luacheck, stylua, and the headless test
