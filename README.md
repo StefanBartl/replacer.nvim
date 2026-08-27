@@ -192,7 +192,9 @@ positional (scope is always the detected root):
 ```
 
 Both are stored as JSON under `stdpath("data")/replacer/` (`history.json`,
-`presets.json`).
+`presets.json`). The history keeps the last `history_max_entries` searches
+(default 50) — a preference, not a limit protecting anything, since each
+entry is small.
 
 ### Checkpoints & Undo
 
