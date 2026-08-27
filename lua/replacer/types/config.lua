@@ -64,6 +64,8 @@
 ---@field lsp?                  boolean     -- soft LSP rename for identifier-shaped matches, see replacer.lsp_rename
 ---@field stream?               boolean     -- incremental rg parsing for smoother progress, see rg.collect_streaming
 ---@field deps_popup?           boolean     -- lib.nvim.deps "declared tools" popup once, ever, on first setup() after install (default true; needs lib.nvim.deps — a no-op without it)
+---@field history_max_entries? integer     -- how many past searches the history keeps (default 50)
+---@field progress_throttle_ms? integer    -- minimum ms between progress redraws while streaming rg's stdout (default 100)
 
 ---@class ReplacerConfigModule
 ---@field setup fun(opts:RP_Config|table|nil): nil

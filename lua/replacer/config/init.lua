@@ -217,6 +217,12 @@ local function validate(cfg)
   out.lsp = pick_bool(cfg.lsp, out.lsp)
   out.stream = pick_bool(cfg.stream, out.stream)
   out.deps_popup = pick_bool(cfg.deps_popup, out.deps_popup)
+  out.history_max_entries = as_pos_int(cfg.history_max_entries) or out.history_max_entries
+  -- `as_pos_int` would reject 0, and 0 is meaningful here: redraw on every
+  -- chunk, no throttling at all.
+  if type(cfg.progress_throttle_ms) == "number" and cfg.progress_throttle_ms >= 0 then
+    out.progress_throttle_ms = math.floor(cfg.progress_throttle_ms)
+  end
 
   if type(cfg.default_scope) == "string" and cfg.default_scope ~= "" then
     out.default_scope = cfg.default_scope

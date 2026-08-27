@@ -72,6 +72,12 @@ return {
   -- yet, see docs/ROADMAP.md history / lua/replacer/rg.lua's
   -- collect_streaming docstring.
   stream = false,
+  -- How many past searches `:Replacer history` keeps.
+  history_max_entries = 50,
+  -- Minimum time between progress redraws while streaming ripgrep's stdout.
+  -- Raise it if a "notify" style that cannot replace in place floods you on
+  -- large searches; lower it for a smoother bar.
+  progress_throttle_ms = 100,
 
   -- One-time "which CLI tools does this plugin want, and why" popup on
   -- first setup() after install (via lib.nvim.deps). false disables it for

@@ -7,7 +7,20 @@ local notify = require("replacer.util.notify")
 
 local M = {}
 
-local MAX_ENTRIES = 50
+---How many past searches the history keeps.
+---
+---`history_max_entries`: a preference about how far back the picker should
+---reach, not a limit protecting anything -- the file holds one small entry
+---per search.
+---@return integer
+local function max_entries()
+  local ok, config = pcall(require, "replacer.config")
+  if not ok or type(config.get) ~= "function" then
+    return 50
+  end
+  local n = (config.get() or {}).history_max_entries
+  return (type(n) == "number" and n > 0) and n or 50
+end
 
 ---@internal
 ---@return string
@@ -57,7 +70,7 @@ function M.add(request, result)
     files = result and result.files or nil,
     spots = result and result.spots or nil,
   })
-  while #history > MAX_ENTRIES do
+  while #history > max_entries() do
     table.remove(history)
   end
   save(history)

@@ -345,7 +345,15 @@ end
 --- Minimum time between progress redraws while streaming stdout. Prevents
 --- flooding a "notify" style that cannot replace in place (no nvim-notify)
 --- with one notification per stdout chunk on large searches.
-local PROGRESS_THROTTLE_MS = 100
+---@return integer
+local function progress_throttle_ms()
+  local ok, config = pcall(require, "replacer.config")
+  if not ok or type(config.get) ~= "function" then
+    return 100
+  end
+  local n = (config.get() or {}).progress_throttle_ms
+  return (type(n) == "number" and n >= 0) and n or 100
+end
 
 ---@internal
 --- Run ripgrep asynchronously (non-blocking). Falls back to sync when
@@ -385,7 +393,7 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
         end
         local uv = vim.uv or vim.loop
         local now = uv.now()
-        if now - last_update_ms >= PROGRESS_THROTTLE_MS then
+        if now - last_update_ms >= progress_throttle_ms() then
           last_update_ms = now
           vim.schedule(function()
             h:update({ text = string.format("%d match(es) found…", match_count) })
