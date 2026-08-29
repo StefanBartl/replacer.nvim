@@ -1,8 +1,7 @@
 # Features
 
-A `docs/FEATURES_FORMAT.md`-shaped catalog of every item on
-[`docs/ROADMAP.md`](../ROADMAP.md)'s "Already shipped" list — one `##`
-section per roadmap point, cross-referenced against the module/command/
+A `docs/FEATURES_FORMAT.md`-shaped catalog of every shipped item — one `##`
+section per feature, cross-referenced against the module/command/
 config option that actually implements it. [`docs/FEATURES.md`](../FEATURES.md)
 stays the narrative, table-shaped write-up for humans reading top to bottom;
 this folder is the machine-readable catalog `documentation.nvim`'s Features

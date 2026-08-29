@@ -119,7 +119,7 @@ widening it.
 of parsing the full stdout blob at the end, giving smoother, filter-aware
 progress updates as matches are found. The picker itself still only opens
 once collection finishes — true live picker fill is a separate, undone
-follow-up (see `docs/ROADMAP.md`).
+follow-up.
 
 - **Module:** `rg.lua` (`M.collect_streaming`)
 - **Config:** `opts.stream` (default `false`)

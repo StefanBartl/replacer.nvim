@@ -1116,7 +1116,6 @@ require("replacer.config").get()
 Project: https://github.com/StefanBartl/replacer.nvim
 Issues:  https://github.com/StefanBartl/replacer.nvim/issues
 Features reference (what shipped, and where): docs/FEATURES.md
-Roadmap (what's still planned): docs/ROADMAP.md
 
 Maintainer: Stefan Bartl
 

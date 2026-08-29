@@ -393,9 +393,8 @@ ______________________________________________________________________
 
 ## Roadmap
 
-See [`docs/FEATURES.md`](docs/FEATURES.md) for what shipped and where it
-lives in the codebase, and [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's
-still planned.
+No open items. See [`docs/FEATURES.md`](docs/FEATURES.md) for what shipped and
+where it lives in the codebase.
 
 ______________________________________________________________________
 

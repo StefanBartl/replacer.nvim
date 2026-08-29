@@ -69,8 +69,7 @@ return {
   -- filter-aware progress updates as matches are found. NOTE: the picker
   -- itself still opens once collection finishes -- true live picker fill
   -- (select matches while the search is still running) is not implemented
-  -- yet, see docs/ROADMAP.md history / lua/replacer/rg.lua's
-  -- collect_streaming docstring.
+  -- yet, see lua/replacer/rg.lua collect_streaming docstring.
   stream = false,
   -- How many past searches `:Replacer history` keeps.
   history_max_entries = 50,

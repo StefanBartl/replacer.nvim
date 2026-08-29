@@ -78,5 +78,4 @@ switches collection to an incremental `rg --json` parser
 collector by test, giving smoother progress updates — but the picker itself
 still only opens once collection finishes. Wiring incremental results into
 fzf-lua and Telescope (structurally very different APIs for a growing source)
-is deliberately deferred; tracked in [`docs/ROADMAP.md`](ROADMAP.md), not
-duplicated here.
+is deliberately deferred.
