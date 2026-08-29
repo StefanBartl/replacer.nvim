@@ -8,6 +8,7 @@
 --- Reused by :Replace --dry and :Replace --export=<path>.
 
 local encoding = require("replacer.encoding")
+local list = require("lib.nvim.ui.list")
 
 local M = {}
 
@@ -211,14 +212,12 @@ end
 ---@param use_loclist boolean
 ---@return nil
 function M.send_to_quickfix(items, use_loclist)
-  local entries = M.to_qf_entries(items)
-  if use_loclist then
-    vim.fn.setloclist(0, {}, "r", { title = "[replacer]", items = entries })
-    vim.cmd("lopen")
-  else
-    vim.fn.setqflist({}, "r", { title = "[replacer]", items = entries })
-    vim.cmd("copen")
-  end
+  list.set({
+    items = M.to_qf_entries(items),
+    title = "[replacer]",
+    loclist = use_loclist,
+    action = "r",
+  })
 end
 
 --------------------------------------------------------------------------------
