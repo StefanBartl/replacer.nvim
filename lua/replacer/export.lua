@@ -99,10 +99,10 @@ function M.build_results(items, new_text, cfg, old_pattern)
   local results = {}
   local totals = { files = 0, spots = 0, skipped = 0 }
 
-  for path, list in pairs(by_path) do
+  for path, path_matches in pairs(by_path) do
     local old_lines = read_lines(path)
     local new_lines, spots, skipped =
-      apply.compute_file_edits(old_lines, list, new_text, cfg, old_pattern)
+      apply.compute_file_edits(old_lines, path_matches, new_text, cfg, old_pattern)
     totals.spots = totals.spots + spots
     totals.skipped = totals.skipped + skipped
     if spots > 0 then
@@ -113,7 +113,7 @@ function M.build_results(items, new_text, cfg, old_pattern)
         new_lines = new_lines,
         spots = spots,
         skipped = skipped,
-        matches = list,
+        matches = path_matches,
       }
     end
   end
