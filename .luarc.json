@@ -9,7 +9,6 @@
   },
   "workspace": {
     "checkThirdParty": false,
-    "library": ["${3rd}/luv/library"],
     "useGitIgnore": true
   }
 }
