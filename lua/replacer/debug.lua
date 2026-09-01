@@ -96,6 +96,29 @@ function M.inspect_buffer()
   print("")
 end
 
+---@internal
+--- Byte index -> character index, across the signature change in 0.11.
+---
+--- `vim.str_utfindex`'s second argument was the byte index up to 0.10 and is
+--- the encoding since 0.11. The README supports Neovim 0.9+, so this probes
+--- rather than picks -- and the old form is what `:ReplaceDebug`'s line
+--- analysis used, which means it raised on every current build.
+---@param str string
+---@param byte_index integer
+---@return integer # character index, or -1 when it cannot be determined
+local function char_index(str, byte_index)
+  local ok, idx = pcall(vim.str_utfindex, str, "utf-32", byte_index, false)
+  if ok and type(idx) == "number" then
+    return idx
+  end
+  ---@diagnostic disable-next-line: param-type-mismatch, missing-parameter
+  ok, idx = pcall(vim.str_utfindex, str, byte_index)
+  if ok and type(idx) == "number" then
+    return idx
+  end
+  return -1
+end
+
 --- Analyze specific line for match issues
 ---@param lnum integer 1-based line number
 ---@param pattern string Pattern to find
@@ -119,8 +142,10 @@ function M.analyze_line(lnum, pattern)
   local count = 0
   print("\nOccurrences:")
   while true do
+    -- find() returns both bounds or neither; guarding only `s` leaves `e`
+    -- optional for every read below it.
     local s, e = line:find(pattern, pos, true)
-    if not s then
+    if not s or not e then
       break
     end
     count = count + 1
@@ -131,8 +156,8 @@ function M.analyze_line(lnum, pattern)
       count,
       s - 1,
       e - 1, -- 0-based byte offsets
-      vim.str_utfindex(line, s - 1) or -1,
-      vim.str_utfindex(line, e) or -1,
+      char_index(line, s - 1),
+      char_index(line, e),
       matched
     ))
 

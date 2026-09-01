@@ -216,7 +216,9 @@ local function run(old, items, new_text, cfg, apply_func)
       end
       local buf = vim.api.nvim_get_current_buf()
       local win = vim.api.nvim_get_current_win()
-      pcall(map, "t", "<Esc>", [[<C-\><C-n>]], { buffer = buf, nowait = true, silent = true })
+      pcall(function()
+        map("t", "<Esc>", [[<C-\><C-n>]], { buffer = buf, nowait = true, silent = true })
+      end)
       window.nice_quit(win, { keys = { key_quit }, force = true })
 
       -- Only "quit" is a real Neovim keymap which-key can see: toggle_select

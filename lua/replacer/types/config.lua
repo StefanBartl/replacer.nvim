@@ -38,6 +38,7 @@
 ---@field exclude_git_dir?      boolean
 ---@field literal?              boolean     -- default search mode (flags may override per-run)
 ---@field _old_len? 	           number
+---@field _line_range?       integer[]   -- internal: {line1, line2} from a [range], see replacer.rg
 ---@field _changed_only?       string[]    -- internal: set by --changed, see replacer.gitfiles
 ---@field _also_rename_file?   boolean     -- internal: set by --also-rename-file
 ---@field smart_case?           boolean

@@ -27,7 +27,13 @@ function U.get_ns()
 end
 
 --- Safely set highlight groups according to highlight config.
---- This acts as small API that telescope's ensure_highlight_groups will call.
+---
+--- NOTE: nothing calls this today. It was written as the API telescope's
+--- `ensure_highlight_groups` would use, and that hook was never added --
+--- neither this function nor `ansi_snippets` below has a caller, and the
+--- `ReplacerOld`/`ReplacerNew` groups it defines are referenced nowhere
+--- else. Kept rather than deleted because whether the preview should be
+--- highlighted is a product decision, not a diagnostics one.
 ---@param cfg RP_HighlightConfig
 function U.setup_highlight_groups(cfg)
   if not cfg or not cfg.enabled then

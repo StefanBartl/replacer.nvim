@@ -1171,8 +1171,10 @@ if vim.fn.executable("rg") == 1 then
   check(
     "streaming: same match count as the non-streaming collector",
     streamed_items and async_items and #streamed_items == #async_items,
-    streamed_items and #streamed_items,
-    async_items and #async_items
+    ("streamed=%s async=%s"):format(
+      tostring(streamed_items and #streamed_items),
+      tostring(async_items and #async_items)
+    )
   )
 
   local function fingerprint(items)
@@ -1192,6 +1194,7 @@ if vim.fn.executable("rg") == 1 then
   -- apply correctly, exercising init.lua's cfg.stream branch.
   replacer.setup({ search_engine = "ripgrep", confirm_all = false, write_changes = true })
   local ok9, sreq = command.parse_request("needle NEEDLE --stream")
+  sreq = assert(sreq, "parse_request must return a request for a valid line")
   check("streaming: --stream flag parses", ok9 and sreq.overrides.stream == true)
   sreq.scope, sreq.all = stream_dir, true
   replacer.run(sreq)

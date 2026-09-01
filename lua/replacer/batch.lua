@@ -139,13 +139,13 @@ end
 function M.run(source, scope, req_template, run_fun)
   local content, err = read_source(source)
   if not content then
-    notify.error(err)
+    notify.error(err or ("batch: could not read " .. source))
     return
   end
 
   local pairs_list, perr = M.parse(content)
   if not pairs_list then
-    notify.error(perr)
+    notify.error(perr or "batch: could not parse the source")
     return
   end
   if #pairs_list == 0 then

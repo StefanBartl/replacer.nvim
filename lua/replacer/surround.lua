@@ -271,7 +271,7 @@ local function handle(run_fun, opts, range)
   local positionals, err = command.apply_tokens(tokens, req)
   if not positionals then
     vim.schedule(function()
-      notify.error(err)
+      notify.error(err or "replacer: could not parse the command arguments")
     end)
     return
   end

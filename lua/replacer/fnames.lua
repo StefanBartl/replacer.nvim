@@ -257,7 +257,9 @@ function M.register()
     req.old, req.new = positionals[1], positionals[2]
 
     local cfg = require("replacer.config").resolve(req.overrides)
-    req.scope = (positionals[3] and positionals[3] ~= "") and positionals[3] or cfg.default_scope
+    req.scope = (positionals[3] and positionals[3] ~= "") and positionals[3]
+      or cfg.default_scope
+      or "%"
 
     local roots = command.resolve_scope(req.scope)
     local scope_path = roots and roots[1]

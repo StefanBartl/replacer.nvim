@@ -749,6 +749,7 @@ local function apply_word_boundary(items, cfg)
     local line = it.line or ""
     local mlen = #(it.old or "")
     local before = it.col0 > 0 and line:sub(it.col0, it.col0) or nil
+    ---@type string|nil
     local after = line:sub(it.col0 + mlen + 1, it.col0 + mlen + 1)
     if after == "" then
       after = nil
@@ -872,7 +873,7 @@ function M.collect_async(old, roots, cfg, on_done)
       if err then
         on_done(nil, err)
       else
-        on_done(post_filter(items, cfg), nil)
+        on_done(post_filter(items or {}, cfg), nil)
       end
     end)
   else
@@ -880,7 +881,7 @@ function M.collect_async(old, roots, cfg, on_done)
       if err then
         on_done(nil, err)
       else
-        on_done(post_filter(items, cfg), nil)
+        on_done(post_filter(items or {}, cfg), nil)
       end
     end)
   end

@@ -59,6 +59,7 @@ end
 local function pick_picker(cfg)
   local e = cfg.engine or "auto"
   if e == "fzf" or e == "telescope" then
+    ---@cast e "fzf"|"telescope"
     return e
   end
   if pcall(require, "fzf-lua") then
@@ -75,8 +76,9 @@ end
 ---@param dst string[]
 ---@param src string[]|nil
 local function extend(dst, src)
-  for i = 1, #(src or {}) do
-    dst[#dst + 1] = src[i]
+  local list = src or {}
+  for i = 1, #list do
+    dst[#dst + 1] = list[i]
   end
 end
 
@@ -322,7 +324,7 @@ function M.run(request, new_text, scope, all)
   local cfg = effective_cfg(request)
 
   -- 1) Resolve scope (fall back to configured default when none was given).
-  local scope_tok = (request.scope ~= "" and request.scope) or cfg.default_scope
+  local scope_tok = (request.scope ~= "" and request.scope) or cfg.default_scope or "%"
   local roots, single_file = cmd_mod.resolve_scope(scope_tok)
   if not roots or #roots == 0 then
     return -- resolve_scope already notified on edge cases

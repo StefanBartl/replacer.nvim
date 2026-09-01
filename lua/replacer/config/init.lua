@@ -165,7 +165,7 @@ end
 ---@return table<string, string>
 local function as_keymaps(v)
   local user = tbl(v)
-  local out = vim.deepcopy(Defaults.keymaps)
+  local out = vim.deepcopy(assert(Defaults.keymaps, "DEFAULTS always carries keymaps"))
   for key, default_val in pairs(out) do
     local uv = user[key]
     if type(uv) == "string" and uv ~= "" then
