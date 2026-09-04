@@ -1,9 +1,10 @@
 # Workflow — getting real use out of replacer.nvim day to day
 
-Every feature here is documented on its own elsewhere (`docs/FEATURES.md` and
-`docs/FEATURES/*.md`). This is the different question: once several features
-exist, *how do they actually combine* into something worth reaching for
-regularly, rather than once after install and never again.
+Every feature here is documented on its own in
+[`docs/FEATURES/`](FEATURES/README.md), and the exact grammar in
+[`docs/commands.md`](commands.md). This is the different question: once
+several features exist, *how do they actually combine* into something worth
+reaching for regularly, rather than once after install and never again.
 
 ## Pick a backend once, then stop thinking about it
 
@@ -116,7 +117,7 @@ Two ways to turn a reviewed quickfix list back into an apply:
   everything else) once you've confirmed the list by eye.
 - Feed the quickfix list itself as a `:ReplaceBatch` source when you were
   reviewing multiple distinct pairs collected via `--to-quickfix` runs, per
-  [`BATCH_AND_PROJECT.md`](FEATURES/BATCH_AND_PROJECT.md#batch-replace).
+  [`BATCH_AND_PRESETS.md`](FEATURES/BATCH_AND_PRESETS.md#batch-replace).
 
 `--to-quickfix` and `--dry` overlap in intent (both are "don't write yet")
 but differ in surface: `--dry` gives you a diff/stats summary, `--to-quickfix`
@@ -264,7 +265,7 @@ try the combination and read the stats before deciding whether to add
 
 Cross-references: [`FEATURES/SEARCH.md`](FEATURES/SEARCH.md) for backend and
 matching details, [`FEATURES/APPLY.md`](FEATURES/APPLY.md) for the full apply
-pipeline, [`FEATURES/BATCH_AND_PROJECT.md`](FEATURES/BATCH_AND_PROJECT.md) for
+pipeline, [`FEATURES/BATCH_AND_PRESETS.md`](FEATURES/BATCH_AND_PRESETS.md) for
 batch/history/preset/rename mechanics, [`FEATURES/COMMANDS_UI.md`](FEATURES/COMMANDS_UI.md)
 for the picker and command surface itself, and [`BINDINGS.md`](BINDINGS.md)
 for the full command/keymap reference.

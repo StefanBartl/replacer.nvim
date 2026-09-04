@@ -1,8 +1,8 @@
-# Batch, history, presets & project
+# Batch, history & presets
 
-Running more than one replace in a single command, extending replace to
-file/directory names instead of content, and the tooling around the repo
-itself.
+Running more than one replace in a single command, reusing an invocation you
+already got right, and extending replace to file and directory names instead
+of file contents.
 
 ## Batch replace
 
@@ -53,18 +53,3 @@ single-file replaces only — a directory tree is `:ReplaceFNames`' job.
 
 - **Module:** `rename_assist.lua` (`M.maybe_rename`)
 - **Usercmds:** `--also-rename-file` flag on `:Replace`
-
-## GitHub repo metadata
-
-The repository's description and topics on GitHub are filled in, so the
-repo is discoverable and self-describing outside the plugin's own docs.
-
-- **Module:** none — repository metadata, not plugin code
-- **Config:** none
-
-## CI workflow
-
-`.github/workflows/ci.yml` runs luacheck, stylua, and the headless test
-suite on every push/PR.
-
-- **Module:** `.github/workflows/ci.yml`

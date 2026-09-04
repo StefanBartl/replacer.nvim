@@ -23,6 +23,26 @@ of a single global override.
 - **Usercmds:** `:[range]Replace[!] {old} {new} [scope] [--flags]` (see
   [BINDINGS.md](../BINDINGS.md#user-commands))
 
+## `:Surround` / `:Wrap`
+
+`:[range]Surround[!] {pattern} [delim] [scope] [--flags]` wraps every
+occurrence of `{pattern}` with a delimiter — the replacement is
+`<left>{pattern}<right>`. A convenience layer over `:Replace`, not a second
+engine: it builds a normal request and hands it to the same executor, so
+scope, `[range]`, `--dry`, `--all` and every `:Replace` flag work unchanged.
+Search is always literal, because a regex pattern has no fixed text to wrap.
+
+`{delim}` takes a literal string, a named alias, or a bracket opener that
+pairs with its own closer; omit it to be prompted. **Idempotent by default** —
+a match already wrapped by the chosen delimiter is skipped, so re-running
+never produces `****test****`. `--nested` (alias `--allow-nested`) forces
+another layer. A charwise `[range]` on a single line narrows to the columns
+of the selection rather than the whole line.
+
+- **Module:** `surround.lua` (`ALIASES`, `build_request`, `M.register`)
+- **Usercmds:** `:[range]Surround[!] {pattern} [delim] [scope] [--flags]`,
+  `:Wrap` as an alias (see [BINDINGS.md](../BINDINGS.md#user-commands))
+
 ## `<Tab>` completion on `:Replace`
 
 Every slot of `:Replace`/`:Replacer`/`:Surround`/`:Wrap` completes: the scope

@@ -1,6 +1,23 @@
-# Replacer Debug Guide
+# Troubleshooting
 
-## Quick Diagnosis
+Symptom-first. For "is my install even wired up" — a missing picker, an old
+ripgrep, an option that did not take — run `:checkhealth replacer` first and
+see [health.md](health.md).
+
+`:ReplaceDebug` is the instrument for everything below. It registers itself on
+first use rather than at load, because it exists to inspect a session that is
+already misbehaving.
+
+| | |
+| --- | --- |
+| `:ReplaceDebug on` / `off` | Verbose diagnostics, including hex dumps on a mismatch |
+| `:ReplaceDebug status` | Whether debug mode is currently on |
+| `:ReplaceDebug inspect` | Buffer state: path, line count, filetype, encoding, per-line byte lengths |
+| `:ReplaceDebug analyze <line> <pattern>` | Every occurrence on that line, with byte *and* character offsets |
+
+Leave it off outside a debugging session — the output is verbose.
+
+## Quick diagnosis
 
 ### Scenario 1: "all matches are skipped"
 
@@ -21,13 +38,8 @@
 " 3. Ripgrep finds the pattern, but the offsets are wrong
 ```
 
-**Solution:**
-```lua
--- In setup(), enable temporarily:
-ext_highlight_opts = {
-  debug = true,  -- shows hex dumps
-}
-```
+`:ReplaceDebug on` is the whole switch — there is no config key for it, and it
+resets itself when you turn it off or restart.
 
 ---
 
@@ -195,34 +207,6 @@ require("replacer").setup({
 
 ---
 
-## Interpreting the test suite
-
-```vim
-:ReplaceDebug test
-```
-
-**All tests pass:**
-```
-✓ ASCII baseline
-✓ UTF-8 offsets
-✓ Match validation
-✓ Emoji offsets
-✓ Ripgrep submatch simulation
-✓ Line normalization
-
-=== Results: 6 passed, 0 failed ===
-```
-→ **the plugin works correctly**
-
-**A test failure:**
-```
-✗ UTF-8 offsets FAILED: assertion failed
-```
-→ **a Neovim/Lua UTF-8 support problem**
-→ check the Neovim version (0.9 minimum)
-
----
-
 ## Understanding the mismatch hex dump
 
 ```vim
@@ -307,8 +291,8 @@ require("replacer").setup({
 " A specific path:
 :Replace "old" "new" /path/to/project
 
-" Do NOT confuse it with:
-:Replace "old" "new"  " → the default is cwd!
+" Scope omitted entirely:
+:Replace "old" "new"  " → falls back to `default_scope`, which defaults to "%"
 ```
 
 ---
@@ -334,10 +318,10 @@ require("replacer").setup({
    :ReplaceDebug analyze <line> "<pattern>"
    ```
 
-4. **Test before large replacements**
+4. **Dry-run before large replacements**
    ```vim
-   :ReplaceDebug test  " verify the plugin works
-   :Replace "pattern" "new" .  " then the actual replace
+   :Replace "pattern" "new" . --dry  " stats + diff, no writes
+   :Replace "pattern" "new" .        " then the actual replace
    ```
 
 ---
@@ -362,7 +346,7 @@ If the problems persist, collect the following info:
 :set fileencoding?
 
 " 4. Config
-:lua print(vim.inspect(require("replacer").options))
+:lua print(vim.inspect(require("replacer.config").get()))
 
 " 5. Debug output (see the buffer)
 ```
@@ -423,3 +407,10 @@ graph TD
     L -->|Yes| M[ReplaceDebug off]
     L -->|No| N[GitHub issue with the debug output]
 ```
+
+---
+
+Still stuck? [`docs/commands.md`](commands.md) has the exact grammar and flag
+semantics, [`docs/FEATURES/`](FEATURES/README.md) says which module implements
+what, and [`docs/WORKFLOW.md`](WORKFLOW.md) covers how the flags are meant to
+combine.

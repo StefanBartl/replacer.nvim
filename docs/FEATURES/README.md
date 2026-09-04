@@ -1,11 +1,13 @@
 # Features
 
-A `docs/FEATURES_FORMAT.md`-shaped catalog of every shipped item — one `##`
-section per feature, cross-referenced against the module/command/
-config option that actually implements it. [`docs/FEATURES.md`](../FEATURES.md)
-stays the narrative, table-shaped write-up for humans reading top to bottom;
-this folder is the machine-readable catalog `documentation.nvim`'s Features
-tab reads.
+The catalog of everything replacer.nvim actually ships, cross-referenced
+against the module, command, and config option that implements it. One `##`
+section per feature, so "did we ever build X, and where does it live" has one
+address instead of a walk through the module tree.
+
+For day-to-day usage, [`:help replacer`](../../doc/replacer.txt) is the
+reference and [`../commands.md`](../commands.md) is the command grammar. This
+folder answers the different question: what exists, and in which file.
 
 ## Files
 
@@ -16,10 +18,18 @@ tab reads.
   dry-run/export, quickfix/loclist, safe-mode, per-file confirmation,
   checkpoints, hooks, LSP-driven rename.
 - **[COMMANDS_UI.md](COMMANDS_UI.md)** — the picker UI itself and the
-  commands/keymaps wrapped around it: scope shorthand, auto-detected
-  engine/picker, preview highlighting, progress indicator, keymaps,
-  messages/quiet mode, parse errors.
-- **[BATCH_AND_PROJECT.md](BATCH_AND_PROJECT.md)** — running more than one
-  replace at once (history, presets, batch pairs), extending replace to
-  file/directory names, and the surrounding project tooling (repo metadata,
-  CI).
+  commands wrapped around it: `:Surround`/`:Wrap`, scope shorthand,
+  `[range]`, completion, auto-detected engine/picker, preview highlighting,
+  progress indicator, keymaps, messages/quiet mode, parse errors.
+- **[BATCH_AND_PRESETS.md](BATCH_AND_PRESETS.md)** — running more than one
+  replace at once (history, presets, batch pairs) and extending replace to
+  file and directory names.
+
+## Not (fully) done
+
+**True live picker fill.** `--stream` already switches collection to an
+incremental `rg --json` parser, proven equivalent to the non-streaming
+collector by test, which is what makes progress updates smooth. The picker
+itself still only opens once collection finishes; wiring a growing source
+into fzf-lua and Telescope (structurally very different APIs for that) is
+deliberately deferred. See [SEARCH.md](SEARCH.md#incremental-ripgrep-parsing).

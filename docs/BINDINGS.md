@@ -17,12 +17,12 @@ place.
 | `:ReplaceTest [pattern] [sample]` | [regex.lua](../lua/replacer/regex.lua) | Small floating live pattern-test panel: line 1 is the pattern, line 2 the sample text, matches highlight as you type; `<Esc>`/`q` closes |
 | `:ReplaceRoot[!] {old} {new} [--flags]` | [root.lua](../lua/replacer/root.lua) | Like `:Replace`, but the scope is an auto-detected project root; prompts when detection finds more than one candidate |
 | `:ReplaceUndo [id]` | [checkpoint.lua](../lua/replacer/checkpoint.lua) | Restore files from a `--checkpoint` snapshot (most recent when `[id]` omitted) |
-| `:ReplaceHistory` | [history.lua](../lua/replacer/history.lua) | `vim.ui.select` over the last 50 applies; re-runs the chosen one |
+| `:ReplaceHistory` | [history.lua](../lua/replacer/history.lua) | `vim.ui.select` over the last `history_max_entries` applies (default 50); re-runs the chosen one |
 | `:ReplaceSavePreset {name} {old} {new} [scope] [--flags]` | [presets.lua](../lua/replacer/presets.lua) | Save a named, reusable replace request |
 | `:ReplacePreset {name}` | [presets.lua](../lua/replacer/presets.lua) | Run a saved preset exactly as saved; `<Tab>` completes names |
 | `:ReplaceBatch[!] {source} [scope] [--flags]` | [batch.lua](../lua/replacer/batch.lua) | Run multiple `{old → new}` pairs from a file/clipboard/quickfix, one full `:Replace` dispatch per pair |
 | `:ReplaceFNames[!] {old} {new} [scope] [--dry]` | [fnames.lua](../lua/replacer/fnames.lua) | Rename every file/directory under scope whose basename contains `{old}`; a nested match is skipped in favor of its renamed ancestor |
-| `:ReplaceDebug` | [debug.lua](../lua/replacer/debug.lua) | Developer utility: `on`/`off`/`status`/`test`/`inspect`/`analyze <line> <pattern>` |
+| `:ReplaceDebug` | [debug.lua](../lua/replacer/debug.lua) | Developer utility: `on`/`off`/`status`/`inspect`/`analyze <line> <pattern>`; registered on first use, not at load. See [troubleshooting.md](troubleshooting.md) |
 
 All support `[range]` and the bang form (`!`) where documented in `:help replacer-commands`.
 
@@ -76,6 +76,32 @@ Telescope's keys are real `vim.keymap.set` calls and are fully labeled.
 
 ---
 
+## `:ReplaceTest` panel keymaps
+
+The floating pattern-test panel binds two close keys, buffer-locally on its
+own scratch buffer. Not configurable: a scratch panel with no other bindings
+has no key worth arguing about.
+
+| Key | Mode | Effect |
+| --- | --- | --- |
+| `<Esc>` | n | Close the panel |
+| `q` | n | Close the panel |
+
+See [`bindings/keymaps.lua`](../lua/replacer/bindings/keymaps.lua).
+
+---
+
 ## Autocommands
 
-None. replacer.nvim registers no `autocmd`/`augroup` of any kind.
+Exactly one, and it is buffer-local.
+
+| Event | Group | Buffer | Effect |
+| --- | --- | --- | --- |
+| `TextChanged`, `TextChangedI` | `ReplacerTestPanel` | the `:ReplaceTest` panel only | Re-highlight the sample line as the pattern is typed |
+
+It dies with the panel buffer (`bufhidden = "wipe"`), so it can neither stack
+across reloads nor fire anywhere else. replacer.nvim registers **no global
+autocommand and no global keymap** — everything it binds is buffer-local to a
+window it opened itself.
+
+See [`bindings/autocmds.lua`](../lua/replacer/bindings/autocmds.lua).

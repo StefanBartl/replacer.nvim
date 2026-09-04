@@ -39,6 +39,8 @@ Replacer provides project-wide search-and-replace with:
 
 • Neovim 0.9 or newer
 • ripgrep (rg) in PATH: https://github.com/BurntSushi/ripgrep
+  Recommended, not required — without it the native vimgrep backend is
+  used automatically (no .gitignore awareness, no rich --type filtering).
 • ONE of the following pickers:
   - telescope.nvim (+ plenary.nvim): https://github.com/nvim-telescope/telescope.nvim
   - fzf-lua: https://github.com/ibhagwan/fzf-lua
@@ -410,14 +412,14 @@ Default configuration: >lua
       telescope = {},                    -- extra telescope options
     })
 <
-This example is not exhaustive of every default value (e.g. |messages| and
-|quiet| are omitted above since their defaults are `{}`/`false` respectively
+This example is not exhaustive of every default value (e.g. `messages` and
+`quiet` are omitted above since their defaults are `{}`/`false` respectively
 with nothing interesting to show inline) — see the per-option entries below
 and the relevant |replacer-advanced| subsection for anything not spelled out
 here.
 
 The native "vimgrep" backend has no external dependency and is used as an
-automatic fallback when ripgrep is not installed. In that mode |file_types|
+automatic fallback when ripgrep is not installed. In that mode `file_types`
 are matched as plain extensions and .gitignore is not consulted.
 
                                                    *replacer-config-engine*
@@ -629,7 +631,7 @@ deps_popup~
     module (declared in docs/install.json); also repeatable via `:Lib deps
     show replacer.nvim` and folded into |:checkhealth| replacer. Disabling
     it here only affects this plugin — `vim.g.lib_nvim_deps_disable_first_run`
-    / `vim.g.lib_nvim_deps_disabled_plugins` (see README) disable it more
+    / `vim.g.lib_nvim_deps_disabled_plugins` (docs/installation.md) disable it more
     broadly without touching any plugin's own config.
 
 ==============================================================================
@@ -1115,7 +1117,8 @@ require("replacer.config").get()
 
 Project: https://github.com/StefanBartl/replacer.nvim
 Issues:  https://github.com/StefanBartl/replacer.nvim/issues
-Features reference (what shipped, and where): docs/FEATURES.md
+Documentation index (installation, configuration, commands, features,
+workflow, troubleshooting): docs/README.md
 
 Maintainer: Stefan Bartl
 

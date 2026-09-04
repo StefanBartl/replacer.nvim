@@ -3,13 +3,15 @@
 A `:Replace`/`:Replacer` search on a large scope (`cwd`, a big directory) can
 take anywhere from instant to several seconds, depending on repo size and
 whether ripgrep is available. Without any feedback that looks like a hang.
-Replacer solves this via [`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md),
-an optional dependency: a small, reusable progress-indicator abstraction that
-decouples "an operation is running" from "how that gets shown".
+Replacer solves this via [`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md):
+a small, reusable progress-indicator abstraction that decouples "an operation
+is running" from "how that gets shown".
 
-- **Optional.** Without `lib.nvim` installed, replacer behaves exactly as
-  before — searches just run silently, no error, no missing feature besides
-  the indicator itself.
+- **The one soft edge of a hard dependency.** `lib.nvim` itself is
+  [required](installation.md#requirements) — replacer does not load without
+  it. This *module* of it is the exception: `rg.lua` resolves
+  `lib.nvim.progress` through a `pcall`, so an older lib.nvim without it means
+  searches run silently, no error, nothing else missing.
 - **Debounced.** A handle only becomes visible after ~150ms. A fast search on
   a small scope never flashes any UI, no matter which style you pick.
 - **Configured via one option:** `progress_style` in `require("replacer").setup({...})`.
@@ -24,18 +26,18 @@ require("replacer").setup({
 
 ## Installation
 
-Add `lib.nvim` as a dependency; lazy.nvim loads it on demand:
+`lib.nvim` is already in replacer's dependency list — see
+[installation.md](installation.md). Nothing extra is needed for `"auto"`,
+`"notify"`, `"statusline"`, `"float"` or `"kit"`; only `"fidget"` wants a
+second plugin.
 
 ```lua
 {
   "StefanBartl/replacer.nvim",
-  dependencies = { "StefanBartl/lib.nvim" }, -- optional: enables the progress indicator
+  dependencies = { "StefanBartl/lib.nvim", "ibhagwan/fzf-lua" },
   opts = { progress_style = "auto" },
 }
 ```
-
-If you skip this dependency, `progress_style` is simply a no-op — replacer
-detects the missing module via `pcall` and continues without any indicator.
 
 ---
 
@@ -63,14 +65,16 @@ still correct, just not visually merged.
 require("replacer").setup({ progress_style = "notify" })
 ```
 
-No extra dependency beyond `lib.nvim` itself.
+Recorded: [`Materials/progress/notify.mp4`](Materials/progress/notify.mp4).
 
 ### `"statusline"`
 
 This style **draws nothing**. It exists specifically so you can surface the
 live search status inside your *own* statusline instead of a separate
 notification or floating window. See the [dedicated section](#using-the-statusline-style)
-below — this is the style most worth reading the details on.
+below — this is the style most worth reading the details on. Recorded (as
+driven from a real statusline component):
+[`Materials/progress/statusline.mp4`](Materials/progress/statusline.mp4).
 
 ### `"fidget"`
 
@@ -83,6 +87,8 @@ already handles the detection).
 ```lua
 require("replacer").setup({ progress_style = "fidget" })
 ```
+
+Recorded: [`Materials/progress/fidget.mp4`](Materials/progress/fidget.mp4).
 
 ### `"float"`
 
@@ -106,8 +112,11 @@ affected.
 require("replacer").setup({ progress_style = "float" })
 ```
 
+![The float progress window in the bottom-right corner](Materials/progress_float.png)
+
 The window auto-closes a moment after the search finishes (or is cancelled),
-showing the final result text first.
+showing the final result text first. Recorded:
+[`Materials/progress/float.mp4`](Materials/progress/float.mp4).
 
 ### `"kit"`
 
@@ -206,6 +215,10 @@ Both snippets guard with `pcall` so your statusline never errors if `lib.nvim`
 
 ## Notes
 
+- `progress_throttle_ms` (default `100`) sets the minimum time between
+  redraws while streaming ripgrep's stdout. Raise it if a `"notify"` backend
+  that cannot replace in place floods you on a large search; lower it for a
+  smoother bar.
 - Cross-platform by construction — the underlying module only uses
   `vim.uv`/`vim.api`/`vim.notify`, no OS-specific calls, no shelling out. All
   styles behave identically on Linux, macOS and Windows.
