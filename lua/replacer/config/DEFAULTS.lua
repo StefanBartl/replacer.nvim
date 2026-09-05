@@ -105,5 +105,9 @@ return {
     -- input, so a bare letter would swallow that character instead of
     -- reaching the search box.
     replace_and_reopen = "<C-r>",
+    -- Open the filter prompt: stacked path/content clauses via pickers.nvim's
+    -- `pickers.refine`. A modifier key (same reasoning as replace_and_reopen).
+    -- No-op with a hint when pickers.nvim is not installed.
+    filter = "<C-f>",
   },
 }

@@ -84,6 +84,7 @@ keymaps = {
   toggle_select_prev = "<S-Tab>", -- multi-select + move to previous
   apply_all          = "<C-a>",   -- replace ALL matches, respects confirm_all
   replace_and_reopen = "<C-r>",   -- apply entry under cursor, reopen with the rest
+  filter             = "<C-f>",   -- filter results (needs pickers.nvim; no-op with a hint otherwise)
   quit               = "<Esc>",   -- close the picker
 }
 ```

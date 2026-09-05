@@ -93,7 +93,7 @@ lib.nvim isn't installed.
 ## Configurable picker keymaps + which-key labels
 
 Every picker keymap (`toggle_select`, `toggle_select_prev`, `apply_all`,
-`quit`, `replace_and_reopen`) is overridable via `setup({ keymaps = {...} })`
+`quit`, `replace_and_reopen`, `filter`) is overridable via `setup({ keymaps = {...} })`
 buffer-locally inside the picker window; which-key shows labels for these
 where the backend allows it (Telescope's real `vim.keymap.set` calls are
 fully labeled, fzf-lua's terminal-native bindings cannot be seen by
@@ -113,6 +113,27 @@ letter would be swallowed by it instead of reaching the search box.
 
 - **Module:** `pickers/telescope.lua`, `pickers/fzf.lua`
 - **Config:** `opts.keymaps.replace_and_reopen` (default `<C-r>`)
+- **Keymaps:** see [BINDINGS.md](../BINDINGS.md#picker-keymaps)
+
+## Filter results (`keymaps.filter`)
+
+A `cwd`-scoped replace can surface hundreds of matches. `keymaps.filter`
+(`<C-f>` by default) opens a `vim.ui.select` → `vim.ui.input` flow that adds
+a **filter clause** — *path contains X*, *content does not contain Y*, … —
+narrowing the list. Clauses **stack** (AND) and are individually removable;
+a term entered as `/…/` is a Lua pattern, anything else a case-insensitive
+substring. The active filter shows in the prompt title
+(`Select matches — path~src · ¬content~test (42/380)`). On Telescope the list
+refreshes in place; on fzf-lua the picker reopens with the filtered set.
+
+Backed by [pickers.nvim](https://github.com/StefanBartl/pickers.nvim)'s
+`pickers.refine` (the shared filter-stack model). **It is a soft dependency:**
+without pickers.nvim the key reports that filtering needs it and does nothing
+else — every other picker key is unaffected.
+
+- **Module:** `pickers/common.lua` (`new_refine`), `pickers/telescope.lua`,
+  `pickers/fzf.lua`
+- **Config:** `opts.keymaps.filter` (default `<C-f>`)
 - **Keymaps:** see [BINDINGS.md](../BINDINGS.md#picker-keymaps)
 
 ## Specific parse errors

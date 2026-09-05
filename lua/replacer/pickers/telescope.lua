@@ -30,8 +30,9 @@ local NS = vim.api.nvim_create_namespace("replacer_preview")
 ---@param new_text string
 ---@param cfg RP_Config            -- receives _old_len optionally (we cast below)
 ---@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean): (integer, integer)
+---@param rstate? { original: RP_Match[], handle: table|false }  refine state, threaded across reopens
 ---@return nil
-local function run(items, new_text, cfg, apply_func)
+local function run(items, new_text, cfg, apply_func, rstate)
   local ok, _ = pcall(require, "telescope")
   if not ok then
     notify.error("telescope.nvim not found")
@@ -53,6 +54,24 @@ local function run(items, new_text, cfg, apply_func)
 
   -- Let LuaLS know that cfg may carry `_old_len`
   ---@cast cfg RP_ConfigPicker
+
+  -- Refine state, created once and threaded across reopens. `handle` is a
+  -- `pickers.refine` handle, or `false` once we have checked and pickers.nvim
+  -- is absent. `original` is the full match set the filters run against.
+  rstate = rstate or {}
+  rstate.original = rstate.original or items
+  if rstate.handle == nil then
+    rstate.handle = common.new_refine() or false
+  end
+  local refine_h = rstate.handle or nil
+
+  local base_title = "Select matches"
+  local function current_title()
+    if refine_h and refine_h:is_active() then
+      return refine_h:title(base_title, #items, #rstate.original)
+    end
+    return base_title
+  end
 
   -- Ensure a visible highlight group; harmless if repeatedly called.
   pcall(vim.api.nvim_set_hl, 0, "ReplacerTarget", { link = "Search" })
@@ -97,7 +116,7 @@ local function run(items, new_text, cfg, apply_func)
   local theme_opts = vim.tbl_deep_extend("force", { multi_icon = "*" }, cfg.telescope or {})
 
   local picker = pickers.new(theme_opts, {
-    prompt_title = "Select matches",
+    prompt_title = current_title(),
     sorter = conf.values.generic_sorter(theme_opts),
     finder = finders.new_table({
       results = items,
@@ -214,13 +233,44 @@ local function run(items, new_text, cfg, apply_func)
           notify.info("no more matches")
           return
         end
+        -- Drop the applied match from the full set too, so a later "clear
+        -- filters" cannot bring it back.
+        rstate.original = common.without(rstate.original, it.id)
         vim.schedule(function()
-          run(remaining, new_text, cfg, apply_func)
+          run(remaining, new_text, cfg, apply_func, rstate)
         end)
       end
       local key_reopen = keys.replace_and_reopen or "<C-r>"
       map("i", key_reopen, do_reopen)
       map("n", key_reopen, do_reopen)
+
+      -- filter: narrow the list via pickers.refine (stacked path/content
+      -- clauses). Refreshes the finder in place — the query line, selection
+      -- and preview stay. A modifier key by design, like replace_and_reopen.
+      local key_filter = keys.filter or "<C-f>"
+      local function do_filter()
+        if not refine_h then
+          notify.warn("result filtering needs pickers.nvim (pickers.refine) — not installed")
+          return
+        end
+        refine_h:prompt(function()
+          local filtered = refine_h:apply(rstate.original)
+          items = filtered
+          local p = action_state.get_current_picker(prompt_bufnr)
+          if not p then
+            return
+          end
+          p:refresh(
+            finders.new_table({ results = filtered, entry_maker = entry_maker }),
+            { reset_prompt = false }
+          )
+          pcall(function()
+            p.prompt_border:change_title(current_title())
+          end)
+        end)
+      end
+      map("i", key_filter, do_filter)
+      map("n", key_filter, do_filter)
 
       -- Double-escape: 1st <Esc> leaves insert -> Telescope normal mode,
       -- 2nd (normal mode, "quit" key) closes the picker.
@@ -237,6 +287,11 @@ local function run(items, new_text, cfg, apply_func)
         {
           lhs = key_reopen,
           desc = "replacer: apply under cursor, reopen with the rest",
+          modes = { "n", "i" },
+        },
+        {
+          lhs = key_filter,
+          desc = "replacer: filter results (path / content)",
           modes = { "n", "i" },
         },
         { lhs = key_quit, desc = "replacer: close picker", modes = { "n" } },

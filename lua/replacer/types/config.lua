@@ -16,6 +16,7 @@
 ---@field apply_all?          string -- replace ALL matches, respects confirm_all (default "<C-a>")
 ---@field quit?                string -- close the picker (default "<Esc>")
 ---@field replace_and_reopen?  string -- apply entry under cursor, reopen with the rest (default "<C-r>")
+---@field filter?               string -- open the filter prompt (pickers.refine: stacked path/content clauses); needs pickers.nvim (default "<C-f>")
 
 ---Lua before/after callbacks around the apply pipeline. Each key takes a
 ---single function or a list of functions; a before_apply hook may return
