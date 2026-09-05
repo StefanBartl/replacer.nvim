@@ -1,4 +1,5 @@
 *replacer.txt*  Project-wide search and replace with interactive picker
+                                                               *replacer.nvim*
 
 Author:  Stefan Bartl
 Version: 0.5
