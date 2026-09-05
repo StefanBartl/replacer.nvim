@@ -159,6 +159,26 @@ function M.undo(id)
 
   local restored = 0
   for _, entry in ipairs(manifest) do
+    -- SEC-33: this manifest is a persisted snapshot, not a value this run
+    -- just produced -- validate before trusting it, same as any other
+    -- checkpoint/cache file loaded back from disk. `entry.snapshot` is
+    -- always the flat, separator-free name `sanitize()` produces on create
+    -- (see above); a manifest crafted or corrupted since then could set it
+    -- to a `../`-style traversal and read an arbitrary file as if it were
+    -- this checkpoint's own snapshot, then have it written to `entry.path`
+    -- below -- an arbitrary-file-write primitive via a single :ReplaceUndo.
+    if
+      type(entry) ~= "table"
+      or type(entry.path) ~= "string"
+      or entry.path == ""
+      or type(entry.snapshot) ~= "string"
+      or entry.snapshot == ""
+      or entry.snapshot:find("[/\\]") ~= nil
+    then
+      notify.warn("checkpoint: skipped a malformed manifest entry")
+      goto continue
+    end
+
     local ok_snap, fh = pcall(io.open, dir .. "/" .. entry.snapshot, "rb")
     if ok_snap and fh then
       local content = fh:read("*a") or ""
@@ -175,6 +195,7 @@ function M.undo(id)
         notify.warn("checkpoint: failed to restore " .. entry.path)
       end
     end
+    ::continue::
   end
 
   return restored, nil
