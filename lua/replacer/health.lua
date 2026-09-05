@@ -189,9 +189,11 @@ local function check_pickers(health)
   if pcall(require, "pickers.refine") then
     health.ok("pickers.nvim is installed (in-picker result filtering available)")
   else
+    -- vim.health.info takes a message and nothing else — a second argument is
+    -- dropped in silence (LLS-29) — so the hint lives in the message.
     health.info(
-      "pickers.nvim not found — the picker 'filter' key is disabled",
-      { "Install for stacked path/content filters: https://github.com/StefanBartl/pickers.nvim" }
+      "pickers.nvim not found — the picker 'filter' key is disabled; install "
+        .. "StefanBartl/pickers.nvim for stacked path/content filters"
     )
   end
 end
@@ -268,9 +270,11 @@ local function check_optional(health)
   if pcall(require, "lib.nvim.progress") then
     health.ok("lib.nvim.progress available — progress_style is functional")
   else
+    -- vim.health.info drops a second argument in silence (LLS-29), so the
+    -- hint lives in the message.
     health.info(
-      "lib.nvim not installed — progress_style has no effect",
-      { "Add 'StefanBartl/lib.nvim' as a dependency to enable the progress indicator" }
+      "lib.nvim.progress not available — progress_style has no effect; update "
+        .. "'StefanBartl/lib.nvim' to enable the progress indicator"
     )
   end
 
@@ -297,7 +301,9 @@ local function check_utf8(health)
     if ok and result == 2 then
       health.ok("UTF-8 byte index conversion working")
     else
-      health.warn("UTF-8 conversion test inconclusive")
+      health.warn("UTF-8 conversion test inconclusive", {
+        "Replace may still work; report at the repo if column offsets come out wrong",
+      })
     end
   else
     health.error(
