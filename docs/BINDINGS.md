@@ -60,17 +60,28 @@ via `require("replacer").setup({ keymaps = { ... } })`, see
 | Toggle select + move to previous | `keymaps.toggle_select_prev` | `<S-Tab>` | ✅ (fzf's native multi-select toggle) | ✅ real Neovim keymap |
 | Apply to ALL matches (respects `confirm_all`) | `keymaps.apply_all` | `<C-a>` | ✅ via fzf action/`--bind` | ✅ real Neovim keymap |
 | Apply entry under cursor, reopen with the rest | `keymaps.replace_and_reopen` | `<C-r>` | ✅ via fzf action/`--bind` | ✅ real Neovim keymap |
+| Filter results (stacked path / content clauses) | `keymaps.filter` | `<C-f>` | ✅ via fzf action | ✅ real Neovim keymap |
 | Close the picker | `keymaps.quit` | `<Esc>` | ✅ (2nd `<Esc>`; 1st leaves terminal-insert, fixed) | ✅ (2nd `<Esc>`; 1st leaves insert mode, fixed) |
 
 `replace_and_reopen` defaults to a modifier key (`<C-r>`), not a bare letter
 like `r`: both pickers' query line is live text input, so a bare letter
 would swallow that character instead of reaching the search box.
 
+`filter` opens a small `vim.ui.select` → `vim.ui.input` flow to add a filter
+clause — *path contains*, *content excludes*, … — that narrows the match
+list; clauses stack and are removable, a term in `/…/` is a Lua pattern.
+It is backed by [pickers.nvim](https://github.com/StefanBartl/pickers.nvim)'s
+`pickers.refine` module: **with pickers.nvim not installed the key reports
+that and does nothing else.** On Telescope the list refreshes in place; on
+fzf-lua the picker reopens with the filtered set. The active filter shows in
+the prompt title (`Select matches — path~src · ¬content~test (42/380)`).
+
 **which-key:** if [which-key.nvim](https://github.com/folke/which-key.nvim) is
 installed, its popup shows labels for these keys — with one caveat: fzf-lua's
-`toggle_select`/`apply_all`/`replace_and_reopen` are fzf's own terminal-native
-bindings (consumed by the fzf binary itself, never passing through Neovim's
-keymap layer), so which-key cannot see or label those for the fzf backend.
+`toggle_select`/`apply_all`/`replace_and_reopen`/`filter` are fzf's own
+terminal-native bindings (consumed by the fzf binary itself, never passing
+through Neovim's keymap layer), so which-key cannot see or label those for the
+fzf backend.
 Telescope's keys are real `vim.keymap.set` calls and are fully labeled.
 `quit` is labeled for both backends.
 

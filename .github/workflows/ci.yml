@@ -44,6 +44,7 @@ jobs:
     # resolver's own first-priority override, meant for exactly this case.
     env:
       LIB_NVIM_PATH: ${{ github.workspace }}/lib.nvim
+      PICKERS_NVIM_PATH: ${{ github.workspace }}/pickers.nvim
     steps:
       - uses: actions/checkout@v4
 
@@ -55,6 +56,14 @@ jobs:
         with:
           repository: StefanBartl/lib.nvim
           path: lib.nvim
+
+      # pickers.nvim is a *soft* dependency (only the picker `filter` key
+      # needs it). refine_wiring.lua exercises that wiring; without this
+      # checkout it would only run the engine-agnostic half.
+      - uses: actions/checkout@v4
+        with:
+          repository: StefanBartl/pickers.nvim
+          path: pickers.nvim
 
       - uses: rhysd/action-setup-vim@v1
         with:
@@ -81,3 +90,9 @@ jobs:
           nvim --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim"
           -c "luafile TESTS/async_utf8.lua" -c "qa"
+
+      - name: refine_wiring.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./pickers.nvim"
+          -c "luafile TESTS/refine_wiring.lua" -c "qa"

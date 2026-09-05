@@ -70,7 +70,9 @@ declared-tools popup: [`docs/installation.md`](docs/installation.md).
 
 In the picker: `<Tab>` selects, `<CR>` applies the selection, `<C-a>` applies
 to everything, `<C-r>` applies the entry under the cursor and reopens with the
-rest, a second `<Esc>` closes. All configurable, all buffer-local.
+rest, `<C-f>` filters the list by stacked path/content clauses (needs
+[pickers.nvim](https://github.com/StefanBartl/pickers.nvim)), a second `<Esc>`
+closes. All configurable, all buffer-local.
 
 `<Tab>` completes at every slot of the command — scope keywords, all 41 flag
 names at a bare `--`, and the values of the four flags that have any.

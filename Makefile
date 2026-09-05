@@ -8,6 +8,7 @@ test:
 	nvim -l tests/feature_smoke.lua
 	nvim -l tests/surround_smoke.lua
 	nvim -l tests/async_utf8.lua
+	nvim -l tests/refine_wiring.lua
 
 # Static analysis. Explicit file list (not a bare `luacheck lua/`): some
 # luacheck/OS combinations (observed with a Windows/mingw install) fail

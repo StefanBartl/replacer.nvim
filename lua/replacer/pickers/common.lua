@@ -17,6 +17,50 @@ local encoding = require("replacer.encoding")
 local M = {}
 
 --------------------------------------------------------------------------------
+-- Result refinement (soft: needs pickers.nvim's `pickers.refine`)
+--------------------------------------------------------------------------------
+
+--- A `pickers.refine` handle configured for replacer's match list, or nil
+--- when pickers.nvim is not installed. The picker's filter key checks for
+--- nil and reports it rather than failing.
+---
+--- `path` matches against the cwd-relative form shown in the list (so typing
+--- `src` filters what the user sees); `content` matches the match line.
+---@return table|nil
+function M.new_refine()
+  local ok, refine = pcall(require, "pickers.refine")
+  if not ok then
+    return nil
+  end
+  return refine.new({
+    fields = {
+      -- Normalized to forward slashes so a `/`-typed term matches on Windows
+      -- too, where the display path may carry backslashes.
+      path = function(it)
+        return (vim.fs.normalize(vim.fn.fnamemodify(it.path, ":.")))
+      end,
+      content = function(it)
+        return it.line
+      end,
+    },
+  })
+end
+
+--- Copy of `list` without the entry whose `.id` equals `id`.
+---@param list RP_Match[]
+---@param id integer
+---@return RP_Match[]
+function M.without(list, id)
+  local out = {}
+  for _, it in ipairs(list) do
+    if it.id ~= id then
+      out[#out + 1] = it
+    end
+  end
+  return out
+end
+
+--------------------------------------------------------------------------------
 -- Display line for list entries
 --------------------------------------------------------------------------------
 

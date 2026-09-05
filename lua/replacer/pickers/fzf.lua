@@ -39,11 +39,27 @@ end
 ---@param new_text string
 ---@param cfg RP_Config            -- expects: literal, write_changes, fzf?, _last_query?
 ---@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean): (integer, integer)
-local function run(old, items, new_text, cfg, apply_func)
+---@param rstate? { original: RP_Match[], handle: table|false }  refine state, threaded across reopens
+local function run(old, items, new_text, cfg, apply_func, rstate)
   local ok_fzf, fzf = pcall(require, "fzf-lua")
   if not ok_fzf then
     notify.error("fzf-lua not found")
     return
+  end
+
+  rstate = rstate or {}
+  rstate.original = rstate.original or items
+  if rstate.handle == nil then
+    rstate.handle = common.new_refine() or false
+  end
+  local refine_h = rstate.handle or nil
+
+  local base_title = "Select matches"
+  local function current_prompt()
+    if refine_h and refine_h:is_active() then
+      return refine_h:title(base_title, #items, #rstate.original) .. "> "
+    end
+    return base_title .. "> "
   end
 
   local last_query = tostring(old or "")
@@ -89,6 +105,7 @@ local function run(old, items, new_text, cfg, apply_func)
   local key_next = to_fzf_key(keys.toggle_select or "<Tab>")
   local key_prev = to_fzf_key(keys.toggle_select_prev or "<S-Tab>")
   local key_reopen = to_fzf_key(keys.replace_and_reopen or "r")
+  local key_filter = to_fzf_key(keys.filter or "<C-f>")
 
   local actions = {
     ["default"] = function(selected)
@@ -172,15 +189,31 @@ local function run(old, items, new_text, cfg, apply_func)
         notify.info("no more matches")
         return
       end
+      rstate.original = common.without(rstate.original, it.id)
       -- Reopen after this picker instance finishes closing.
       vim.schedule(function()
-        run(old, remaining, new_text, cfg, apply_func)
+        run(old, remaining, new_text, cfg, apply_func, rstate)
+      end)
+    end,
+    [key_filter] = function()
+      if not refine_h then
+        notify.warn("result filtering needs pickers.nvim (pickers.refine) — not installed")
+        return
+      end
+      -- fzf-lua has already closed the picker window by the time an action
+      -- runs, so reopen unconditionally (on_done) — with the current filtered
+      -- view, which is unchanged when the prompt was cancelled.
+      refine_h:prompt(nil, function()
+        local filtered = refine_h:apply(rstate.original)
+        vim.schedule(function()
+          run(old, filtered, new_text, cfg, apply_func, rstate)
+        end)
       end)
     end,
   }
 
   local base = {
-    prompt = "Select matches> ",
+    prompt = current_prompt(),
     fzf_opts = {
       ["--multi"] = true,
       ["--with-nth"] = "1",

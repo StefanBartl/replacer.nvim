@@ -183,6 +183,17 @@ local function check_pickers(health)
       "OR install fzf-lua: https://github.com/ibhagwan/fzf-lua",
     })
   end
+
+  -- pickers.nvim is optional: only the in-picker `filter` key (keymaps.filter,
+  -- pickers.refine) needs it. Everything else works without it.
+  if pcall(require, "pickers.refine") then
+    health.ok("pickers.nvim is installed (in-picker result filtering available)")
+  else
+    health.info(
+      "pickers.nvim not found — the picker 'filter' key is disabled",
+      { "Install for stacked path/content filters: https://github.com/StefanBartl/pickers.nvim" }
+    )
+  end
 end
 
 ---@internal
