@@ -699,6 +699,44 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 2l) history: a corrupt history.json is backed up, not silently discarded
+--------------------------------------------------------------------------------
+do
+  local hist_path = vim.fn.stdpath("data") .. "/replacer/history.json"
+  local corrupt_path = hist_path .. ".corrupt"
+  pcall(vim.fn.delete, corrupt_path)
+
+  -- Preserve whatever real history already exists (this is the shared
+  -- stdpath("data") file also used by the block above) and restore it after.
+  local original = vim.fn.filereadable(hist_path) == 1 and vim.fn.readfile(hist_path) or nil
+
+  vim.fn.mkdir(vim.fn.fnamemodify(hist_path, ":h"), "p")
+  local garbage = "{not valid json"
+  vim.fn.writefile({ garbage }, hist_path)
+
+  package.loaded["replacer.history"] = nil
+  local history_corrupt = require("replacer.history")
+  local loaded = history_corrupt.load()
+  check("history: corrupt file loads as empty, not an error", type(loaded) == "table" and #loaded == 0)
+  check(
+    "history: corrupt file backed up to history.json.corrupt",
+    vim.fn.filereadable(corrupt_path) == 1
+  )
+  if vim.fn.filereadable(corrupt_path) == 1 then
+    local backed_up = table.concat(vim.fn.readfile(corrupt_path), "\n")
+    check("history: backup preserves the original corrupt bytes", backed_up == garbage, backed_up)
+  end
+
+  pcall(vim.fn.delete, corrupt_path)
+  if original then
+    vim.fn.writefile(original, hist_path)
+  else
+    pcall(vim.fn.delete, hist_path)
+  end
+  package.loaded["replacer.history"] = nil
+end
+
+--------------------------------------------------------------------------------
 -- 2l) presets: save/load/run/delete
 --------------------------------------------------------------------------------
 do
