@@ -638,13 +638,22 @@ deps_popup~
 ==============================================================================
 7. PROGRESS INDICATOR                                    *replacer-progress*
 
-A search on a large scope (cwd, a big directory) can take a few seconds.
-Replacer reports on this via lib.nvim's `lib.nvim.progress` module — an
-OPTIONAL dependency (see |replacer-installation|). Without it, everything
-works exactly as before, just silently without any indicator.
+On a large scope (cwd, a big directory) both phases can take a few seconds:
+the search, and — for `--all` / `:Replace!` — the apply, which loads and
+rewrites every matched file. Both report through lib.nvim's
+`lib.nvim.progress` module — an OPTIONAL dependency (see
+|replacer-installation|). Without it, everything works exactly as before,
+just silently without any indicator.
 
-A handle only becomes visible after ~150ms, so a fast search on a small scope
-never flashes any UI, regardless of style.
+The apply runs asynchronously once the match set spans more than ten files:
+it is applied in chunks across event-loop ticks instead of one blocking
+loop, so the editor stays responsive and the indicator shows "applying
+replacements… N/total". A smaller set is applied synchronously, exactly as
+before. Either way the "N file(s), M spot(s)" result notification is the
+same.
+
+A handle only becomes visible after ~150ms, so a fast search or a
+single-buffer replace never flashes any UI, regardless of style.
 
                                                 *replacer-progress-styles*
 Styles (|replacer-config-progress_style|):~

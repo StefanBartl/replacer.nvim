@@ -41,7 +41,7 @@ end
 ---@param items RP_Match[]
 ---@param new_text string
 ---@param write_changes boolean
----@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean): integer, integer
+---@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean, on_result?: fun(files: integer, spots: integer))
 ---@param on_pick_file fun(items: RP_Match[])   # "Only some": open a picker scoped to this file
 ---@param on_done fun(files: integer, spots: integer)  # called once the loop ends (Quit/<Esc> or all files seen)
 function M.run(items, new_text, write_changes, apply_func, on_pick_file, on_done)
@@ -65,9 +65,14 @@ function M.run(items, new_text, write_changes, apply_func, on_pick_file, on_done
       choices = { "All", "Skip", "Only some", "Quit" },
       on_answer = function(choice)
         if choice == "All" then
-          local f, s = apply_func(list, new_text, write_changes)
-          total_files = total_files + f
-          total_spots = total_spots + s
+          -- apply_func may apply asynchronously (wide file set); advance the
+          -- per-file loop only once it has settled so the totals are accurate.
+          apply_func(list, new_text, write_changes, function(f, s)
+            total_files = total_files + f
+            total_spots = total_spots + s
+            step(i + 1)
+          end)
+          return
         elseif choice == "Only some" then -- hand off to the picker for this file
           on_pick_file(list)
         elseif choice == nil or choice == "Quit" then -- <Esc>/q or explicit Quit

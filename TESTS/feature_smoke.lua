@@ -473,8 +473,13 @@ do
   local perfile_stubbed = require("replacer.perfile")
 
   local applied_paths = {}
-  local function fake_apply(list, _new_text, _write)
+  local function fake_apply(list, _new_text, _write, on_result)
     applied_paths[#applied_paths + 1] = list[1].path
+    -- perfile now advances its loop from apply_func's completion callback
+    -- (the real apply_matches applies a wide file set asynchronously).
+    if on_result then
+      on_result(1, #list)
+    end
     return 1, #list
   end
   local picked_files = {}
@@ -1362,6 +1367,52 @@ do
     "apply: all 'foo' replaced with 'XXX'",
     not content:match("foo") and content:match("XXX"),
     content
+  )
+end
+
+--------------------------------------------------------------------------------
+-- 5b) Wide apply is chunked + async: a match set larger than APPLY_CHUNK_SIZE
+--     is applied across event-loop ticks and the totals arrive via on_done,
+--     not the return value.
+--------------------------------------------------------------------------------
+do
+  local wide = tmp .. "/wide"
+  vim.fn.mkdir(wide, "p")
+  local n = 25 -- > APPLY_CHUNK_SIZE (10)
+  for i = 1, n do
+    local fh = assert(io.open(string.format("%s/f%02d.txt", wide, i), "w"))
+    fh:write("foo here\nand foo again\n")
+    fh:close()
+  end
+
+  local items = rg.collect("foo", { wide }, { search_engine = "vimgrep" })
+  check("apply(wide): collected matches across all files", #items == n * 2, #items)
+
+  local done_files, done_spots
+  local sync_files = apply.apply_matches(items, "foo", "W", true, {}, function(f, s)
+    done_files, done_spots = f, s
+  end)
+  check(
+    "apply(wide): synchronous return is a partial snapshot (first chunk only)",
+    sync_files > 0 and sync_files < n,
+    tostring(sync_files)
+  )
+
+  local settled = vim.wait(5000, function()
+    return done_files ~= nil
+  end)
+  check(
+    "apply(wide): on_done fired with the real total",
+    settled and done_files == n,
+    tostring(done_files)
+  )
+  check("apply(wide): every spot applied", done_spots == n * 2, tostring(done_spots))
+
+  local last = assert(io.open(string.format("%s/f%02d.txt", wide, n), "r")):read("*a")
+  check(
+    "apply(wide): the last file was actually written",
+    not last:match("foo") and last:match("W"),
+    last
   )
 end
 

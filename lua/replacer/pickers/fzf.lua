@@ -38,7 +38,7 @@ end
 ---@param items RP_Match[]
 ---@param new_text string
 ---@param cfg RP_Config            -- expects: literal, write_changes, fzf?, _last_query?
----@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean): (integer, integer)
+---@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean, on_result?: fun(files: integer, spots: integer))
 ---@param rstate? { original: RP_Match[], handle: table|false }  refine state, threaded across reopens
 local function run(old, items, new_text, cfg, apply_func, rstate)
   local ok_fzf, fzf = pcall(require, "fzf-lua")
@@ -124,8 +124,9 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
       if #chosen == 0 then
         return
       end
-      local files, spots = apply_func(chosen, new_text, cfg.write_changes)
-      common.notify_result(files, spots, cfg)
+      apply_func(chosen, new_text, cfg.write_changes, function(files, spots)
+        common.notify_result(files, spots, cfg)
+      end)
     end,
     [key_all] = function()
       local all = {} ---@type RP_Match[]
@@ -156,14 +157,16 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
               messages.info(cfg, messages.fmt(cfg, "cancelled"))
               return
             end
-            local files, spots = apply_func(all, new_text, cfg.write_changes)
-            common.notify_result(files, spots, cfg)
+            apply_func(all, new_text, cfg.write_changes, function(files, spots)
+              common.notify_result(files, spots, cfg)
+            end)
           end,
         })
         return
       end
-      local files, spots = apply_func(all, new_text, cfg.write_changes)
-      common.notify_result(files, spots, cfg)
+      apply_func(all, new_text, cfg.write_changes, function(files, spots)
+        common.notify_result(files, spots, cfg)
+      end)
     end,
     [key_reopen] = function(selected)
       if not selected or #selected == 0 then
@@ -176,8 +179,9 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
         return
       end
 
-      local files, spots = apply_func({ it }, new_text, cfg.write_changes)
-      common.notify_result(files, spots, cfg)
+      apply_func({ it }, new_text, cfg.write_changes, function(files, spots)
+        common.notify_result(files, spots, cfg)
+      end)
 
       local remaining = {} ---@type RP_Match[]
       for _, other in ipairs(items) do

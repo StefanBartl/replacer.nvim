@@ -29,7 +29,7 @@ local NS = vim.api.nvim_create_namespace("replacer_preview")
 ---@param items RP_Match[]
 ---@param new_text string
 ---@param cfg RP_Config            -- receives _old_len optionally (we cast below)
----@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean): (integer, integer)
+---@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean, on_result?: fun(files: integer, spots: integer))
 ---@param rstate? { original: RP_Match[], handle: table|false }  refine state, threaded across reopens
 ---@return nil
 local function run(items, new_text, cfg, apply_func, rstate)
@@ -142,17 +142,19 @@ local function run(items, new_text, cfg, apply_func, rstate)
               chosen[#chosen + 1] = e.value
             end
           end
-          local files, spots = apply_func(chosen, new_text, cfg.write_changes)
-          common.notify_result(files, spots, cfg)
           actions.close(prompt_bufnr)
+          apply_func(chosen, new_text, cfg.write_changes, function(files, spots)
+            common.notify_result(files, spots, cfg)
+          end)
         else
           if not sel.value then
             return
           end
           ---@cast sel { value: RP_Match }
-          local files, spots = apply_func({ sel.value }, new_text, cfg.write_changes)
-          common.notify_result(files, spots, cfg)
           actions.close(prompt_bufnr)
+          apply_func({ sel.value }, new_text, cfg.write_changes, function(files, spots)
+            common.notify_result(files, spots, cfg)
+          end)
         end
       end
 
@@ -194,15 +196,17 @@ local function run(items, new_text, cfg, apply_func, rstate)
               if not yes then
                 return
               end
-              local files, spots = apply_func(items, new_text, cfg.write_changes)
-              common.notify_result(files, spots, cfg)
+              apply_func(items, new_text, cfg.write_changes, function(files, spots)
+                common.notify_result(files, spots, cfg)
+              end)
             end,
           })
           return
         end
-        local files, spots = apply_func(items, new_text, cfg.write_changes)
-        common.notify_result(files, spots, cfg)
         actions.close(prompt_bufnr)
+        apply_func(items, new_text, cfg.write_changes, function(files, spots)
+          common.notify_result(files, spots, cfg)
+        end)
       end
       local key_all = keys.apply_all or "<C-a>"
       map("i", key_all, do_all)
@@ -220,8 +224,9 @@ local function run(items, new_text, cfg, apply_func, rstate)
 
         actions.close(prompt_bufnr)
 
-        local files, spots = apply_func({ it }, new_text, cfg.write_changes)
-        common.notify_result(files, spots, cfg)
+        apply_func({ it }, new_text, cfg.write_changes, function(files, spots)
+          common.notify_result(files, spots, cfg)
+        end)
 
         local remaining = {} ---@type RP_Match[]
         for _, other in ipairs(items) do
