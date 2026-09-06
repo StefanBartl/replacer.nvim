@@ -30,14 +30,28 @@ end
 
 --- Load the stored history, newest first. Never errors; returns {} on any
 --- read/parse failure (e.g. first run, no file yet).
+---
+--- A decode failure on non-empty content is not the same situation as no
+--- file existing at all: `M.add` always rewrites the WHOLE file via `save`,
+--- so falling straight through to an empty history here means the very next
+--- `:Replace` apply silently replaces the corrupt file with a fresh
+--- one-entry history — every prior recorded search is gone with no trace it
+--- ever existed. The original bytes are backed up once, so "the file was
+--- briefly unreadable" never turns into "the history is gone".
 ---@return table[]
 function M.load()
   local ok, lines = pcall(vim.fn.readfile, history_path())
   if not ok or type(lines) ~= "table" or #lines == 0 then
     return {}
   end
-  local ok_json, data = pcall(vim.json.decode, table.concat(lines, "\n"))
+  local raw = table.concat(lines, "\n")
+  local ok_json, data = pcall(vim.json.decode, raw)
   if not ok_json or type(data) ~= "table" then
+    local fh = io.open(history_path() .. ".corrupt", "wb")
+    if fh then
+      fh:write(raw)
+      fh:close()
+    end
     return {}
   end
   return data
