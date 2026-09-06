@@ -1,6 +1,6 @@
 ---@module 'replacer.types.pickers'
 
--- AUDIT: Ausformulieren
+--- CDX: flesh out these picker type annotations
 
 --------------------------------------------------------------------------------
 -- common.lua

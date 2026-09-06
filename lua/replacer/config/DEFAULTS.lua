@@ -71,7 +71,7 @@ return {
   -- (select matches while the search is still running) is not implemented
   -- yet, see lua/replacer/rg.lua collect_streaming docstring.
   stream = false,
-  -- How many past searches `:Replacer history` keeps.
+  -- How many past searches `:ReplaceHistory` keeps.
   history_max_entries = 50,
   -- Minimum time between progress redraws while streaming ripgrep's stdout.
   -- Raise it if a "notify" style that cannot replace in place floods you on

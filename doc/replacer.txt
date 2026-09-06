@@ -312,7 +312,7 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
                      • a literal char/string:  ` " ' * ** _  (used on both sides)
                      • a named alias (see below)
                      • a bracket opener ( [ { <  -> paired with its closer
-                   When omitted, you are prompted for it (via |vim.ui.input()|).
+                   When omitted, you are prompted for it.
         [scope]    Same as |:Replace|: % | buf · cwd | . · <file|dir>
                    (default: |replacer-config-default_scope|).
         [range]    Restricts matching to the selected buffer lines.
@@ -791,13 +791,13 @@ shown and nothing runs. See lua/replacer/gitfiles.lua.
 Per-File Confirmation~
 
 --confirm-per-file (or config.confirm_per_file) replaces the single global
-"Apply ALL N spot(s) across M file(s)?" confirmation with one native
-vim.fn.confirm() prompt per file, in --all mode: >vim
+"Apply ALL N spot(s) across M file(s)?" confirmation with one confirmation
+prompt per file, in --all mode: >vim
     :Replace! foo bar cwd --confirm-per-file
 <
-Per file: &All applies every match in that file immediately; &Skip moves on
-without touching it; &Only some opens the interactive picker scoped to just
-that file's matches; &Quit (or <Esc>) stops the whole loop, leaving any
+Per file: All applies every match in that file immediately; Skip moves on
+without touching it; Only some opens the interactive picker scoped to just
+that file's matches; Quit (or <Esc>) stops the whole loop, leaving any
 later files untouched. Supersedes confirm_all/confirm_wide_scope when
 enabled. See lua/replacer/perfile.lua.
 
@@ -1097,21 +1097,33 @@ replacer.setup({opts})
         nil
 
                                                            *replacer.run()*
-replacer.run({old}, {new}, {scope}, {all})
-    Execute replace operation programmatically.
+replacer.run({request})
+    Execute a replace workflow programmatically — the same executor every
+    :Replace* command dispatches into.
 
-    Parameters:~
-        {old}    Pattern to search (string)
-        {new}    Replacement text (string)
-        {scope}  Scope string (see |replacer-scopes|)
-        {all}    Non-interactive mode (boolean)
+    {request} is a structured RP_Request (see lua/replacer/types/init.lua):
+    a table with `old`, `new`, `scope`, `all`, `dry`, `export`, `line_range`,
+    `overrides` and `filters` fields. `overrides` carries the per-run flag
+    values; `filters` narrows which files are searched.
+
+    The legacy positional form replacer.run({old}, {new}, {scope}, {all}) is
+    still accepted and normalised into the above.
 
     Returns:~
         nil
 
     Example: >lua
-        require("replacer").run("old", "new", "cwd", false)
+        require("replacer").run({
+          old = "oldName", new = "newName", scope = "cwd",
+          all = false, dry = true,
+          overrides = { case_preserve = true },
+          filters = { file_types = { "lua" }, globs = {}, exclude = {} },
+        })
+        require("replacer").run("old", "new", "cwd", false)  -- legacy form
 <
+
+    docs/api.md additionally documents require("replacer.config").resolve()
+    and require("replacer.hooks").on()/clear().
 
                                                   *replacer.config.get()*
 require("replacer.config").get()
