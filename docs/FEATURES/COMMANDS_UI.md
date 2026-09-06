@@ -99,7 +99,7 @@ where the backend allows it (Telescope's real `vim.keymap.set` calls are
 fully labeled, fzf-lua's terminal-native bindings cannot be seen by
 which-key).
 
-- **Module:** `pickers/utils.lua` (which-key label registration),
+- **Module:** `pickers/common.lua` (`register_which_key`),
   `pickers/telescope.lua`, `pickers/fzf.lua`
 - **Config:** `opts.keymaps.*`
 - **Keymaps:** see [BINDINGS.md](../BINDINGS.md#picker-keymaps)

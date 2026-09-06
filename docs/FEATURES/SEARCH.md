@@ -30,7 +30,8 @@ When ripgrep isn't installed (or `search_engine = "vimgrep"` is set
 explicitly), matching falls back to a native Neovim implementation instead
 of failing outright.
 
-- **Module:** `rg.lua` (`collect_ripgrep`, `collect_ripgrep_async`)
+- **Module:** `rg.lua` (`pick_backend`, `collect_vimgrep`,
+  `collect_vimgrep_async`)
 - **Config:** `opts.search_engine` (`"auto"` | `"ripgrep"` | `"vimgrep"`,
   default `"auto"`)
 
@@ -68,7 +69,7 @@ immediately before/after). `--code-only` skips matches that fall inside a
 string/comment Tree-sitter node, best-effort with a fallback to keeping
 everything when no parser is available for the file's language.
 
-- **Module:** `apply.lua` (word-boundary check), `tscode.lua`
+- **Module:** `rg.lua` (`apply_word_boundary`), `tscode.lua`
   (`M.is_in_string_or_comment`)
 - **Config:** `opts.word_boundary`, `opts.code_only` (both default `false`)
 

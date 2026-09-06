@@ -9,19 +9,10 @@
 ---   {new}    replacement text ("" deletes the match)
 ---   [scope]  %|buf (current buffer) · cwd|. (working dir) · <path> (file/dir)
 ---
---- Flags (may appear anywhere; a lone "--" stops flag parsing):
----   --literal | --no-literal | --regex     toggle literal vs regex search
----   --smart-case | --no-smart-case         toggle ripgrep smart-case
----   --hidden | --no-hidden                 include/exclude dotfiles
----   --ignore | --no-ignore                 respect/ignore .gitignore
----   --type=<ft>      (repeatable)          restrict to a filetype (ripgrep --type)
----   --glob=<pat>     (repeatable)          include glob pattern
----   --exclude=<pat>  (repeatable)          exclude path/glob pattern
----   --engine=<fzf|telescope>               override picker for this run
----   --context=<n>                          preview context lines
----   --dry                                  plan only; show stats, no writes
----   --export=<path>                        write diff (or .json) of the planned edits
----   --all                                  non-interactive: apply to every match
+--- Flags (may appear anywhere; a lone "--" stops flag parsing) are defined in
+--- BOOL_FLAGS / VALUE_FLAGS / the `changed` special-case below, and mirrored in
+--- M.FLAGS for completion. The full reference (all 41, each with its `--no-`
+--- counterpart) lives in `doc/replacer.txt` and `docs/commands.md`.
 ---
 ---   The bang form (:Replace!) is shorthand for --all.
 ---   A [range] (e.g. :'<,'>Replace) restricts matching to the selected lines of

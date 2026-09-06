@@ -104,7 +104,7 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
   local key_all = to_fzf_key(keys.apply_all or "<C-a>")
   local key_next = to_fzf_key(keys.toggle_select or "<Tab>")
   local key_prev = to_fzf_key(keys.toggle_select_prev or "<S-Tab>")
-  local key_reopen = to_fzf_key(keys.replace_and_reopen or "r")
+  local key_reopen = to_fzf_key(keys.replace_and_reopen or "<C-r>")
   local key_filter = to_fzf_key(keys.filter or "<C-f>")
 
   local actions = {

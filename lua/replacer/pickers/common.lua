@@ -1,10 +1,7 @@
 ---@module 'replacer.pickers.common'
---- Shared helpers used by both pickers (Telescope / fzf-lua).
---- Responsibilities:
----   - Consistent list display formatting
----   - Preview text generation with context
----   - (NEW) Preview with exact target position for highlighting
----   - Uniform result notifications
+--- Shared helpers used by both pickers (Telescope / fzf-lua):
+--- list display formatting, preview text (with context and the exact target
+--- position for highlighting), and uniform result notifications.
 ---
 --- Notes:
 ---   - We operate on byte indices (Lua's `#` on strings) which matches ripgrep's
@@ -80,9 +77,8 @@ end
 -- Preview helpers
 --------------------------------------------------------------------------------
 
---- Build preview lines around a match and compute the exact target position.
---- Returns:
----   - target_col0: 0-based byte column within that row
+--- Build preview lines around a match and compute the exact target position
+--- (0-based row/col within the returned block) for the caller to highlight.
 --- @param it RP_Match
 --- @param ctx integer
 --- @return string[] lines, integer target_row0, integer target_col0
@@ -131,18 +127,6 @@ function M.preview_lines_with_pos(it, ctx)
 
   return out, target_row0, target_col0
 end
-
--- --- Back-compat wrapper: only preview text (no coordinates).
--- --- @param path string
--- --- @param lnum integer
--- --- @param ctx integer
--- --- @return string[]
--- function M.preview_lines(path, lnum, ctx)
---   local it = { path = path, lnum = lnum, col0 = 0, line = "" } ---@type RP_Match
---   local lines = M.preview_lines_with_pos(it, ctx)
---   ---@cast lines string[]  -- first return of the tuple
---   return lines
--- end
 
 --------------------------------------------------------------------------------
 -- Notifications

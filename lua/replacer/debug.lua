@@ -1,6 +1,13 @@
 ---@module 'replacer.debug'
 --- Debug utilities for troubleshooting replacer issues.
---- Usage: :ReplaceDebug {on|off|status|test}
+--- Usage: :ReplaceDebug {on|off|status|test|inspect|analyze <line> <pattern>}
+---
+--- CDX: the on/off/status toggle writes `require("replacer").options` — a
+--- field the module never exposes (init.lua returns only setup/run), so those
+--- branches are dead and `on`/`off` currently do nothing observable. The
+--- user-facing docs (commands.md, BINDINGS.md, troubleshooting.md) omit
+--- `test` and describe verbose output / hex dumps that this module does not
+--- emit. Needs a product decision, not a comment fix.
 
 local notify = require("replacer.util.notify")
 local usercmd = require("lib.nvim.bindings.usercmd")
@@ -54,6 +61,9 @@ function M.status()
 end
 
 --- Run test suite
+--- CDX: `test.utf8_offsets` does not resolve — the suite lives at
+--- TESTS/utf8_offsets.lua, which is not on the runtimepath under `lua/`.
+--- This branch always reports "Test suite not found".
 function M.test()
   notify.info("Running test suite...")
   local ok, test = pcall(require, "test.utf8_offsets")

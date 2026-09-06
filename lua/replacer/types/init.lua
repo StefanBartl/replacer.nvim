@@ -26,13 +26,12 @@
 ----------------
 
 ---@alias ReplacerSetup fun(user: RP_Config|nil): nil
----@alias ReplacerRun fun(old: string, new_text: string, scope: RP_Scope, all: boolean): nil
+---@alias ReplacerRun fun(request: RP_Request|string, new_text?: string, scope?: string, all?: boolean): nil
 
 --- Public facade of the plugin (returned by `require("replacer")`).
 ---@class Replacer
----@field options RP_Config
----@field setup fun(user: RP_Config|nil): nil
----@field run fun(old: string, new_text: string, scope: RP_Scope, all: boolean): nil
+---@field setup fun(opts: RP_Config|table|nil): nil
+---@field run fun(request: RP_Request|string, new_text?: string, scope?: string, all?: boolean): nil
 
 ----------------
 -- Errors      --
@@ -99,13 +98,5 @@
 ---@field register ReplacerRunRegisterFn
 ---@field resolve_scope ReplacerResolveScopeFn
 ---@field parse_request fun(raw: string|nil, cmd_opts: table|nil): boolean, RP_Request|nil, string|nil
-
-----------------
--- apply.lua  -- Local extended match type to satisfy LuaLS when accessing optional fields.
-----------------
-
----@class RP_MatchEx : RP_Match
----@field mlen integer|nil
----@field col1 integer|nil
 
 return {}
