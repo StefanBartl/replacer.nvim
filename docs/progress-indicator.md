@@ -1,19 +1,26 @@
 # Progress Indicator
 
-A `:Replace`/`:Replacer` search on a large scope (`cwd`, a big directory) can
-take anywhere from instant to several seconds, depending on repo size and
-whether ripgrep is available. Without any feedback that looks like a hang.
-Replacer solves this via [`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md):
+A `:Replace`/`:Replacer` on a large scope (`cwd`, a big directory) has two
+phases that can each take anywhere from instant to several seconds: the
+**search** (repo size, ripgrep vs. the vimgrep fallback) and — for `--all` /
+`:Replace!` — the **apply**, which loads and rewrites every matched file.
+Without any feedback either one looks like a hang. Replacer solves this via
+[`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md):
 a small, reusable progress-indicator abstraction that decouples "an operation
 is running" from "how that gets shown".
 
 - **The one soft edge of a hard dependency.** `lib.nvim` itself is
   [required](installation.md#requirements) — replacer does not load without
-  it. This *module* of it is the exception: `rg.lua` resolves
+  it. This *module* of it is the exception: `rg.lua` and `apply.lua` resolve
   `lib.nvim.progress` through a `pcall`, so an older lib.nvim without it means
-  searches run silently, no error, nothing else missing.
+  search and apply run silently, no error, nothing else missing.
+- **The apply is chunked once it spans more than ten files.** It is applied
+  across event-loop ticks instead of one blocking loop, so the editor stays
+  responsive and the indicator shows `applying replacements… N/total`. A
+  smaller set is applied synchronously, exactly as before.
 - **Debounced.** A handle only becomes visible after ~150ms. A fast search on
-  a small scope never flashes any UI, no matter which style you pick.
+  a small scope, or a single-buffer replace, never flashes any UI, no matter
+  which style you pick.
 - **Configured via one option:** `progress_style` in `require("replacer").setup({...})`.
 
 ```lua

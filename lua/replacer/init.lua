@@ -177,7 +177,20 @@ local function dispatch(request, cfg, single_file, items)
   -- Records history for every real apply (never for dry-run/export/
   -- quickfix, which don't reach here); a history-write failure must never
   -- affect the apply itself, hence the pcall.
-  local function apply_func(chosen, replacement, write_changes)
+  --- Apply `chosen` and report `(files, spots)`.
+  ---
+  --- `apply_matches` runs the wide-scope apply asynchronously (chunked, with a
+  --- progress indicator), so the result is delivered through `on_result`
+  --- rather than returned. A single-buffer replace still finishes within this
+  --- call — `on_result` just fires synchronously in that case. The synchronous
+  --- return value is kept for the few callers (and tests) that ignore
+  --- `on_result` and only ever apply a handful of files.
+  ---@param chosen RP_Match[]
+  ---@param replacement string
+  ---@param write_changes boolean
+  ---@param on_result? fun(files: integer, spots: integer)
+  ---@return integer files, integer spots
+  local function apply_func(chosen, replacement, write_changes, on_result)
     -- Soft LSP integration: try an LSP-driven rename first for eligible
     -- (identifier-shaped) matches; only whatever falls back goes through
     -- the normal plain-text apply below. Guarded so any failure here just
@@ -193,25 +206,33 @@ local function dispatch(request, cfg, single_file, items)
       end
     end
 
-    local files, spots = apply.apply_matches(to_apply, request.old, replacement, write_changes, cfg)
-    spots = spots + lsp_count
-    pcall(function()
-      require("replacer.history").add(request, { files = files, spots = spots })
-    end)
-    -- --also-rename-file: single-file scope only (never a directory tree —
-    -- that's :ReplaceFNames' job). Guarded so a rename-assist failure never
-    -- affects the content apply it followed.
-    if cfg._also_rename_file and single_file and files > 0 and chosen[1] then
+    local final_files, final_spots = 0, 0
+    local function settled(files, spots)
+      spots = spots + lsp_count
+      final_files, final_spots = files, spots
       pcall(function()
-        require("replacer.rename_assist").maybe_rename(
-          chosen[1].path,
-          request.old,
-          replacement,
-          cfg
-        )
+        require("replacer.history").add(request, { files = files, spots = spots })
       end)
+      -- --also-rename-file: single-file scope only (never a directory tree —
+      -- that's :ReplaceFNames' job). Guarded so a rename-assist failure never
+      -- affects the content apply it followed.
+      if cfg._also_rename_file and single_file and files > 0 and chosen[1] then
+        pcall(function()
+          require("replacer.rename_assist").maybe_rename(
+            chosen[1].path,
+            request.old,
+            replacement,
+            cfg
+          )
+        end)
+      end
+      if on_result then
+        on_result(files, spots)
+      end
     end
-    return files, spots
+
+    apply.apply_matches(to_apply, request.old, replacement, write_changes, cfg, settled)
+    return final_files, final_spots
   end
 
   -- Interactive picker over `pick_items` (auto-detected when engine = "auto").
@@ -278,15 +299,17 @@ local function dispatch(request, cfg, single_file, items)
             messages.info(cfg, messages.fmt(cfg, "cancelled"))
             return
           end
-          local files, spots = apply_func(items, request.new, cfg.write_changes)
-          common.notify_result(files, spots, cfg)
+          apply_func(items, request.new, cfg.write_changes, function(files, spots)
+            common.notify_result(files, spots, cfg)
+          end)
         end,
       })
       return
     end
 
-    local files, spots = apply_func(items, request.new, cfg.write_changes)
-    common.notify_result(files, spots, cfg)
+    apply_func(items, request.new, cfg.write_changes, function(files, spots)
+      common.notify_result(files, spots, cfg)
+    end)
     return
   end
 
