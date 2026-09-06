@@ -10,7 +10,7 @@ jobs:
     name: luacheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: leafo/gh-actions-lua@v10
         with:
@@ -18,7 +18,7 @@ jobs:
       - uses: leafo/gh-actions-luarocks@v4
 
       - name: Install luacheck
-        run: luarocks install luacheck
+        run: luarocks install luacheck 1.2.0
 
       - name: Run luacheck
         run: find lua plugin -name '*.lua' | xargs luacheck
@@ -27,12 +27,12 @@ jobs:
     name: stylua --check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: JohnnyMorganz/stylua-action@v3
+      - uses: JohnnyMorganz/stylua-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
+          version: v2.5.2
           args: --check lua/
 
   test:
@@ -46,13 +46,13 @@ jobs:
       LIB_NVIM_PATH: ${{ github.workspace }}/lib.nvim
       PICKERS_NVIM_PATH: ${{ github.workspace }}/pickers.nvim
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Tests require lib.nvim on the runtimepath (the plugin's own hard
       # dependency for the command layer, notifications, confirm dialog,
       # and export) -- checked out as a subdirectory of the workspace so it
       # can be added via `set rtp+=./lib.nvim` below.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: StefanBartl/lib.nvim
           path: lib.nvim
@@ -60,7 +60,7 @@ jobs:
       # pickers.nvim is a *soft* dependency (only the picker `filter` key
       # needs it). refine_wiring.lua exercises that wiring; without this
       # checkout it would only run the engine-agnostic half.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: StefanBartl/pickers.nvim
           path: pickers.nvim
