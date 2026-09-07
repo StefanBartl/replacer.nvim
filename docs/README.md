@@ -27,6 +27,11 @@ per question, so nothing has to be read end to end.
 | [FEATURES/](FEATURES/README.md) | The catalog: every shipped feature against the module, command and config option that implements it |
 | [api.md](api.md) | `setup`, `run`, `config.get`, `hooks.on` — the surface meant for scripting |
 | [troubleshooting.md](troubleshooting.md) | Symptom-first, plus what `:ReplaceDebug` can tell you |
+
+## Working on it
+
+| | |
+| --- | --- |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Repository layout, the checks CI runs, and where documentation belongs |
 
 `:help replacer` carries the same reference in-editor, in
