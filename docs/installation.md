@@ -10,6 +10,9 @@
 | **[ripgrep](https://github.com/BurntSushi/ripgrep)** | recommended, not required — without `rg` on `PATH` the native `vimgrep` backend takes over automatically, at the cost of `.gitignore` awareness and rich `--type` filtering |
 | [`fidget.nvim`](https://github.com/j-hui/fidget.nvim) | optional — only for `progress_style = "fidget"` |
 | [`which-key.nvim`](https://github.com/folke/which-key.nvim) | optional — labels the picker keymaps it can see, see [BINDINGS.md](BINDINGS.md) |
+| Tree-sitter parsers | optional — `--code-only`, which skips matches in comments and strings |
+| An LSP server | optional — `--lsp`, which upgrades an identifier-shaped match to a real symbol rename |
+| [pickers.nvim](https://github.com/StefanBartl/pickers.nvim) | optional — `<C-f>`, the stacked path and content filter over the result list |
 
 `lib.nvim` is a hard dependency, not a soft one. Roughly every module in
 `lua/replacer/` opens with a bare `require("lib.nvim…")`; without it the
