@@ -1,5 +1,33 @@
 # Features
 
+A project-wide replace is easy to start and hard to trust. The usual tools
+either apply everything or make you edit a results buffer by hand, and both
+answers are wrong for the common case: most of the hits are right, a few are
+not, and you want to see which is which before anything is written.
+
+| Area | Does |
+| --- | --- |
+| **Occurrence-level selection** | Several hits on one line are several entries, not one — pick and skip individually, with the match highlighted in the preview |
+| **Two backends, auto-detected** | ripgrep `--json` for precise coordinates, or a native `vimgrep` scan when `rg` is absent. Two pickers, likewise |
+| **Nothing writes by surprise** | `--dry` for stats and a diff, `--export=` for a git-applyable patch or JSON, `--to-quickfix` for a navigable list, `--confirm-per-file`, and `--checkpoint` with `:ReplaceUndo` to recover from an apply that already happened |
+| **Matching that knows what it is looking at** | Case-preserving replace, whole-word, Tree-sitter-aware `--code-only`, whitespace preservation, regex with backreferences and a live test panel, and a soft `--lsp` mode that upgrades identifier-shaped matches to a real symbol rename |
+| **More than one replace at a time** | Batch pairs from a file, the clipboard or the quickfix list; named presets; a re-runnable history; file and directory renames by basename |
+| **`:Surround` / `:Wrap`** | Wrap every match with a delimiter, idempotently |
+
+## Where this sits
+
+- [**nvim-spectre**](https://github.com/nvim-pack/nvim-spectre) — the
+  best-known alternative; reach for it if you want a dedicated editable results
+  buffer rather than a picker over individual occurrences.
+- [**grug-far.nvim**](https://github.com/MagicDuck/grug-far.nvim) — a
+  buffer-as-form take on the same job, if you prefer typing a search into a
+  live-updating window over a command grammar.
+
+replacer's own bias: every occurrence is an individually selectable entry, and
+nothing is written before you have had the chance to look at a diff.
+
+## The catalog
+
 The catalog of everything replacer.nvim actually ships, cross-referenced
 against the module, command, and config option that implements it. One `##`
 section per feature, so "did we ever build X, and where does it live" has one

@@ -8,6 +8,8 @@ per question, so nothing has to be read end to end.
 | | |
 | --- | --- |
 | [installation.md](installation.md) | Requirements, the lazy.nvim spec, and the declared-CLI-tools popup |
+| [quickstart.md](quickstart.md) | The first thing to run after installing |
+| [what-you-get.md](what-you-get.md) | The picker keymaps at a glance |
 | [configuration.md](configuration.md) | Every `setup()` option with its default, plus hooks and message templates |
 | [health.md](health.md) | What `:checkhealth replacer` checks, and which of its warnings are supposed to be warnings |
 
