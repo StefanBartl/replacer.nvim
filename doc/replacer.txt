@@ -674,7 +674,7 @@ Styles (|replacer-config-progress_style|):~
                   that window, so nothing happens while any other window is
                   focused.
     "kit"         same interaction as "float", rendered through
-                  lib.nvim.ui.kit's themed surface instead of a fixed look
+                  ui.kit's themed surface instead of a fixed look
                   (matches whatever preset you configured for ui.kit).
 
                                              *replacer-progress-statusline*
