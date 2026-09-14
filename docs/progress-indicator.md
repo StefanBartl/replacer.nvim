@@ -129,7 +129,7 @@ showing the final result text first. Recorded:
 
 Identical interaction model to `"float"` — same non-focus-stealing window,
 same focus + `<Esc>` + confirm-prompt cancel flow — but rendered through
-[`ui.kit`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/ui/kit/README.md)'s
+[`ui.kit`](https://github.com/StefanBartl/ui.nvim/blob/main/lua/ui/kit/README.md)'s
 themed `surface` primitive instead of a hardcoded border. If you already use
 `ui.kit` for other popups in your config (notes, toasts, confirms),
 `"kit"` gives the progress window the same border/highlight preset instead of
