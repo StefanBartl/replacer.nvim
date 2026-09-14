@@ -223,7 +223,7 @@ local USAGE = "Usage: :ReplaceFNames[!] {old} {new} [scope] [--dry]"
 function M.register()
   local usercmd = require("lib.nvim.bindings.usercmd")
   local command = require("replacer.command")
-  local confirm = require("lib.nvim.ui.kit.confirm")
+  local confirm = require("ui.kit.confirm")
 
   usercmd.create("ReplaceFNames", function(opts)
     local raw = (type(opts.args) == "string") and opts.args or ""

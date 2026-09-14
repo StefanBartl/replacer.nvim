@@ -6,7 +6,7 @@
 --- tree — that's :ReplaceFNames' job).
 
 local notify = require("replacer.util.notify")
-local confirm = require("lib.nvim.ui.kit.confirm")
+local confirm = require("ui.kit.confirm")
 
 local M = {}
 

@@ -115,7 +115,7 @@ function M.pick(on_pick)
   elseif #candidates == 1 then
     on_pick(candidates[1])
   else
-    require("lib.nvim.ui.kit").select({
+    require("ui.kit").select({
       items = candidates,
       title = "Multiple project roots found:",
       on_select = on_pick,

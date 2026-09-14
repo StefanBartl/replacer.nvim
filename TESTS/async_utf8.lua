@@ -16,6 +16,12 @@ if not add_lib_nvim() then
   print("      Set $LIB_NVIM_PATH, or check it out next to this repo.")
   os.exit(1)
 end
+local add_ui_nvim = dofile((this_file:match("^(.*)/[^/]+$") or ".") .. "/resolve_ui_nvim.lua")
+if not add_ui_nvim() then
+  print("FAIL  cannot locate ui.nvim (a runtime dependency of replacer.nvim).")
+  print("      Set $UI_NVIM_PATH, or check it out next to this repo.")
+  os.exit(1)
+end
 
 local replacer = require("replacer")
 local rg = require("replacer.rg")

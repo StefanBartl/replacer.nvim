@@ -16,7 +16,7 @@
 
 local common = require("replacer.pickers.common")
 local notify = require("replacer.util.notify")
-local confirm = require("lib.nvim.ui.kit.confirm")
+local confirm = require("ui.kit.confirm")
 
 --------------------------------------------------------------------------------
 -- Implementation

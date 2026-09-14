@@ -6,6 +6,7 @@
 | --- | --- |
 | **Neovim** | 0.9 or newer |
 | **[`lib.nvim`](https://github.com/StefanBartl/lib.nvim)** | **required** — the `:Replace`/`:Surround` command layer, notifications, confirm dialogs, file writes and the progress indicator all resolve through it at load time |
+| **[`ui.nvim`](https://github.com/StefanBartl/ui.nvim)** | **required** — `ui.kit.confirm`/`ui.kit.select`/`ui.kit.input` back the confirm dialogs, root/rename pickers and prompts; `replacer.init` requires it unconditionally, same tier as `lib.nvim` |
 | **A picker** | **required** — [`fzf-lua`](https://github.com/ibhagwan/fzf-lua), or [`telescope.nvim`](https://github.com/nvim-telescope/telescope.nvim) (+ [`plenary.nvim`](https://github.com/nvim-lua/plenary.nvim)). `engine = "auto"` prefers fzf-lua when both are present |
 | **[ripgrep](https://github.com/BurntSushi/ripgrep)** | recommended, not required — without `rg` on `PATH` the native `vimgrep` backend takes over automatically, at the cost of `.gitignore` awareness and rich `--type` filtering |
 | [`fidget.nvim`](https://github.com/j-hui/fidget.nvim) | optional — only for `progress_style = "fidget"` |
@@ -14,11 +15,12 @@
 | An LSP server | optional — `--lsp`, which upgrades an identifier-shaped match to a real symbol rename |
 | [pickers.nvim](https://github.com/StefanBartl/pickers.nvim) | optional — `<C-f>`, the stacked path and content filter over the result list |
 
-`lib.nvim` is a hard dependency, not a soft one. Roughly every module in
-`lua/replacer/` opens with a bare `require("lib.nvim…")`; without it the
-plugin does not load at all. The *progress indicator specifically* is the one
-part guarded by `pcall`, which is why it is sometimes described as optional —
-that description applies to the indicator, never to `lib.nvim` itself.
+`lib.nvim` and `ui.nvim` are both hard dependencies, not soft ones. Roughly
+every module in `lua/replacer/` opens with a bare `require("lib.nvim…")` or
+`require("ui.kit…")`; without either, the plugin does not load at all. The
+*progress indicator specifically* is the one part guarded by `pcall`, which
+is why it is sometimes described as optional — that description applies to
+the indicator, never to `lib.nvim`/`ui.nvim` themselves.
 
 ## lazy.nvim
 
@@ -28,6 +30,7 @@ that description applies to the indicator, never to `lib.nvim` itself.
   cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
   dependencies = {
     "StefanBartl/lib.nvim",
+    "StefanBartl/ui.nvim",
     "ibhagwan/fzf-lua", -- or nvim-telescope/telescope.nvim + nvim-lua/plenary.nvim
   },
   opts = {}, -- engine defaults to "auto": fzf-lua first, then telescope

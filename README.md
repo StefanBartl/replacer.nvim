@@ -40,7 +40,8 @@ before you have had the chance to look at a diff.
 > to carry the rename out.
 >
 > All of the above are soft: without them everything else works unchanged.
-> [lib.nvim](https://github.com/StefanBartl/lib.nvim) and a picker are the real
+> [lib.nvim](https://github.com/StefanBartl/lib.nvim),
+> [ui.nvim](https://github.com/StefanBartl/ui.nvim) and a picker are the real
 > dependencies — see [Requirements](docs/installation.md#requirements).
 
 ---
