@@ -17,6 +17,11 @@ if not add_lib_nvim() then
   print("FAIL  cannot locate lib.nvim (a runtime dependency of replacer.nvim).")
   os.exit(1)
 end
+local add_ui_nvim = dofile((this:match("^(.*)/[^/]+$") or ".") .. "/resolve_ui_nvim.lua")
+if not add_ui_nvim() then
+  print("FAIL  cannot locate ui.nvim (a runtime dependency of replacer.nvim).")
+  os.exit(1)
+end
 
 -- pickers.nvim: sibling checkout, else the lazy-managed copy. Built by
 -- appending — a nil $PICKERS_NVIM_PATH at index 1 would stop ipairs early.

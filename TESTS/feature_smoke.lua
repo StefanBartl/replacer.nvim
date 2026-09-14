@@ -23,6 +23,12 @@ if not add_lib_nvim() then
   print("      Set $LIB_NVIM_PATH, or check it out next to this repo.")
   os.exit(1)
 end
+local add_ui_nvim = dofile((this_file:match("^(.*)/[^/]+$") or ".") .. "/resolve_ui_nvim.lua")
+if not add_ui_nvim() then
+  print("FAIL  cannot locate ui.nvim (a runtime dependency of replacer.nvim).")
+  print("      Set $UI_NVIM_PATH, or check it out next to this repo.")
+  os.exit(1)
+end
 
 local ok_mod, replacer = pcall(require, "replacer")
 assert(ok_mod, "failed to require replacer: " .. tostring(replacer))
@@ -455,7 +461,7 @@ do
   }
   ---@diagnostic enable: missing-fields
 
-  -- perfile now confirms via lib.nvim.ui.kit.confirm (async on_answer, callback-
+  -- perfile now confirms via ui.kit.confirm (async on_answer, callback-
   -- recursive loop) instead of the old blocking vim.fn.confirm; stub the kit
   -- module and force a reload so perfile picks up the stub's `confirm.open`.
   -- The stub answers synchronously, so the whole recursive chain (and the
@@ -463,7 +469,7 @@ do
   -- the old blocking version did.
   local answers = { "All", "Skip", "Quit" }
   local call_n = 0
-  package.loaded["lib.nvim.ui.kit.confirm"] = {
+  package.loaded["ui.kit.confirm"] = {
     open = function(opts)
       call_n = call_n + 1
       opts.on_answer(answers[call_n])
@@ -492,7 +498,7 @@ do
     files, spots = f, s
   end)
 
-  package.loaded["lib.nvim.ui.kit.confirm"] = nil
+  package.loaded["ui.kit.confirm"] = nil
   package.loaded["replacer.perfile"] = nil
 
   check(
@@ -676,11 +682,11 @@ do
   check("history: newest entry is first", loaded[1].old == "__hist_test_old__", loaded[1].old)
   check("history: files/spots recorded", loaded[1].files == 2 and loaded[1].spots == 5)
 
-  -- history.pick() now selects via lib.nvim.ui.kit.select (on_select(item, idx))
+  -- history.pick() now selects via ui.kit.select (on_select(item, idx))
   -- instead of the old blocking vim.ui.select(items, opts, on_choice); stub the
   -- kit module and force a reload so history.lua picks up the stub.
   local picked
-  package.loaded["lib.nvim.ui.kit"] = {
+  package.loaded["ui.kit"] = {
     select = function(opts)
       opts.on_select(opts.items[1], 1)
     end,
@@ -690,7 +696,7 @@ do
   history_stubbed.pick(function(r)
     picked = r
   end)
-  package.loaded["lib.nvim.ui.kit"] = nil
+  package.loaded["ui.kit"] = nil
   package.loaded["replacer.history"] = nil
   check(
     "history: pick() re-runs the newest entry",
@@ -985,11 +991,11 @@ end
 -- 2q) rename_assist: --also-rename-file (single-file scope only)
 --------------------------------------------------------------------------------
 do
-  -- rename_assist now confirms via lib.nvim.ui.kit.confirm (async on_answer)
+  -- rename_assist now confirms via ui.kit.confirm (async on_answer)
   -- instead of the old blocking vim.fn.confirm; stub the kit module and
   -- force a reload so rename_assist picks up the stub's `confirm.open`.
   local answer_with -- set per sub-test before calling maybe_rename
-  package.loaded["lib.nvim.ui.kit.confirm"] = {
+  package.loaded["ui.kit.confirm"] = {
     open = function(opts)
       opts.on_answer(answer_with)
     end,
@@ -1008,7 +1014,7 @@ do
 
   -- No match in the basename -> no-op, no prompt at all.
   local confirm_calls = 0
-  package.loaded["lib.nvim.ui.kit.confirm"].open = function(opts)
+  package.loaded["ui.kit.confirm"].open = function(opts)
     confirm_calls = confirm_calls + 1
     opts.on_answer(answer_with)
   end
@@ -1070,7 +1076,7 @@ do
     final_content
   )
 
-  package.loaded["lib.nvim.ui.kit.confirm"] = nil
+  package.loaded["ui.kit.confirm"] = nil
   package.loaded["replacer.rename_assist"] = nil
 end
 

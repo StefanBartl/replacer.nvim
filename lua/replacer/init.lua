@@ -21,7 +21,7 @@ local export = require("replacer.export")
 local common = require("replacer.pickers.common")
 local cmd_mod = require("replacer.command")
 local notify = require("replacer.util.notify")
-local confirm = require("lib.nvim.ui.kit.confirm")
+local confirm = require("ui.kit.confirm")
 
 --------------------------------------------------------------------------------
 -- Public API

@@ -3,13 +3,13 @@
 --- instead of one global "apply ALL N spots across M files?" confirm, ask
 --- All/Skip/Only-some/Quit for each file in turn.
 ---
---- Uses lib.nvim.ui.kit.confirm, which is async/callback-based (no blocking
+--- Uses ui.kit.confirm, which is async/callback-based (no blocking
 --- return value like the native vim.fn.confirm this replaces). The file loop
 --- is therefore callback-recursive: each file's confirm only advances to the
 --- next one from inside its own on_answer callback, and the final totals are
 --- delivered via `on_done` instead of a synchronous return.
 
-local confirm = require("lib.nvim.ui.kit.confirm")
+local confirm = require("ui.kit.confirm")
 
 local M = {}
 

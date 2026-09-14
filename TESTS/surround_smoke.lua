@@ -18,6 +18,12 @@ if not add_lib_nvim() then
   print("      Set $LIB_NVIM_PATH, or check it out next to this repo.")
   os.exit(1)
 end
+local add_ui_nvim = dofile((this_file:match("^(.*)/[^/]+$") or ".") .. "/resolve_ui_nvim.lua")
+if not add_ui_nvim() then
+  print("FAIL  cannot locate ui.nvim (a runtime dependency of replacer.nvim).")
+  print("      Set $UI_NVIM_PATH, or check it out next to this repo.")
+  os.exit(1)
+end
 
 local replacer = require("replacer")
 local command = require("replacer.command")
@@ -175,7 +181,7 @@ do
   fh:close()
 
   local captured_title
-  package.loaded["lib.nvim.ui.kit"] = {
+  package.loaded["ui.kit"] = {
     input = function(opts)
       captured_title = opts.title
       opts.on_submit("_")
@@ -194,7 +200,7 @@ do
   local c = assert(io.open(fc, "r")):read("*a")
   check("no-delim: submitted '_' wraps the matches", select(2, c:gsub("_gamma_", "")) == 2, c)
 
-  package.loaded["lib.nvim.ui.kit"] = nil
+  package.loaded["ui.kit"] = nil
 end
 
 --------------------------------------------------------------------------------

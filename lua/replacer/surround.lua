@@ -335,7 +335,7 @@ local function handle(run_fun, opts, range)
 
   if delim == nil then
     -- Prompt asynchronously; :Surround word  → ask what to wrap with.
-    require("lib.nvim.ui.kit").input({
+    require("ui.kit").input({
       title = messages.fmt(cfg, "surround_prompt"),
       on_submit = function(input)
         finish(input and vim.trim(input) or nil)

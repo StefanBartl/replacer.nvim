@@ -32,11 +32,13 @@ make test       # headless test suite
 make check      # all three
 ```
 
-`make test` needs [`lib.nvim`](https://github.com/StefanBartl/lib.nvim) on the
-runtimepath — it is the plugin's hard dependency, so nothing loads without it:
+`make test` needs [`lib.nvim`](https://github.com/StefanBartl/lib.nvim) and
+[`ui.nvim`](https://github.com/StefanBartl/ui.nvim) on the runtimepath — both
+are the plugin's hard dependencies, so nothing loads without either:
 
 ```sh
 nvim --headless -u NONE -c "set rtp+=." -c "set rtp+=/path/to/lib.nvim" \
+  -c "set rtp+=/path/to/ui.nvim" \
   -c "luafile TESTS/feature_smoke.lua" -c "qa"
 ```
 
@@ -45,7 +47,10 @@ nvim --headless -u NONE -c "set rtp+=." -c "set rtp+=/path/to/lib.nvim" \
 Point your plugin manager at the checkout instead of GitHub:
 
 ```lua
-{ dir = "/path/to/replacer.nvim", dependencies = { "StefanBartl/lib.nvim" } }
+{
+  dir = "/path/to/replacer.nvim",
+  dependencies = { "StefanBartl/lib.nvim", "StefanBartl/ui.nvim" },
+}
 ```
 
 A useful loop for anything touching the apply path: set

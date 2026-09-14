@@ -118,7 +118,7 @@ function M.pick(run_fun)
   for i, entry in ipairs(history) do
     display[i] = format_entry(entry)
   end
-  require("lib.nvim.ui.kit").select({
+  require("ui.kit").select({
     items = display,
     title = "Replace history:",
     on_select = function(_, idx)
