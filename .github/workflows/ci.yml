@@ -106,3 +106,33 @@ jobs:
           nvim --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim" -c "set rtp+=./pickers.nvim"
           -c "luafile TESTS/refine_wiring.lua" -c "qa"
+
+      - name: config_merge.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
+          -c "luafile TESTS/config_merge.lua" -c "qa"
+
+      - name: argtypes_debug_error.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
+          -c "luafile TESTS/argtypes_debug_error.lua" -c "qa"
+
+      - name: health_pickers_tscode.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
+          -c "luafile TESTS/health_pickers_tscode.lua" -c "qa"
+
+      - name: bindings_wiring.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
+          -c "luafile TESTS/bindings_wiring.lua" -c "qa"
+
+      - name: init_dispatch.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
+          -c "luafile TESTS/init_dispatch.lua" -c "qa"
