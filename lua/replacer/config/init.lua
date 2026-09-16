@@ -262,7 +262,7 @@ end
 --- Get the current effective configuration (deep copy, read-only for callers).
 --- @return RP_Config
 function M.get()
-  return vim.tbl_deep_extend("force", {}, state)
+  return vim.deepcopy(state)
 end
 
 --- Resolve a partial override against the current state (without mutating it).

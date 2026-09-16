@@ -1,13 +1,6 @@
 ---@module 'replacer.debug'
 --- Debug utilities for troubleshooting replacer issues.
 --- Usage: :ReplaceDebug {on|off|status|test|inspect|analyze <line> <pattern>}
----
---- CDX: the on/off/status toggle writes `require("replacer").options` — a
---- field the module never exposes (init.lua returns only setup/run), so those
---- branches are dead and `on`/`off` currently do nothing observable. The
---- user-facing docs (commands.md, BINDINGS.md, troubleshooting.md) omit
---- `test` and describe verbose output / hex dumps that this module does not
---- emit. Needs a product decision, not a comment fix.
 
 local notify = require("replacer.util.notify")
 local usercmd = require("lib.nvim.bindings.usercmd")
@@ -20,54 +13,34 @@ local debug_enabled = false
 --- Enable debug mode
 function M.enable()
   debug_enabled = true
-  -- Update config if plugin is loaded
-  local ok, replacer = pcall(require, "replacer")
-  if ok and replacer.options then
-    replacer.options.ext_highlight_opts = replacer.options.ext_highlight_opts or {}
-    replacer.options.ext_highlight_opts.debug = true
-  end
   notify.info("Debug mode ENABLED")
 end
 
 --- Disable debug mode
 function M.disable()
   debug_enabled = false
-  local ok, replacer = pcall(require, "replacer")
-  if ok and replacer.options then
-    if replacer.options.ext_highlight_opts then
-      replacer.options.ext_highlight_opts.debug = false
-    end
-  end
   notify.info("Debug mode DISABLED")
 end
 
 --- Get debug status
 function M.status()
-  local ok, replacer = pcall(require, "replacer")
-  local cfg_debug = ok
-      and replacer.options
-      and replacer.options.ext_highlight_opts
-      and replacer.options.ext_highlight_opts.debug
-    or false
-
-  notify.info(
-    string.format(
-      "Debug: %s (config: %s)",
-      debug_enabled and "ON" or "OFF",
-      cfg_debug and "ON" or "OFF"
-    )
-  )
+  notify.info(string.format("Debug: %s", debug_enabled and "ON" or "OFF"))
   return debug_enabled
 end
 
 --- Run test suite
---- CDX: `test.utf8_offsets` does not resolve — the suite lives at
---- TESTS/utf8_offsets.lua, which is not on the runtimepath under `lua/`.
---- This branch always reports "Test suite not found".
+--- The suite lives at TESTS/utf8_offsets.lua, outside `lua/`'s search path,
+--- so it is loaded by file path (relative to this module's own location)
+--- rather than `require()`.
 function M.test()
   notify.info("Running test suite...")
-  local ok, test = pcall(require, "test.utf8_offsets")
-  if not ok then
+  local this_file = debug.getinfo(1, "S").source:sub(2):gsub("\\", "/")
+  local repo_root = this_file:match("^(.*)/lua/replacer/debug%.lua$")
+  local ok, test = false, nil
+  if repo_root then
+    ok, test = pcall(dofile, repo_root .. "/TESTS/utf8_offsets.lua")
+  end
+  if not ok or type(test) ~= "table" or type(test.run_all) ~= "function" then
     notify.error("Test suite not found")
     return
   end

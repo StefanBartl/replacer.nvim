@@ -102,17 +102,28 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
   themselves are tested directly; only their would-be callers inside the
   fzf-lua/telescope `run()` paths are excluded, for the reason above.
 
-## A pinned (not fixed) bug found while writing these suites
+## Bugs found while writing these suites (since fixed)
 
-`replacer.config.get()`'s docstring promises "a deep copy, to avoid
-accidental mutation by callers", but it is implemented as
-`vim.tbl_deep_extend("force", {}, state)`. That call only deep-merges a
-sub-table when *both* sides being merged already have a table at that key —
-a key that exists on only one side (every key here, since the first
-argument is `{}`) is assigned by reference. Every nested table `get()`
-returns (`keymaps`, `fzf`, `telescope`, `hooks`, `messages`,
-`file_types`/`globs`/`exclude`) is therefore the *same table object*
-backing the module's private `state`; mutating what looks like a read-only
-snapshot silently corrupts persistent config for the rest of the session.
-Pinned with a regression assertion in `config_merge.lua` rather than fixed
-here — a real fix (`vim.deepcopy(state)`) is a separate, deliberate change.
+- `replacer.config.get()`'s docstring promised "a deep copy, to avoid
+  accidental mutation by callers", but it was implemented as
+  `vim.tbl_deep_extend("force", {}, state)`. That call only deep-merges a
+  sub-table when *both* sides being merged already have a table at that key —
+  a key that exists on only one side (every key here, since the first
+  argument is `{}`) was assigned by reference. Every nested table `get()`
+  returned (`keymaps`, `fzf`, `telescope`, `hooks`, `messages`,
+  `file_types`/`globs`/`exclude`) was therefore the *same table object*
+  backing the module's private `state`; mutating what looked like a
+  read-only snapshot silently corrupted persistent config for the rest of
+  the session. Fixed to `vim.deepcopy(state)`; `config_merge.lua` asserts
+  nested tables are no longer aliased.
+- `replacer.debug`'s `enable()`/`disable()`/`status()` wrote/read
+  `require("replacer").options.ext_highlight_opts.debug` — a field
+  `init.lua` never exposed, so the config-echo half of `status()`'s message
+  always reported "OFF" regardless of real state. Removed (dead code with
+  no consumer); `status()` now only reports the module-local flag.
+  Separately, `M.test()` required `"test.utf8_offsets"`, which resolves to
+  `lua/test/utf8_offsets.lua` on the runtimepath — but the real suite lives
+  at `TESTS/utf8_offsets.lua`, outside `lua/`'s search path, so `:ReplaceDebug
+  test` always reported "Test suite not found". Fixed to load the suite by
+  file path (relative to `debug.lua`'s own location) instead of `require()`.
+  Both pinned and verified fixed in `argtypes_debug_error.lua`.
