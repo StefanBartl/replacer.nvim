@@ -156,8 +156,7 @@ end
 
 --------------------------------------------------------------------------------
 -- 3) replacer.debug: enable/disable/status, analyze_line, inspect_buffer,
---    and :ReplaceDebug dispatch. Two behaviors are pinned as documented bugs
---    (per the module's own "CDX" header comments) rather than fixed here.
+--    and :ReplaceDebug dispatch.
 --------------------------------------------------------------------------------
 do
   package.loaded["replacer.debug"] = nil
@@ -176,31 +175,21 @@ do
 
   dbg.enable()
   check("debug: enable() sets the module-local flag", dbg.status() == true)
-  -- BUG (pinned, not fixed -- see the module's own CDX comment): enable()/
-  -- disable() write `require("replacer").options`, a field replacer's
-  -- top-level init.lua never exposes (it returns only setup/run). The
-  -- config-side half of status()'s message is therefore always "OFF",
-  -- whether or not debug mode is actually on.
-  check(
-    "BUG (documented, not fixed): status() config-echo never reflects real state",
-    infos[#infos]:find("config: OFF", 1, true) ~= nil,
-    infos[#infos]
-  )
+  check("debug: status() reports ON when enabled", infos[#infos] == "Debug: ON", infos[#infos])
 
   dbg.disable()
   check("debug: disable() clears the flag", dbg.status() == false)
+  check("debug: status() reports OFF when disabled", infos[#infos] == "Debug: OFF", infos[#infos])
 
-  infos = {}
+  infos, errors = {}, {}
   dbg.test()
-  -- BUG (pinned, not fixed -- CDX comment on M.test()): the require target
-  -- is "test.utf8_offsets", which resolves to lua/test/utf8_offsets.lua on
-  -- the runtimepath -- but the real suite lives at TESTS/utf8_offsets.lua,
-  -- which is never on `lua/`'s search path. `:ReplaceDebug test` therefore
-  -- always reports "Test suite not found", never runs anything.
+  vim.wait(50, function()
+    return false
+  end)
   check(
-    "BUG (documented, not fixed): :ReplaceDebug test never finds the real suite",
-    #errors == 1 and errors[1] == "Test suite not found",
-    vim.inspect(errors)
+    "debug: :ReplaceDebug test finds and runs the real suite at TESTS/utf8_offsets.lua",
+    #errors == 0 and infos[#infos] == "Running test suite...",
+    vim.inspect({ infos = infos, errors = errors })
   )
 
   -- inspect_buffer / analyze_line are mostly `print`, but must never error --

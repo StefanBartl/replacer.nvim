@@ -58,9 +58,9 @@ do
 end
 
 --------------------------------------------------------------------------------
--- 2) get(): top-level fields are copied, but nested tables are NOT --
---    a confirmed bug in the module's own docstring's promise ("returns a
---    deep copy to avoid accidental mutation by callers").
+-- 2) get(): both top-level fields and nested tables are copied, matching the
+--    module's own docstring promise ("returns a deep copy to avoid accidental
+--    mutation by callers").
 --------------------------------------------------------------------------------
 do
   config.setup({})
@@ -69,27 +69,13 @@ do
   local snap2 = config.get()
   check("get(): top-level scalar fields are copied, not aliased", snap2.engine ~= "MUTATED")
 
-  -- BUG (pinned, not fixed): `M.get()` is `vim.tbl_deep_extend("force", {},
-  -- state)`. That call only recurses into a sub-table when BOTH sides being
-  -- merged already have a table at that key; a key that exists only on one
-  -- side (which is every key here, since the first argument is `{}`) is
-  -- assigned BY REFERENCE, not deep-copied. So every nested table `get()`
-  -- returns (keymaps, fzf, telescope, hooks, messages, file_types/globs/
-  -- exclude) is literally the SAME table object backing the module's
-  -- private `state` -- mutating what looks like a read-only snapshot
-  -- silently corrupts persistent config for the rest of the session.
-  -- A real fix would need `vim.deepcopy(state)` instead; not applied here,
-  -- per this campaign's "pin the regression, don't fix it inline" rule.
   snap.keymaps.toggle_select = "MUTATED"
   local snap3 = config.get()
   check(
-    "BUG (documented, not fixed): get()'s nested tables alias internal state, "
-      .. "despite the docstring's 'deep copy' promise",
-    snap3.keymaps.toggle_select == "MUTATED",
+    "get(): nested tables are deep-copied, not aliased to internal state",
+    snap3.keymaps.toggle_select ~= "MUTATED",
     snap3.keymaps.toggle_select
   )
-  -- Restore, so no later sub-test in this file inherits the corruption.
-  config.setup({ keymaps = { toggle_select = DEFAULTS.keymaps.toggle_select } })
 end
 
 --------------------------------------------------------------------------------
