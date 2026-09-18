@@ -535,6 +535,64 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 2h-2) perfile: "Only some" hands off to the picker and stops the loop
+-- (UI-53) -- it must not fall through to the next file's confirm while the
+-- picker session for this one is still open.
+--------------------------------------------------------------------------------
+do
+  ---@diagnostic disable: missing-fields
+  local items = {
+    { id = 1, path = "a.txt", lnum = 1, col0 = 0, old = "foo", line = "foo" },
+    { id = 2, path = "b.txt", lnum = 1, col0 = 0, old = "foo", line = "foo" },
+  }
+  ---@diagnostic enable: missing-fields
+
+  local answers = { "Only some" }
+  local call_n = 0
+  package.loaded["ui.kit.confirm"] = {
+    open = function(opts)
+      call_n = call_n + 1
+      opts.on_answer(answers[call_n])
+    end,
+  }
+  package.loaded["replacer.perfile"] = nil
+  local perfile_stubbed2 = require("replacer.perfile")
+
+  local applied_paths2 = {}
+  local function fake_apply2(list, _new_text, _write, on_result)
+    applied_paths2[#applied_paths2 + 1] = list[1].path
+    if on_result then
+      on_result(1, #list)
+    end
+    return 1, #list
+  end
+  local picked_files2 = {}
+  local function fake_pick2(list)
+    picked_files2[#picked_files2 + 1] = list[1].path
+  end
+
+  local files2, spots2
+  perfile_stubbed2.run(items, "bar", true, fake_apply2, fake_pick2, function(f, s)
+    files2, spots2 = f, s
+  end)
+
+  package.loaded["ui.kit.confirm"] = nil
+  package.loaded["replacer.perfile"] = nil
+
+  check(
+    "perfile: Only-some hands the file to the picker",
+    #picked_files2 == 1 and picked_files2[1] == "a.txt",
+    vim.inspect(picked_files2)
+  )
+  check("perfile: Only-some stops the loop -- b.txt's confirm never opens", call_n == 1, call_n)
+  check("perfile: Only-some never calls apply_func itself", #applied_paths2 == 0)
+  check(
+    "perfile: on_done still fires (0/0 -- nothing applied by perfile itself)",
+    files2 == 0 and spots2 == 0
+  )
+end
+
+--------------------------------------------------------------------------------
 -- 2i) checkpoint: snapshot + restore (--checkpoint / :ReplaceUndo)
 --------------------------------------------------------------------------------
 do
