@@ -38,9 +38,12 @@ M.REGISTRY = {
 
 ---Register every command in `REGISTRY`.
 ---
----Each `register()` is pcall'd around its `require`, which is what the old
----ladder in `plugin/replacer.lua` did too: one feature module failing to load
----must not cost the user `:Replace` itself.
+---Both the `require` and the `register()` call are pcall'd: `register()` is
+---itself a system boundary (it calls into lib.nvim's `composer.verb`/
+---`usercmd.create` and into ui.nvim), so a throw from either step must not
+---abort the whole loop -- one feature module failing to load or register
+---must not cost the user every command after it, including `:Replace`
+---itself.
 ---@param run fun(request: table)  `replacer.run`
 ---@return string[] registered  Names of the commands that were created
 function M.setup(run)
@@ -49,9 +52,11 @@ function M.setup(run)
   for _, entry in ipairs(M.REGISTRY) do
     local ok, mod = pcall(require, entry.module)
     if ok and type(mod) == "table" and type(mod.register) == "function" then
-      mod.register(entry.needs_run and run or nil)
-      for _, name in ipairs(entry.commands) do
-        registered[#registered + 1] = name
+      local ok_register = pcall(mod.register, entry.needs_run and run or nil)
+      if ok_register then
+        for _, name in ipairs(entry.commands) do
+          registered[#registered + 1] = name
+        end
       end
     end
   end
