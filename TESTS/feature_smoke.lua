@@ -915,6 +915,61 @@ do
   local bc2 = assert(io.open(file_b2, "r")):read("*a")
   check("batch: pair 1 applied across the batch scope", bc1:match("ALPHA") ~= nil, bc1)
   check("batch: pair 2 applied across the batch scope", bc2:match("BETA") ~= nil, bc2)
+
+  -- UI-01: with confirm_all on, a real batch run must ask ONCE for the
+  -- whole batch, not once per pair (previously: one `ui.kit.confirm` float
+  -- per pair, in collection-completion order).
+  local file_c1 = tmp .. "/batch_confirm1.txt"
+  local file_c2 = tmp .. "/batch_confirm2.txt"
+  local function write_file(path, content)
+    local fh = assert(io.open(path, "w"))
+    fh:write(content)
+    fh:close()
+  end
+  write_file(file_c1, "gamma\n")
+  write_file(file_c2, "delta\n")
+
+  local confirm_batch_file = tmp .. "/batch_confirm_spec.txt"
+  write_file(confirm_batch_file, "gamma => GAMMA\ndelta => DELTA\n")
+
+  replacer.setup({ confirm_all = true })
+
+  local confirm_calls = 0
+  package.loaded["ui.kit.confirm"] = {
+    open = function(opts)
+      confirm_calls = confirm_calls + 1
+      opts.on_answer(true)
+    end,
+  }
+
+  ---@type RP_Request
+  local btpl2 = {
+    old = "",
+    new = "",
+    scope = "",
+    all = false,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = {},
+    filters = { file_types = {}, globs = {}, exclude = {} },
+  }
+  batch.run(confirm_batch_file, tmp, btpl2, replacer.run)
+  vim.wait(300)
+
+  package.loaded["ui.kit.confirm"] = nil
+  replacer.setup({ confirm_all = false })
+
+  check(
+    "batch: confirm_all -> exactly one confirm for the whole batch (UI-01)",
+    confirm_calls == 1,
+    confirm_calls
+  )
+
+  local cc1 = assert(io.open(file_c1, "r")):read("*a")
+  local cc2 = assert(io.open(file_c2, "r")):read("*a")
+  check("batch: pair 1 applied after the single confirm", cc1:match("GAMMA") ~= nil, cc1)
+  check("batch: pair 2 applied after the single confirm", cc2:match("DELTA") ~= nil, cc2)
 end
 
 --------------------------------------------------------------------------------
