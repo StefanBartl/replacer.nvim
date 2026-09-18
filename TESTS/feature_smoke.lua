@@ -1247,8 +1247,19 @@ if vim.fn.executable("rg") == 1 then
   check("streaming: --stream flag parses", ok9 and sreq.overrides.stream == true)
   sreq.scope, sreq.all = stream_dir, true
   replacer.run(sreq)
-  vim.wait(2000)
-  local sc1 = assert(io.open(stream_dir .. "/f1.txt", "r")):read("*a")
+  -- Wait on the outcome, not on a stopwatch: --stream spawns a real rg
+  -- process and applies on its exit callback, so a flat `vim.wait(2000)` was
+  -- the same race the `--changed` case above documents. Poll for the write.
+  local function read_streamed()
+    return assert(io.open(stream_dir .. "/f1.txt", "r")):read("*a")
+  end
+  local streamed_written = vim.wait(10000, function()
+    return read_streamed():match("NEEDLE") ~= nil
+  end, 20)
+  if not streamed_written then
+    print("NOTE  --stream --all did not write within 10s; asserting on what is there")
+  end
+  local sc1 = read_streamed()
   check(
     "streaming: end-to-end :Replace --stream --all applies correctly",
     sc1:match("NEEDLE") ~= nil and not sc1:match("needle"),
