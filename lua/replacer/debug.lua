@@ -173,7 +173,11 @@ function M.register_command()
     elseif cmd == "inspect" then
       M.inspect_buffer()
     elseif cmd:match("^analyze%s+") then
-      local lnum, pattern = cmd:match("^analyze%s+(%d+)%s+(.+)$")
+      -- PRIN-25: `cmd` is case-folded for verb dispatch above; the search
+      -- pattern payload must come from the ORIGINAL `arg` so an uppercase
+      -- identifier isn't silently lowercased before reaching the literal,
+      -- case-sensitive line:find() in analyze_line.
+      local lnum, pattern = arg:match("^%S+%s+(%d+)%s+(.+)$")
       local _lnum = tonumber(lnum)
       if _lnum and pattern then
         M.analyze_line(_lnum, pattern)

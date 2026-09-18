@@ -243,6 +243,38 @@ do
     vim.inspect(analyze_errors)
   )
   notify.error = orig_error
+
+  -- PRIN-25: the pattern payload must keep its original case -- the verb is
+  -- lowercased for dispatch, but that lowercased copy used to leak into the
+  -- literal, case-sensitive line:find() search too, so an uppercase pattern
+  -- like an identifier never matched.
+  local case_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(case_buf, 0, -1, false, { "the answer is FooBar here" })
+  vim.api.nvim_set_current_buf(case_buf)
+
+  local printed = {}
+  local orig_print = print
+  _G.print = function(...)
+    local parts = {}
+    for i = 1, select("#", ...) do
+      parts[#parts + 1] = tostring(select(i, ...))
+    end
+    printed[#printed + 1] = table.concat(parts, "\t")
+  end
+  vim.cmd("ReplaceDebug analyze 1 FooBar")
+  _G.print = orig_print
+
+  local reported_none = false
+  for _, line in ipairs(printed) do
+    if line:find("No occurrences found", 1, true) then
+      reported_none = true
+    end
+  end
+  check(
+    "debug: :ReplaceDebug analyze finds a mixed-case pattern (case preserved)",
+    not reported_none,
+    vim.inspect(printed)
+  )
 end
 
 print(string.format("\n=== %d passed, %d failed ===", pass, fail))
