@@ -64,9 +64,29 @@ function M.detect(start_dir)
   return candidates
 end
 
+---@internal
+--- True when `dir` is exactly the user's home directory. PERF-72: an
+--- auto-detected scan root must never default to the whole home directory
+--- -- a dotfiles repo (`~/.git`) is common enough that "prefer the outermost
+--- .git" would otherwise silently widen every `root`-scoped run under
+--- `$HOME` to the entire home directory.
+---@param dir string
+---@return boolean
+local function is_home_dir(dir)
+  local uv = vim.uv or vim.loop
+  local home = uv.os_homedir()
+  if not home then
+    return false
+  end
+  local norm = function(p)
+    return (p:gsub("\\", "/"):gsub("/+$", ""))
+  end
+  return norm(dir) == norm(home)
+end
+
 --- Best single guess, without prompting: prefer the outermost candidate
---- that has .git (the conventional "true" project root); otherwise the
---- nearest candidate.
+--- that has .git (the conventional "true" project root) and is not the
+--- home directory itself; otherwise the nearest candidate.
 ---@param start_dir string
 ---@return string|nil root, string[] candidates
 function M.detect_best(start_dir)
@@ -75,7 +95,7 @@ function M.detect_best(start_dir)
     return nil, candidates
   end
   for i = #candidates, 1, -1 do
-    if vim.fn.isdirectory(candidates[i] .. "/.git") == 1 then
+    if vim.fn.isdirectory(candidates[i] .. "/.git") == 1 and not is_home_dir(candidates[i]) then
       return candidates[i], candidates
     end
   end
