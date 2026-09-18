@@ -49,12 +49,30 @@ local function write_exact(path, content)
 end
 
 ---@internal
+--- Find a loaded buffer by exact path. `vim.fn.bufnr()` treats a string
+--- argument as a |file-pattern| (matched with 'magic'), not a literal path
+--- -- `[`, `*`, `?`, `.` in `path` are regex operators there, and it also
+--- substring-matches, so an unrelated buffer whose name merely contains
+--- `path` could win. Walking the buffer list and comparing full names is
+--- the literal equivalent.
+---@param path string
+---@return integer bufnr  # -1 if no loaded buffer has this exact name
+local function bufnr_exact(path)
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_get_name(b) == path then
+      return b
+    end
+  end
+  return -1
+end
+
+---@internal
 --- Read a path's CURRENT content, preferring a loaded buffer over disk (so
 --- the checkpoint reflects unsaved edits too, consistent with dry-run).
 ---@param path string
 ---@return string
 local function read_current(path)
-  local bufnr = vim.fn.bufnr(path)
+  local bufnr = bufnr_exact(path)
   if bufnr ~= -1 and vim.api.nvim_buf_is_loaded(bufnr) then
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     return table.concat(lines, "\n") .. "\n"

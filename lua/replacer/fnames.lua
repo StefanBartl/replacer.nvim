@@ -54,6 +54,24 @@ local function replace_all_literal(text, old, new)
 end
 
 ---@internal
+--- Find a loaded buffer by exact path. `vim.fn.bufnr()` treats a string
+--- argument as a |file-pattern| (matched with 'magic'), not a literal path
+--- -- `[`, `*`, `?`, `.` in `path` are regex operators there, and it also
+--- substring-matches, so an unrelated buffer whose name merely contains
+--- `path` could win. Walking the buffer list and comparing full names is
+--- the literal equivalent.
+---@param path string
+---@return integer bufnr  # -1 if no loaded buffer has this exact name
+local function bufnr_exact(path)
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_get_name(b) == path then
+      return b
+    end
+  end
+  return -1
+end
+
+---@internal
 --- Recursively collect every file/directory path under `root` (root itself
 --- excluded — callers add it separately when relevant).
 ---@param root string
@@ -168,6 +186,17 @@ function M.apply(matches)
 
   for _, m in ipairs(matches) do
     local uv = vim.uv or vim.loop
+    -- ERR-30: the plan was computed from a directory snapshot taken before
+    -- this loop started; re-verify the destination is still free right
+    -- before writing. rename(2)/MoveFileEx(REPLACE_EXISTING) silently
+    -- replaces an existing destination otherwise, so a stale plan would
+    -- destroy a file it never planned to touch.
+    if uv.fs_stat(m.new_path) then
+      errors[#errors + 1] =
+        string.format("%s -> %s skipped (destination already exists)", m.old_path, m.new_path)
+      goto continue
+    end
+
     local ok_rename, err = uv.fs_rename(m.old_path, m.new_path)
     if ok_rename then
       renamed = renamed + 1
@@ -182,7 +211,7 @@ function M.apply(matches)
           end
         end
       else
-        local bufnr = vim.fn.bufnr(m.old_path)
+        local bufnr = bufnr_exact(m.old_path)
         if bufnr ~= -1 then
           pcall(vim.api.nvim_buf_set_name, bufnr, m.new_path)
         end
@@ -191,6 +220,7 @@ function M.apply(matches)
       errors[#errors + 1] =
         string.format("%s -> %s failed (%s)", m.old_path, m.new_path, tostring(err))
     end
+    ::continue::
   end
 
   return renamed, errors
