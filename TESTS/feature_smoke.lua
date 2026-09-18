@@ -790,6 +790,49 @@ do
 
   check("presets: unknown name -> nil", presets.as_request("__does_not_exist__") == nil)
 
+  -- SEC-33: presets.json is untrusted on load -- a corrupted/hand-edited
+  -- entry must be rejected cleanly, not crash deep in the replace pipeline.
+  local bad_name = "bad_" .. name
+  presets.save(bad_name, {
+    old = 123, -- wrong type -- must be rejected outright
+    new = "bar",
+    scope = "cwd",
+    all = false,
+    overrides = { changed_only = "not-a-table" },
+    filters = { file_types = { "lua", 5, true }, globs = {}, exclude = {} },
+  })
+  local bad_req, bad_err = presets.as_request(bad_name)
+  check(
+    "presets: as_request() rejects a non-string old instead of crashing",
+    bad_req == nil and type(bad_err) == "string",
+    vim.inspect({ bad_req, bad_err })
+  )
+  presets.delete(bad_name)
+
+  local partial_name = "partial_" .. name
+  presets.save(partial_name, {
+    old = "foo",
+    new = "bar",
+    scope = "cwd",
+    all = false,
+    overrides = { changed_only = "not-a-table" }, -- would throw via ipairs() unvalidated
+    filters = { file_types = { "lua", 5, true }, globs = {}, exclude = {} },
+  })
+  local partial_req = presets.as_request(partial_name)
+  check(
+    "presets: as_request() drops a non-table changed_only override",
+    partial_req ~= nil and partial_req.overrides.changed_only == nil,
+    vim.inspect(partial_req and partial_req.overrides)
+  )
+  check(
+    "presets: as_request() drops non-string filter entries",
+    partial_req ~= nil
+      and #partial_req.filters.file_types == 1
+      and partial_req.filters.file_types[1] == "lua",
+    vim.inspect(partial_req and partial_req.filters)
+  )
+  presets.delete(partial_name)
+
   presets.delete(name)
   check("presets: delete() removes it", presets.as_request(name) == nil)
 end
