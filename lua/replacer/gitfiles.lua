@@ -69,10 +69,13 @@ end
 --- "staged", "untracked") as absolute paths, deduplicated.
 ---
 --- Asynchronous: the result arrives through `on_done`. `top` is nil there when
---- `start_dir` isn't inside a git repository.
+--- `start_dir` isn't inside a git repository. `failed_kinds` names any
+--- requested kind ("modified"/"staged"/"untracked") whose git query itself
+--- failed (git missing, locked/corrupt index, permission error) -- distinct
+--- from that kind legitimately contributing zero files.
 ---@param start_dir string
 ---@param kinds string[]
----@param on_done fun(files: string[], top: string|nil)
+---@param on_done fun(files: string[], top: string|nil, failed_kinds: string[]|nil)
 ---@return nil
 function M.list(start_dir, kinds, on_done)
   -- `list` is asynchronous and returns nothing: without this guard a caller
@@ -109,15 +112,21 @@ function M.list(start_dir, kinds, on_done)
   -- invocations against the same repository serialise on the index anyway.
   local steps = {}
   if set.modified then
-    steps[#steps + 1] = { "diff", "--name-only" }
+    steps[#steps + 1] = { kind = "modified", args = { "diff", "--name-only" } }
   end
   if set.staged then
-    steps[#steps + 1] = { "diff", "--staged", "--name-only" }
+    steps[#steps + 1] = { kind = "staged", args = { "diff", "--staged", "--name-only" } }
   end
   if set.untracked then
-    steps[#steps + 1] = { "ls-files", "--others", "--exclude-standard" }
+    steps[#steps + 1] =
+      { kind = "untracked", args = { "ls-files", "--others", "--exclude-standard" } }
   end
 
+  -- ERR-11: an empty `rel` can mean "nothing changed" or "the git query for
+  -- this kind failed" (git missing, locked/corrupt index, permission
+  -- error) -- track which kinds failed so the caller can tell those apart
+  -- instead of reporting a silent, possibly-incomplete "no changed files".
+  local failed_kinds = {}
   local i = 0
   local function step()
     i = i + 1
@@ -126,11 +135,16 @@ function M.list(start_dir, kinds, on_done)
       for n, r in ipairs(rel) do
         abs[n] = top .. "/" .. r
       end
-      on_done(abs, top)
+      on_done(abs, top, (#failed_kinds > 0) and failed_kinds or nil)
       return
     end
-    git_lines(top, steps[i], function(lines)
-      add_all(lines)
+    local s = steps[i]
+    git_lines(top, s.args, function(lines, ok)
+      if ok then
+        add_all(lines)
+      else
+        failed_kinds[#failed_kinds + 1] = s.kind
+      end
       step()
     end)
   end
