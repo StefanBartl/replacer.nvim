@@ -250,6 +250,9 @@ Keys other than <CR> are configurable via `keymaps` in setup(), see
     non-interactive — no picker), reusing the exact same pipeline (dry-run,
     filters, checkpoints, hooks, history, …) as a normal :Replace! would.
     The bang is implied/optional: batch always runs non-interactively.
+    With 'confirm_all' on and no --dry, the whole batch is confirmed ONCE
+    up front, not once per pair; declining cancels the batch before any
+    pair is dispatched.
 
     {source} is a file path, or one of:
         clipboard, +    the "+" register

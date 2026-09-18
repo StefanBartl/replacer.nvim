@@ -128,9 +128,42 @@ end
 -- Runner
 --------------------------------------------------------------------------------
 
+---@internal
+--- Dispatch every pair as its own :Replace-equivalent request via `run_fun`
+--- (search + apply, or plan-only when `req_template.dry` is set). Each
+--- pair's own result is reported by the normal apply pipeline.
+---@param pairs_list RP_BatchPair[]
+---@param scope string
+---@param req_template RP_Request
+---@param run_fun fun(request: RP_Request): nil
+---@param source string  # for the summary notification only
+---@return nil
+local function dispatch_all(pairs_list, scope, req_template, run_fun, source)
+  for _, pair in ipairs(pairs_list) do
+    ---@type RP_Request
+    local req = vim.deepcopy(req_template)
+    req.old, req.new, req.scope = pair.old, pair.new, scope
+    -- Batch is inherently non-interactive (a picker per pair makes no
+    -- sense); dispatch() ignores `all` entirely on the --dry/plan path
+    -- anyway, so this is a no-op when req.dry is set.
+    req.all = true
+    -- UI-01: the batch itself is the one bulk/destructive action, confirmed
+    -- once below (see `M.run`) -- each pair's own dispatch must not open a
+    -- second confirm on top of that.
+    req.overrides = req.overrides or {}
+    req.overrides.confirm_all = false
+    req.overrides.confirm_wide_scope = false
+    run_fun(req)
+  end
+
+  notify.info(string.format("batch: dispatched %d pair(s) from %s", #pairs_list, source))
+end
+
 --- Run every pair, sequentially dispatching one :Replace-equivalent request
---- per pair via `run_fun` (search + apply, or plan-only when req_template.dry
---- is set). Each pair's own result is reported by the normal apply pipeline.
+--- per pair. A real (non-dry) run asks for confirmation ONCE for the whole
+--- batch instead of once per pair (UI-01) -- up to 40 stacked "Apply ALL?"
+--- floats, arriving in collection-completion order rather than file order,
+--- was the previous behavior.
 ---@param source string
 ---@param scope string
 ---@param req_template RP_Request     # carries dry/all/overrides/filters from the command line
@@ -153,18 +186,33 @@ function M.run(source, scope, req_template, run_fun)
     return
   end
 
-  for _, pair in ipairs(pairs_list) do
-    ---@type RP_Request
-    local req = vim.deepcopy(req_template)
-    req.old, req.new, req.scope = pair.old, pair.new, scope
-    -- Batch is inherently non-interactive (a picker per pair makes no
-    -- sense); dispatch() ignores `all` entirely on the --dry/plan path
-    -- anyway, so this is a no-op when req.dry is set.
-    req.all = true
-    run_fun(req)
+  -- --dry never writes and dispatch() routes it to the plan-only path
+  -- before it would ever reach a confirm -- skip straight to dispatching.
+  if req_template.dry then
+    dispatch_all(pairs_list, scope, req_template, run_fun, source)
+    return
   end
 
-  notify.info(string.format("batch: dispatched %d pair(s) from %s", #pairs_list, source))
+  local cfg = require("replacer.config").resolve(req_template.overrides or {})
+  if not cfg.confirm_all then
+    dispatch_all(pairs_list, scope, req_template, run_fun, source)
+    return
+  end
+
+  require("ui.kit.confirm").open({
+    question = string.format(
+      "Apply %d replace pair(s) from %s? (each pair searches and replaces across the given scope)",
+      #pairs_list,
+      source
+    ),
+    on_answer = function(yes)
+      if yes then
+        dispatch_all(pairs_list, scope, req_template, run_fun, source)
+      else
+        notify.info("batch: cancelled")
+      end
+    end,
+  })
 end
 
 --------------------------------------------------------------------------------

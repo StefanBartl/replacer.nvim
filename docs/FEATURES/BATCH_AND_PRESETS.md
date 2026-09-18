@@ -8,7 +8,9 @@ of file contents.
 
 `:ReplaceBatch[!] {source} [scope] [--flags]` runs multiple `{old → new}`
 pairs in one command, sourced from a file, the clipboard, or the quickfix
-list — one full `:Replace` dispatch per pair.
+list — one full `:Replace` dispatch per pair. With `confirm_all` on and no
+`--dry`, the whole batch is confirmed once up front, not once per pair; a
+"no" cancels the batch before anything is dispatched.
 
 - **Module:** `batch.lua` (`M.parse`, `M.run`, `M.register`)
 - **Usercmds:** `:ReplaceBatch[!] {source} [scope] [--flags]` (see
