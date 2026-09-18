@@ -122,7 +122,9 @@ selection; a linewise or multi-line range keeps the whole-line behaviour.
 `root` as a scope walks up from the current buffer's directory looking for
 markers (`.git`, `package.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`, …)
 and deterministically prefers the outermost `.git` candidate, without
-prompting.
+prompting — except the home directory itself, which is never picked just
+because it happens to hold a dotfiles `.git`; the nearest marker match wins
+instead.
 
 ```vim
 :Replace old new root

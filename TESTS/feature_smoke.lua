@@ -328,6 +328,24 @@ do
   local best = root.detect_best(mono .. "/pkg/src/deep")
   check("root: detect_best prefers the outermost .git root", best == mono, best)
 
+  -- PERF-72: the outermost `.git` candidate must be skipped when it is
+  -- exactly the home directory (a dotfiles repo), falling back to the
+  -- nearest marker match instead of silently widening to all of $HOME.
+  do
+    local uv = vim.uv or vim.loop
+    local orig_home = uv.os_homedir
+    uv.os_homedir = function()
+      return mono
+    end
+    local ok_call, best_when_home = pcall(root.detect_best, mono .. "/pkg/src/deep")
+    uv.os_homedir = orig_home
+    check(
+      "root: detect_best skips the home directory even when it has .git",
+      ok_call and best_when_home == mono .. "/pkg",
+      best_when_home
+    )
+  end
+
   local no_markers = tmp .. "/no_markers_here"
   vim.fn.mkdir(no_markers, "p")
   local empty_best, empty_candidates = root.detect_best(no_markers)

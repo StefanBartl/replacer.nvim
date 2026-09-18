@@ -928,7 +928,9 @@ The "root" scope token walks up from the current buffer's directory (or
 cwd) looking for markers (.git, package.json, go.mod, Cargo.toml,
 pyproject.toml, …). With several candidates (e.g. a monorepo package with
 its own package.json nested inside a git repo), it deterministically
-prefers the outermost one with .git, without prompting: >vim
+prefers the outermost one with .git, without prompting -- except the home
+directory itself, which is never picked just because it happens to hold a
+dotfiles .git; the nearest marker match wins instead: >vim
     :Replace old new root
 <
 For an interactive prompt when there is more than one candidate, use
