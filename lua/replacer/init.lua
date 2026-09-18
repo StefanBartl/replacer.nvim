@@ -401,10 +401,17 @@ function M.run(request, new_text, scope, all)
   if cfg._changed_only then
     local gitfiles = require("replacer.gitfiles")
     local start_dir = single_file and vim.fn.fnamemodify(roots[1], ":h") or roots[1]
-    gitfiles.list(start_dir, cfg._changed_only, function(files, top)
+    gitfiles.list(start_dir, cfg._changed_only, function(files, top, failed_kinds)
       if not top then
         notify.warn("--changed: not inside a git repository")
         return
+      end
+      if failed_kinds then
+        notify.warn(
+          "--changed: git query failed for "
+            .. table.concat(failed_kinds, ", ")
+            .. " — results may be incomplete"
+        )
       end
       -- git always reports forward-slash paths regardless of OS; normalize
       -- the scope prefix the same way before comparing (fnamemodify keeps
