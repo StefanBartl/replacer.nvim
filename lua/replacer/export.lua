@@ -128,6 +128,21 @@ end
 -- Renderers
 --------------------------------------------------------------------------------
 
+---@internal
+--- `vim.text.diff` only exists from Neovim 0.11; `vim.diff` is the same
+--- function under its pre-0.11 name and is still present on 0.9/0.10 (the
+--- plugin's declared minimum).
+---@param a string
+---@param b string
+---@return string|boolean|nil
+local function text_diff(a, b)
+  local fn = (vim.text and vim.text.diff) or vim.diff
+  if not fn then
+    return nil
+  end
+  return fn(a, b, { result_type = "unified", ctxlen = 3 })
+end
+
 --- Render a unified diff (git-applyable) for the plan.
 ---@param results RP_FileResult[]
 ---@return string
@@ -136,7 +151,7 @@ function M.build_patch(results)
   for _, r in ipairs(results) do
     local a = table.concat(r.old_lines, "\n") .. "\n"
     local b = table.concat(r.new_lines, "\n") .. "\n"
-    local hunks = vim.text.diff(a, b, { result_type = "unified", ctxlen = 3 })
+    local hunks = text_diff(a, b)
     if type(hunks) == "string" and hunks ~= "" then
       local rel = vim.fn.fnamemodify(r.path, ":.")
       out[#out + 1] = "--- a/" .. rel
