@@ -1,12 +1,15 @@
 -- TESTS/refine_wiring.lua — the replacer side of the picker filter feature.
 -- Run:  nvim -l TESTS/refine_wiring.lua
 --
--- The picker `run()` functions need telescope/fzf loaded and are exercised
--- manually. What is unit-testable — and what actually broke twice while
--- wiring this — is `replacer.pickers.common`: the `pickers.refine` handle it
+-- This file covers `replacer.pickers.common`: the `pickers.refine` handle it
 -- builds for an `RP_Match` list, and the `without()` helper the reopen path
 -- leans on. pickers.nvim is picked up as a sibling checkout (same rule as
 -- lib.nvim); the refine-handle checks are skipped with a note if it is absent.
+-- (An earlier version of this comment claimed the picker `run()` functions
+-- "need telescope/fzf loaded and are exercised manually" -- they don't, and
+-- now aren't: TESTS/pickers_backends.lua drives both with the actual backend
+-- module stubbed at package.loaded, covering the `<C-f>` filter wiring this
+-- feature adds to each picker's attach_mappings/actions table.)
 ---@diagnostic disable: need-check-nil
 
 vim.opt.runtimepath:append(vim.fn.getcwd())

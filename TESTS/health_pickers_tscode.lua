@@ -335,6 +335,74 @@ do
   end, calls) > 0)
 end
 
+--------------------------------------------------------------------------------
+-- 6) BUG (pinned, not fixed -- see TESTS/README.md): check_lib_nvim() already
+--    reports + degrades gracefully when
+--    lib.nvim.bindings.usercmd.composer is missing, but M.check() itself
+--    then unconditionally requires that exact module again a few lines
+--    later for the "composer route pre-flight" (:Replace/:Surround
+--    checkhealth), with no pcall guard. Simulated via package.preload so the
+--    require genuinely fails (lib.nvim is otherwise present and required for
+--    this whole suite -- only this one submodule is made to look missing,
+--    e.g. an older lib.nvim checkout without it), rather than swapping in a
+--    fake table that would just mask the real crash.
+--------------------------------------------------------------------------------
+do
+  local health_mod = require("replacer.health")
+  local mod_name = "lib.nvim.bindings.usercmd.composer"
+  local real_mod = package.loaded[mod_name]
+  package.loaded[mod_name] = nil
+  package.preload[mod_name] = function()
+    error("simulated: " .. mod_name .. " unavailable (e.g. an older lib.nvim checkout)")
+  end
+
+  local calls2 = {}
+  local fake_health2 = {
+    start = function(name)
+      calls2[#calls2 + 1] = { kind = "start", name = name }
+    end,
+    ok = function(msg)
+      calls2[#calls2 + 1] = { kind = "ok", msg = msg }
+    end,
+    warn = function(msg, advice)
+      calls2[#calls2 + 1] = { kind = "warn", msg = msg, advice = advice }
+    end,
+    error = function(msg, advice)
+      calls2[#calls2 + 1] = { kind = "error", msg = msg, advice = advice }
+    end,
+    info = function(msg)
+      calls2[#calls2 + 1] = { kind = "info", msg = msg }
+    end,
+  }
+  local orig_health2 = vim.health
+  vim.health = fake_health2 --[[@as table]]
+
+  local ok_check2, err2 = pcall(health_mod.check)
+
+  vim.health = orig_health2
+  package.preload[mod_name] = nil
+  package.loaded[mod_name] = real_mod
+
+  local reported_missing = false
+  for _, c in ipairs(calls2) do
+    if c.kind == "error" and c.msg and c.msg:find("lib.nvim not found", 1, true) then
+      reported_missing = true
+    end
+  end
+  check(
+    "BUG setup: check_lib_nvim() reports the missing submodule via health.error()",
+    reported_missing,
+    vim.inspect(calls2)
+  )
+  check(
+    "BUG: health.check() then crashes on the SAME missing dependency instead of "
+      .. "degrading to the warning check_lib_nvim() already issued -- the composer "
+      .. "pre-flight calls at the end of M.check() are unconditional, with no pcall",
+    ok_check2 == false,
+    err2
+  )
+end
+
 print(string.format("\n=== %d passed, %d failed ===", pass, fail))
 if fail > 0 then
   vim.cmd("cquit 1")

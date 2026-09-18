@@ -136,3 +136,9 @@ jobs:
           nvim --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/init_dispatch.lua" -c "qa"
+
+      - name: pickers_backends.lua
+        run: >-
+          nvim --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
+          -c "luafile TESTS/pickers_backends.lua" -c "qa"
