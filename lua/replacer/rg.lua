@@ -529,10 +529,11 @@ end
 ---@param root string
 ---@param cfg RP_RG_Config
 ---@param acc string[]
+---@return boolean ok  # false when `root` itself could not be opened for listing
 local function list_files(root, cfg, acc)
   local ok, iter = pcall(vim.fs.dir, root, { depth = 32 })
   if not ok or not iter then
-    return
+    return false
   end
   local n = #acc
   for name, typ in iter do
@@ -546,6 +547,7 @@ local function list_files(root, cfg, acc)
       end
     end
   end
+  return true
 end
 
 ---@internal
@@ -555,12 +557,12 @@ end
 ---@param cfg RP_RG_Config
 ---@param id_start integer
 ---@param acc RP_Match[]
----@return integer next_id
+---@return integer next_id, boolean ok  # ok false when `path` could not be opened
 local function scan_file(old, path, cfg, id_start, acc)
   local id = id_start
   local ok, fh = pcall(io.open, path, "r")
   if not ok or not fh then
-    return id
+    return id, false
   end
   local lnum = 0
   for line in fh:lines() do
@@ -584,7 +586,7 @@ local function scan_file(old, path, cfg, id_start, acc)
     end
   end
   fh:close()
-  return id
+  return id, true
 end
 
 ---@internal
@@ -596,16 +598,35 @@ local function collect_vimgrep(old, roots, cfg)
   ---@type RP_Match[]
   local matches = {}
   local id = 0
+  -- ERR-11: an unreadable root/file yields zero matches for that path
+  -- indistinguishably from "nothing there matched" -- count skips and warn
+  -- once at the end so the caller can tell the difference.
+  local unreadable = 0
   for _, root in ipairs(roots) do
     if vim.fn.isdirectory(root) ~= 0 then
       local files = {} ---@type string[]
-      list_files(root, cfg, files)
+      if not list_files(root, cfg, files) then
+        unreadable = unreadable + 1
+      end
       for _, f in ipairs(files) do
-        id = scan_file(old, f, cfg, id, matches)
+        local ok
+        id, ok = scan_file(old, f, cfg, id, matches)
+        if not ok then
+          unreadable = unreadable + 1
+        end
       end
     elseif passes_filters(root, cfg) then
-      id = scan_file(old, root, cfg, id, matches)
+      local ok
+      id, ok = scan_file(old, root, cfg, id, matches)
+      if not ok then
+        unreadable = unreadable + 1
+      end
     end
+  end
+  if unreadable > 0 then
+    notify.warn(
+      string.format("vimgrep scan: %d path(s) could not be read and were skipped", unreadable)
+    )
   end
   return matches
 end
@@ -626,9 +647,14 @@ local VIMGREP_CHUNK_SIZE = 25
 local function collect_vimgrep_async(old, roots, cfg, on_done)
   ---@type string[]
   local files = {}
+  -- ERR-11: same accounting as `collect_vimgrep` -- an unreadable root/file
+  -- must not look identical to "nothing there matched".
+  local unreadable = 0
   for _, root in ipairs(roots) do
     if vim.fn.isdirectory(root) ~= 0 then
-      list_files(root, cfg, files)
+      if not list_files(root, cfg, files) then
+        unreadable = unreadable + 1
+      end
     elseif passes_filters(root, cfg) then
       files[#files + 1] = root
     end
@@ -646,7 +672,11 @@ local function collect_vimgrep_async(old, roots, cfg, on_done)
 
     local last = math.min(i + VIMGREP_CHUNK_SIZE, total)
     for j = i + 1, last do
-      id = scan_file(old, files[j], cfg, id, matches)
+      local ok
+      id, ok = scan_file(old, files[j], cfg, id, matches)
+      if not ok then
+        unreadable = unreadable + 1
+      end
     end
     i = last
     if h then
@@ -667,6 +697,11 @@ local function collect_vimgrep_async(old, roots, cfg, on_done)
         end
       end
       h:finish(string.format("%d match(es) in %d file(s)", #matches, n_files))
+    end
+    if unreadable > 0 then
+      notify.warn(
+        string.format("vimgrep scan: %d path(s) could not be read and were skipped", unreadable)
+      )
     end
     on_done(matches, nil)
   end
