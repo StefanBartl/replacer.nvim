@@ -77,6 +77,19 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
   `cfg.confirm_per_file` wiring (as opposed to those two modules' isolated
   unit tests in `feature_smoke.lua`, which drive them with a fake
   `apply_func`).
+- `pickers_backends.lua` — `replacer.pickers.fzf`/`replacer.pickers.telescope`'s
+  `run()`, with the actual backend (`fzf-lua` / `telescope.nvim`) stubbed at
+  `package.loaded` instead of skipped: candidate/entry-maker construction,
+  the id-tag lookup both reopen paths use, every `attach_mappings`/`actions`
+  entry (default apply, multi-select, apply-all incl. the real
+  `confirm_all` → `ui.kit.confirm` flow, replace-and-reopen's recursive
+  re-run with the match removed, and the `<C-f>` filter guard when
+  pickers.nvim is absent), the telescope previewer's highlight-extmark math,
+  and fzf's `<C-a>`/`<S-Tab>`/`<M-x>`/bare-`<CR>` → `ctrl-a`/`shift-tab`/
+  `alt-x`/`enter` key-notation translator. Only the one call each adapter
+  makes into the real rendering UI (`fzf.fzf_exec`/`picker:find()`) is
+  replaced with a capture stub; everything upstream of it is this plugin's
+  own logic, not the backend's.
 
 ## Present but not run by CI
 
@@ -90,17 +103,40 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
 
 ## Deliberately excluded from any suite
 
-- `pickers/fzf.lua` / `pickers/telescope.lua` — both `run()` functions hard-
-  require an actual picker backend (`fzf-lua` / `telescope.nvim`), neither
-  of which is a CI sibling checkout (only `lib.nvim`/`ui.nvim`/
-  `pickers.nvim` are, per `.github/workflows/ci.yml`). The engine-agnostic
-  logic they both lean on (`replacer.pickers.common`) is fully covered
-  without either backend.
+- The actual rendering call inside `pickers/fzf.lua` (`fzf.fzf_exec`) and
+  `pickers/telescope.lua` (`picker:find()`'s real floating window / keypress
+  loop) — a live picker UI genuinely rendering is the one part of those two
+  files `pickers_backends.lua` does not (and should not) exercise. Everything
+  else in both `run()` functions is covered there; see that suite's entry
+  above. (An earlier round excluded both files outright on the premise that
+  they "hard-require an actual picker backend... neither of which is a CI
+  sibling checkout" — true of the literal `require`, but that require only
+  needs *something* in `package.loaded`, which doesn't need a real plugin
+  checkout, in CI or anywhere else.)
 - `@types`/`types/*.lua` — pure `---@meta` annotations, no runtime code.
-- `bindings/keymaps.lua`'s picker keymaps and `pickers/utils.lua`'s
-  `setup_highlight_groups`/`ansi_snippets` callers — the *functions*
-  themselves are tested directly; only their would-be callers inside the
-  fzf-lua/telescope `run()` paths are excluded, for the reason above.
+- `pickers/utils.lua`'s `setup_highlight_groups`/`ansi_snippets` — not a
+  backend-availability exclusion: as of this audit neither function has any
+  caller anywhere in the codebase (see the "NOTE: nothing calls this today"
+  comment on `setup_highlight_groups` itself). Each function is still tested
+  directly by `health_pickers_tscode.lua`; there is no caller left to cover.
+
+## Known bugs (pinned as regression tests, not fixed)
+
+- `replacer.health.check()`: `check_lib_nvim()` already handles
+  `lib.nvim.bindings.usercmd.composer` being unavailable — it reports
+  `health.error("lib.nvim not found — commands will fail to register", ...)`
+  and lets `M.check()` carry on. But `M.check()` itself then unconditionally
+  calls `require("lib.nvim.bindings.usercmd.composer").checkhealth("Replace")`
+  / `.checkhealth("Surround")` a few lines later (the "composer route
+  pre-flight"), with no guard — so on a lib.nvim checkout old enough to be
+  missing just that one submodule, `:checkhealth replacer` reports the clean
+  warning and then crashes on the exact same missing dependency instead of
+  degrading to it. Pinned in `health_pickers_tscode.lua` (section 6, via a
+  `package.preload` stub that makes the require genuinely fail rather than
+  swapping in a fake module) rather than fixed here, per this campaign's rule
+  for a real behavior bug that isn't a trivial, zero-risk infra fix — the
+  right degradation (skip the pre-flight entirely? report a third error
+  section instead?) is a product decision, not this audit's to make quietly.
 
 ## Bugs found while writing these suites (since fixed)
 
