@@ -73,5 +73,6 @@
 ---@field setup fun(opts:RP_Config|table|nil): nil
 ---@field get fun(): RP_Config
 ---@field resolve fun(partial:table|nil): RP_Config
+---@field issues fun(): string[]  -- unknown/invalid options the last setup() had to reject or degrade (ERR-22, ERR-50); see :checkhealth replacer
 
 return {}

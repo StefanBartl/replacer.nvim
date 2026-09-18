@@ -23,6 +23,15 @@ local Defaults = require("replacer.config.DEFAULTS")
 ---@type RP_Config
 local state = vim.deepcopy(Defaults)
 
+---What the last `setup()` had to reject or degrade, for `:checkhealth`.
+--- Populated by `M.setup` only -- `M.resolve` merges per-run overrides built
+--- by the command layer itself (e.g. `changed_only`/`also_rename_file`,
+--- which are intentionally not RP_Config fields), so treating every
+--- `:Replace --changed` invocation as a config typo would be noise, not a
+--- diagnostic.
+---@type string[]
+local issues = {}
+
 --------------------------------------------------------------------------------
 -- Validators / Coercers (defensive)
 --------------------------------------------------------------------------------
@@ -178,16 +187,85 @@ local function as_keymaps(v)
 end
 
 ---@internal
+--- `key` with the nearest known top-level option as a hint when one is
+--- plausible (edit distance <= 3).
+---@param key string
+---@param known table<string, true>
+---@return string
+local function describe_unknown_key(key, known)
+  local levenshtein = require("lib.lua.strings.distance").levenshtein
+  local best, best_distance = nil, nil
+  for candidate in pairs(known) do
+    local d = levenshtein(key, candidate)
+    if d <= 3 and (best_distance == nil or d < best_distance) then
+      best, best_distance = candidate, d
+    end
+  end
+  if best then
+    return string.format("unknown option '%s' (did you mean '%s'?)", key, best)
+  end
+  return string.format("unknown option '%s'", key)
+end
+
+---@internal
+--- Drop top-level keys `setup()` doesn't recognize, BEFORE the merge --
+--- otherwise a typo (e.g. `smartcase` for `smart_case`) survives into the
+--- intermediate merged table and `validate`'s key-by-key rebuild drops it
+--- later with no diagnostic anywhere (ERR-50).
+---@param user_opts table
+---@return table clean, string[] new_issues
+local function sanitize_keys(user_opts)
+  local known = {}
+  for k in pairs(Defaults) do
+    known[k] = true
+  end
+  local clean, new_issues = {}, {}
+  for key, value in pairs(user_opts) do
+    if known[key] then
+      clean[key] = value
+    else
+      new_issues[#new_issues + 1] = describe_unknown_key(tostring(key), known)
+    end
+  end
+  return clean, new_issues
+end
+
+---@internal
+--- Record that `field` had a present-but-invalid value that degraded to its
+--- default (ERR-22): `raw` is what the user passed, `coerced` is what the
+--- matching `as_*` validator made of it (nil means rejected).
+---@param field_issues string[]
+---@param field string
+---@param raw any
+---@param coerced any
+local function record_degraded(field_issues, field, raw, coerced)
+  if raw ~= nil and coerced == nil then
+    field_issues[#field_issues + 1] =
+      string.format("'%s': invalid value %s -- using default", field, vim.inspect(raw))
+  end
+end
+
+---@internal
 ---@param cfg table|nil
----@return RP_Config
+---@return RP_Config out, string[] field_issues  # field_issues: present-but-invalid single values that degraded to their default (ERR-22)
 local function validate(cfg)
   cfg = tbl(cfg)
 
   local out = vim.deepcopy(Defaults)
+  ---@type string[]
+  local field_issues = {}
 
-  out.engine = as_engine(cfg.engine) or out.engine
-  out.search_engine = as_search_engine(cfg.search_engine) or out.search_engine
-  out.progress_style = as_progress_style(cfg.progress_style) or out.progress_style
+  local engine_v = as_engine(cfg.engine)
+  record_degraded(field_issues, "engine", cfg.engine, engine_v)
+  out.engine = engine_v or out.engine
+
+  local search_engine_v = as_search_engine(cfg.search_engine)
+  record_degraded(field_issues, "search_engine", cfg.search_engine, search_engine_v)
+  out.search_engine = search_engine_v or out.search_engine
+
+  local progress_style_v = as_progress_style(cfg.progress_style)
+  record_degraded(field_issues, "progress_style", cfg.progress_style, progress_style_v)
+  out.progress_style = progress_style_v or out.progress_style
   out.write_changes = pick_bool(cfg.write_changes, out.write_changes)
   out.confirm_all = pick_bool(cfg.confirm_all, out.confirm_all)
   out.confirm_wide_scope = pick_bool(cfg.confirm_wide_scope, out.confirm_wide_scope)
@@ -245,7 +323,7 @@ local function validate(cfg)
     out.telescope = vim.tbl_deep_extend("force", vim.deepcopy(Defaults.telescope), tel)
   end
 
-  return out
+  return out, field_issues
 end
 
 --------------------------------------------------------------------------------
@@ -253,10 +331,20 @@ end
 --------------------------------------------------------------------------------
 
 --- Initialize/override configuration.
+---
+--- Unknown top-level keys and present-but-invalid single values (ERR-50,
+--- ERR-22) are rejected/degraded here, before the merge, and recorded for
+--- `M.issues()`/`:checkhealth` -- see `sanitize_keys`/`record_degraded`.
 --- @param opts RP_Config|table|nil
 --- @return nil
 function M.setup(opts)
-  state = validate(vim.tbl_deep_extend("force", {}, state, tbl(opts)))
+  local clean, key_issues = sanitize_keys(tbl(opts))
+  local new_state, field_issues = validate(vim.tbl_deep_extend("force", {}, state, clean))
+  state = new_state
+  issues = vim.list_extend(vim.list_extend({}, key_issues), field_issues)
+  if #issues > 0 then
+    require("replacer.util.notify").warn("setup(): ignored config: " .. table.concat(issues, "; "))
+  end
 end
 
 --- Get the current effective configuration (deep copy, read-only for callers).
@@ -265,13 +353,26 @@ function M.get()
   return vim.deepcopy(state)
 end
 
+--- What the last `setup()` had to reject or degrade: unknown top-level keys
+--- and present-but-invalid single values, one human-readable line each.
+--- Empty when everything was accepted. See `:checkhealth replacer`.
+--- @return string[]
+function M.issues()
+  return vim.list_extend({}, issues)
+end
+
 --- Resolve a partial override against the current state (without mutating it).
---- Useful for per-run overrides (e.g., flags from :Replace).
+--- Useful for per-run overrides (e.g., flags from :Replace) -- deliberately
+--- NOT key-sanitized like `M.setup`: the command layer's own override
+--- tables intentionally carry non-RP_Config keys (`changed_only`,
+--- `also_rename_file`), which `validate` already drops silently by only
+--- copying known fields into `out`.
 --- @param partial table|nil
 --- @return RP_Config
 function M.resolve(partial)
   local merged = vim.tbl_deep_extend("force", {}, state, tbl(partial))
-  return validate(merged)
+  local out = validate(merged)
+  return out
 end
 
 return M ---@type ReplacerConfigModule
