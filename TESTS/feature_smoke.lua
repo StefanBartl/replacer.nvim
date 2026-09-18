@@ -1437,6 +1437,20 @@ do
   local ppath = tmp .. "/plan.patch"
   local okp = export.write_export(ppath, results, "X")
   check("export: patch file written", okp and vim.fn.filereadable(ppath) == 1)
+
+  -- ERR-11: a match on a file that cannot be read must be counted
+  -- distinctly from one that was merely stale, not folded silently into
+  -- the same "skipped" bucket.
+  local missing_path = tmp .. "/does-not-exist.txt"
+  ---@diagnostic disable: missing-fields
+  local bogus = { id = 99, path = missing_path, lnum = 1, col0 = 0, old = "foo", line = "foo" }
+  ---@diagnostic enable: missing-fields
+  local _, bogus_totals = export.build_results({ bogus }, "X")
+  check(
+    "plan: unreadable file counted distinctly (unreadable == 1)",
+    bogus_totals.unreadable == 1,
+    bogus_totals.unreadable
+  )
 end
 
 --------------------------------------------------------------------------------

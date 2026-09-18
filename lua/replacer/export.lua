@@ -83,6 +83,7 @@ end
 ---@field files integer
 ---@field spots integer
 ---@field skipped integer
+---@field unreadable integer  # files whose matches were counted as skipped only because the file itself couldn't be read (permissions, vanished since scan) — see ERR-11 note on `read_lines`
 
 --- Build the change plan for `items` replaced with `new_text`.
 --- Only files with at least one applied spot are included in `results`.
@@ -97,10 +98,17 @@ function M.build_results(items, new_text, cfg, old_pattern)
 
   ---@type RP_FileResult[]
   local results = {}
-  local totals = { files = 0, spots = 0, skipped = 0 }
+  local totals = { files = 0, spots = 0, skipped = 0, unreadable = 0 }
 
   for path, path_matches in pairs(by_path) do
-    local old_lines = read_lines(path)
+    -- ERR-11: `read_lines`'s second value distinguishes "file has no lines"
+    -- from "file could not be read" -- an unreadable file must not be
+    -- folded into the generic "stale match" skip count with no trace of
+    -- the real cause (permissions, a vanished file).
+    local old_lines, read_ok = read_lines(path)
+    if not read_ok then
+      totals.unreadable = totals.unreadable + 1
+    end
     local new_lines, spots, skipped =
       apply.compute_file_edits(old_lines, path_matches, new_text, cfg, old_pattern)
     totals.spots = totals.spots + spots
