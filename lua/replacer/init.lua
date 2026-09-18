@@ -128,10 +128,16 @@ local function plan(request, items, cfg)
   local results, totals = export.build_results(items, request.new, cfg, request.old)
   notify.info(
     string.format(
-      "dry-run: %d spot(s) in %d file(s)%s — no changes written",
+      "dry-run: %d spot(s) in %d file(s)%s%s — no changes written",
       totals.spots,
       totals.files,
-      totals.skipped > 0 and string.format(" (%d skipped)", totals.skipped) or ""
+      totals.skipped > 0 and string.format(" (%d skipped)", totals.skipped) or "",
+      totals.unreadable > 0
+          and string.format(
+            " (%d file(s) could not be read — permissions or vanished since scan)",
+            totals.unreadable
+          )
+        or ""
     )
   )
 
