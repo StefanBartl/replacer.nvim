@@ -212,6 +212,21 @@ local function check_config(health)
 
   local cfg = cfg_mod.get()
 
+  -- ERR-22: an invalid single config value degrades to its default silently
+  -- at the `validate()` call site -- `setup()` records what it had to
+  -- reject/degrade so that degradation is visible somewhere, not just
+  -- inferable from the resolved value matching a default by coincidence.
+  if cfg_mod.issues then
+    local issues = cfg_mod.issues()
+    if #issues == 0 then
+      health.ok("every setup() option was recognized and valid")
+    else
+      for _, issue in ipairs(issues) do
+        health.warn(issue, { "Fix the option in require('replacer').setup({ ... })" })
+      end
+    end
+  end
+
   -- Picker engine ("auto" resolves to fzf-lua, else telescope)
   if cfg.engine == "auto" then
     local resolved = pcall(require, "fzf-lua") and "fzf-lua"
@@ -223,8 +238,15 @@ local function check_config(health)
     end
   elseif cfg.engine == "telescope" or cfg.engine == "fzf" then
     health.ok(string.format("Picker engine: %s", cfg.engine))
-    local picker_ok = (cfg.engine == "telescope") and pcall(require, "telescope")
-      or pcall(require, "fzf-lua")
+    -- ERR-60: `a and b or c` falls through to `c` whenever `b` itself is
+    -- falsy -- and `pcall(require, ...)`'s whole purpose here is to be
+    -- `false` when the picker is missing. An explicit `if` is required.
+    local picker_ok
+    if cfg.engine == "telescope" then
+      picker_ok = pcall(require, "telescope")
+    else
+      picker_ok = pcall(require, "fzf-lua")
+    end
     if not picker_ok then
       health.error(
         string.format("Configured engine '%s' not available", cfg.engine),

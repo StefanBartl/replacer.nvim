@@ -14,7 +14,7 @@ order:
 | **lib.nvim** | `lib.nvim.bindings.usercmd.composer` does not resolve — the commands cannot register at all | — |
 | **ripgrep** | — | `rg` missing (the native `vimgrep` backend takes over), or older than 11.0 (`--json` support) |
 | **Pickers** | neither fzf-lua nor telescope.nvim is installed | the configured `engine` names a picker that is not installed |
-| **Configuration** | an option has the wrong type or an out-of-range value | — |
+| **Configuration** | `replacer.config` fails to load | an unknown top-level `setup()` key, or a present-but-invalid single value — both degrade to the default and are listed as a warning here (see `config.issues()`) |
 | **UTF-8 Support** | `vim.str_byteindex` is missing | the round-trip conversion test is inconclusive |
 | **Optional integrations** | — | `lib.nvim.progress` absent (`progress_style` is inert) or which-key absent (keymaps unlabeled) |
 | **Declared tools** | — | reports [`install.json`](install.json) through `lib.nvim.deps`, skipped silently on an older lib.nvim |

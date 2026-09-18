@@ -272,6 +272,50 @@ do
   )
 end
 
+--------------------------------------------------------------------------------
+-- 13) setup(): unknown top-level keys and invalid single values are
+--     dropped/degraded BEFORE the merge (ERR-50) and recorded for
+--     issues()/:checkhealth (ERR-22) -- previously both vanished into the
+--     defaults with zero diagnostic trace.
+--------------------------------------------------------------------------------
+do
+  config.setup({ smartcase = false }) -- typo for smart_case
+  local issues1 = config.issues()
+  check(
+    "setup(): unknown top-level key is reported with a 'did you mean' hint",
+    #issues1 == 1
+      and issues1[1]:find("smartcase", 1, true) ~= nil
+      and issues1[1]:find("smart_case", 1, true) ~= nil,
+    vim.inspect(issues1)
+  )
+  check(
+    "setup(): the typo'd key never reaches the merged state",
+    config.get().smart_case == DEFAULTS.smart_case
+  )
+
+  config.setup({ engine = "telescpoe" }) -- known key, invalid value
+  local issues2 = config.issues()
+  check(
+    "setup(): a present-but-invalid value is reported too (ERR-22)",
+    #issues2 == 1 and issues2[1]:find("engine", 1, true) ~= nil,
+    vim.inspect(issues2)
+  )
+  check("setup(): the invalid engine degrades to the default", config.get().engine == "auto")
+
+  config.setup({ engine = "fzf" })
+  check("setup(): a fully valid setup() call reports no issues", #config.issues() == 0)
+
+  -- resolve() intentionally does NOT run the unknown-key check: the command
+  -- layer's own override tables carry non-RP_Config keys on purpose
+  -- (changed_only, also_rename_file) that would otherwise be flagged as
+  -- typos on every single :Replace --changed invocation.
+  local r = config.resolve({ changed_only = { "modified" } })
+  check("resolve(): non-RP_Config override keys are silently dropped, not flagged", r ~= nil)
+
+  -- restore for hygiene, in case any later suite run in the same process cares
+  config.setup({ engine = DEFAULTS.engine, smart_case = DEFAULTS.smart_case })
+end
+
 print(string.format("\n=== %d passed, %d failed ===", pass, fail))
 if fail > 0 then
   vim.cmd("cquit 1")
