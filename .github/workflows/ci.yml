@@ -36,8 +36,19 @@ jobs:
           args: --check lua/
 
   test:
-    name: headless test suite
-    runs-on: ubuntu-latest
+    name: headless test suite (${{ matrix.os }})
+    runs-on: ${{{{ matrix.os }}}}
+    strategy:
+      # One platform failing must not cancel the others: which of the three
+      # broke is the whole information content of this job.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    defaults:
+      run:
+        # Windows runners default to PowerShell; one shell on all three keeps
+        # the run step itself from being what differs between platforms.
+        shell: bash
     # TESTS/resolve_lib_nvim.lua/resolve_ui_nvim.lua look for a *sibling*
     # checkout (<repo>/../lib.nvim, <repo>/../ui.nvim), but this job checks
     # them out *inside* the workspace so `set rtp+=./lib.nvim`/`./ui.nvim`
@@ -81,7 +92,18 @@ jobs:
           version: stable
 
       - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
+        run: |
+          # `rg` is a real dependency of these specs, not a convenience -- they
+          # shell out to it. The install is the one step that has to differ per
+          # runner image; everything after it is identical on all three. The
+          # `rg --version` at the end is the actual gate: if a package manager
+          # silently no-ops, the suite must not start and then fail obscurely.
+          case "${{ runner.os }}" in
+            Linux)   sudo apt-get update && sudo apt-get install -y ripgrep ;;
+            macOS)   brew install ripgrep || true ;;
+            Windows) choco install ripgrep -y --no-progress ;;
+          esac
+          rg --version
 
       - name: feature_smoke.lua
         run: >-
