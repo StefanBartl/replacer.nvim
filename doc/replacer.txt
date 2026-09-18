@@ -800,7 +800,10 @@ prompt per file, in --all mode: >vim
 <
 Per file: All applies every match in that file immediately; Skip moves on
 without touching it; Only some opens the interactive picker scoped to just
-that file's matches; Quit (or <Esc>) stops the whole loop, leaving any
+that file's matches AND STOPS THE LOOP THERE (like Quit) instead of also
+prompting for the remaining files, since a second confirm float on top of
+the still-open picker would corrupt it; re-run with --confirm-per-file to
+continue with the rest. Quit (or <Esc>) stops the whole loop, leaving any
 later files untouched. Supersedes confirm_all/confirm_wide_scope when
 enabled. See lua/replacer/perfile.lua.
 
