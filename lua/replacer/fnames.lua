@@ -191,10 +191,21 @@ function M.apply(matches)
     -- before writing. rename(2)/MoveFileEx(REPLACE_EXISTING) silently
     -- replaces an existing destination otherwise, so a stale plan would
     -- destroy a file it never planned to touch.
-    if uv.fs_stat(m.new_path) then
-      errors[#errors + 1] =
-        string.format("%s -> %s skipped (destination already exists)", m.old_path, m.new_path)
-      goto continue
+    --
+    -- A case-only rename ("Config.lua" -> "config.lua") is not a collision:
+    -- on a case-insensitive, case-preserving filesystem (NTFS, default
+    -- APFS) new_path resolves to old_path itself, so fs_stat(new_path)
+    -- finds a file that "already exists" -- because it IS old_path. dev+ino
+    -- identity tells the two apart from a genuine, different destination.
+    local new_stat = uv.fs_stat(m.new_path)
+    if new_stat then
+      local old_stat = uv.fs_stat(m.old_path)
+      local same_file = old_stat and old_stat.dev == new_stat.dev and old_stat.ino == new_stat.ino
+      if not same_file then
+        errors[#errors + 1] =
+          string.format("%s -> %s skipped (destination already exists)", m.old_path, m.new_path)
+        goto continue
+      end
     end
 
     local ok_rename, err = uv.fs_rename(m.old_path, m.new_path)
