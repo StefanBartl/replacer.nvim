@@ -1028,6 +1028,60 @@ do
   local cc2 = assert(io.open(file_c2, "r")):read("*a")
   check("batch: pair 1 applied after the single confirm", cc1:match("GAMMA") ~= nil, cc1)
   check("batch: pair 2 applied after the single confirm", cc2:match("DELTA") ~= nil, cc2)
+
+  -- SEC: confirm_all=false must NOT silently defeat confirm_wide_scope=true
+  -- for a batch run over a non-single-file scope -- the two are independent
+  -- settings (DEFAULTS.lua) and dispatch_all() forces both off per pair
+  -- (UI-01), so the up-front M.run gate is the only place confirm_wide_scope
+  -- can still fire for a batch.
+  local file_d1 = tmp .. "/batch_wide1.txt"
+  local file_d2 = tmp .. "/batch_wide2.txt"
+  write_file(file_d1, "epsilon\n")
+  write_file(file_d2, "zeta\n")
+
+  local wide_batch_file = tmp .. "/batch_wide_spec.txt"
+  write_file(wide_batch_file, "epsilon => EPSILON\nzeta => ZETA\n")
+
+  replacer.setup({ confirm_all = false, confirm_wide_scope = true })
+
+  local wide_confirm_calls = 0
+  package.loaded["ui.kit.confirm"] = {
+    open = function(opts)
+      wide_confirm_calls = wide_confirm_calls + 1
+      opts.on_answer(true)
+    end,
+  }
+
+  ---@type RP_Request
+  local btpl3 = {
+    old = "",
+    new = "",
+    scope = "",
+    all = false,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = {},
+    filters = { file_types = {}, globs = {}, exclude = {} },
+  }
+  -- `tmp` (a directory) is a non-single-file scope, so confirm_wide_scope
+  -- must gate this run even though confirm_all is off.
+  batch.run(wide_batch_file, tmp, btpl3, replacer.run)
+  vim.wait(300)
+
+  package.loaded["ui.kit.confirm"] = nil
+  replacer.setup({ confirm_all = false, confirm_wide_scope = false })
+
+  check(
+    "batch: confirm_all=false + confirm_wide_scope=true -> still confirms once (SEC)",
+    wide_confirm_calls == 1,
+    wide_confirm_calls
+  )
+
+  local dc1 = assert(io.open(file_d1, "r")):read("*a")
+  local dc2 = assert(io.open(file_d2, "r")):read("*a")
+  check("batch: pair 1 applied after the wide-scope confirm", dc1:match("EPSILON") ~= nil, dc1)
+  check("batch: pair 2 applied after the wide-scope confirm", dc2:match("ZETA") ~= nil, dc2)
 end
 
 --------------------------------------------------------------------------------

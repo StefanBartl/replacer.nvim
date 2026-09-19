@@ -194,7 +194,18 @@ function M.run(source, scope, req_template, run_fun)
   end
 
   local cfg = require("replacer.config").resolve(req_template.overrides or {})
-  if not cfg.confirm_all then
+  -- SEC: the gate must consider confirm_wide_scope too, not just
+  -- confirm_all -- a user who left confirm_all off but opted into
+  -- confirm_wide_scope (a narrower, independent safety setting; see
+  -- DEFAULTS.lua/types/config.lua) still expects a confirm before a batch
+  -- runs unattended across a non-single-file scope. dispatch_all() forces
+  -- both overrides off per pair (UI-01: one confirm for the whole batch,
+  -- not once per pair), so this up-front check is the only place either
+  -- setting can still take effect for a batch run.
+  local scope_tok = (scope ~= "" and scope) or cfg.default_scope or "%"
+  local _, single_file = require("replacer.command").resolve_scope(scope_tok)
+  local wide = (not single_file) and cfg.confirm_wide_scope
+  if not cfg.confirm_all and not wide then
     dispatch_all(pairs_list, scope, req_template, run_fun, source)
     return
   end
