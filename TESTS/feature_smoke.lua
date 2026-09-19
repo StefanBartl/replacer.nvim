@@ -781,6 +781,46 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 2k2) history: history_max_entries = 0 is honored as "keep no history",
+--      not silently treated as unset (config.get().history_max_entries == 0
+--      is a legitimate, reachable state -- as_pos_int honors 0 -- so the
+--      sole consumer must too, not fall back to the 50-entry default).
+--------------------------------------------------------------------------------
+do
+  local config = require("replacer.config")
+  local hist_path = vim.fn.stdpath("data") .. "/replacer/history.json"
+  local original = vim.fn.filereadable(hist_path) == 1 and vim.fn.readfile(hist_path) or nil
+
+  config.setup({ history_max_entries = 0 })
+  package.loaded["replacer.history"] = nil
+  local history_zero = require("replacer.history")
+
+  local req = {
+    old = "__hist_zero_test_old__",
+    new = "__hist_zero_test_new__",
+    scope = "%",
+    all = false,
+    dry = false,
+    export = nil,
+    line_range = nil,
+    overrides = {},
+    filters = { file_types = {}, globs = {}, exclude = {} },
+  }
+  history_zero.add(req, { files = 1, spots = 1 })
+  local loaded = history_zero.load()
+  check("history: history_max_entries = 0 keeps zero entries", #loaded == 0, #loaded)
+
+  config.setup({ history_max_entries = 50 })
+  package.loaded["replacer.history"] = nil
+  if original then
+    vim.fn.mkdir(vim.fn.fnamemodify(hist_path, ":h"), "p")
+    vim.fn.writefile(original, hist_path)
+  else
+    pcall(vim.fn.delete, hist_path)
+  end
+end
+
+--------------------------------------------------------------------------------
 -- 2l) history: a corrupt history.json is backed up, not silently discarded
 --------------------------------------------------------------------------------
 do

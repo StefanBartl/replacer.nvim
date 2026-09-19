@@ -11,7 +11,7 @@ local M = {}
 ---
 ---`history_max_entries`: a preference about how far back the picker should
 ---reach, not a limit protecting anything -- the file holds one small entry
----per search.
+---per search. `0` is a valid, honored value: it means "keep no history".
 ---@return integer
 local function max_entries()
   local ok, config = pcall(require, "replacer.config")
@@ -19,7 +19,7 @@ local function max_entries()
     return 50
   end
   local n = (config.get() or {}).history_max_entries
-  return (type(n) == "number" and n > 0) and n or 50
+  return (type(n) == "number" and n >= 0) and n or 50
 end
 
 ---@internal

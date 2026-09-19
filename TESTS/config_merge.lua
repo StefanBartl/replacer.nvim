@@ -125,6 +125,11 @@ do
   -- correctly yields 0 rather than falling through to `x`).
   local r4 = config.resolve({ max_file_size = 0 })
   check("as_pos_int: 0 is a valid, honored value", r4.max_file_size == 0)
+  local r5 = config.resolve({ history_max_entries = 0 })
+  check(
+    "as_pos_int: history_max_entries = 0 is honored at the config layer too",
+    r5.history_max_entries == 0
+  )
 end
 
 --------------------------------------------------------------------------------
