@@ -74,6 +74,13 @@ function M.add(request, result)
   if not request or not request.old or request.old == "" then
     return
   end
+  -- history_max_entries = 0 means "keep no history": the outcome is always
+  -- an empty file, so skip the load+decode entirely rather than reading the
+  -- current file just to throw it away below.
+  if max_entries() == 0 then
+    save({})
+    return
+  end
   local history = M.load()
   table.insert(history, 1, {
     timestamp = os.time(),

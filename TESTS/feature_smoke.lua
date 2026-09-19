@@ -785,39 +785,59 @@ end
 --      not silently treated as unset (config.get().history_max_entries == 0
 --      is a legitimate, reachable state -- as_pos_int honors 0 -- so the
 --      sole consumer must too, not fall back to the 50-entry default).
+--
+--      Runs against a throwaway stdpath("data"), NOT the real shared one
+--      2k/2l use: history_max_entries = 0 makes M.add() truncate
+--      history.json to empty via a real (uncorrupted) code path -- unlike
+--      2l's injected-garbage case, a snapshot-and-restore here would both
+--      lose the developer's actual history for good if this block were
+--      interrupted before the restore ran, and race a concurrently running
+--      Neovim instance's own :Replace applies to the same file. Stubbing
+--      vim.fn.stdpath("data") for this block only (history_path() re-reads
+--      it on every call, nothing caches it at require time) sidesteps both
+--      risks instead of trying to make a crash-safe backup of the real file.
 --------------------------------------------------------------------------------
 do
   local config = require("replacer.config")
-  local hist_path = vim.fn.stdpath("data") .. "/replacer/history.json"
-  local original = vim.fn.filereadable(hist_path) == 1 and vim.fn.readfile(hist_path) or nil
+  local orig_stdpath = vim.fn.stdpath
+  local tmp_data = vim.fn.tempname()
+  vim.fn.mkdir(tmp_data, "p")
+  vim.fn.stdpath = function(what)
+    if what == "data" then
+      return tmp_data
+    end
+    return orig_stdpath(what)
+  end
 
-  config.setup({ history_max_entries = 0 })
-  package.loaded["replacer.history"] = nil
-  local history_zero = require("replacer.history")
+  local ok, err = pcall(function()
+    config.setup({ history_max_entries = 0 })
+    package.loaded["replacer.history"] = nil
+    local history_zero = require("replacer.history")
 
-  local req = {
-    old = "__hist_zero_test_old__",
-    new = "__hist_zero_test_new__",
-    scope = "%",
-    all = false,
-    dry = false,
-    export = nil,
-    line_range = nil,
-    overrides = {},
-    filters = { file_types = {}, globs = {}, exclude = {} },
-  }
-  history_zero.add(req, { files = 1, spots = 1 })
-  local loaded = history_zero.load()
-  check("history: history_max_entries = 0 keeps zero entries", #loaded == 0, #loaded)
+    local req = {
+      old = "__hist_zero_test_old__",
+      new = "__hist_zero_test_new__",
+      scope = "%",
+      all = false,
+      dry = false,
+      export = nil,
+      line_range = nil,
+      overrides = {},
+      filters = { file_types = {}, globs = {}, exclude = {} },
+    }
+    history_zero.add(req, { files = 1, spots = 1 })
+    local loaded = history_zero.load()
+    check("history: history_max_entries = 0 keeps zero entries", #loaded == 0, #loaded)
+  end)
 
+  -- Always restore the real vim.fn.stdpath and drop the sandboxed config,
+  -- even if the block above errored -- later tests (e.g. 2l, right below)
+  -- rely on vim.fn.stdpath("data") being the real one again.
+  vim.fn.stdpath = orig_stdpath
+  pcall(vim.fn.delete, tmp_data, "rf")
   config.setup({ history_max_entries = 50 })
   package.loaded["replacer.history"] = nil
-  if original then
-    vim.fn.mkdir(vim.fn.fnamemodify(hist_path, ":h"), "p")
-    vim.fn.writefile(original, hist_path)
-  else
-    pcall(vim.fn.delete, hist_path)
-  end
+  check("history: history_max_entries = 0 test block ran without error", ok, err)
 end
 
 --------------------------------------------------------------------------------
