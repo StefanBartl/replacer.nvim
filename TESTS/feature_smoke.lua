@@ -1162,6 +1162,67 @@ do
 end
 
 --------------------------------------------------------------------------------
+-- 2p2) fnames: a case-only rename is not "destination already exists" (BUG, fixed)
+--------------------------------------------------------------------------------
+do
+  -- On a case-insensitive, case-preserving filesystem (NTFS, default APFS)
+  -- new_path resolves to the SAME file as old_path, so the ERR-30
+  -- pre-write existence check must not read that as a genuine collision.
+  local ci_root = tmp .. "/fn_ci"
+  vim.fn.mkdir(ci_root, "p")
+  do
+    local fh = assert(io.open(ci_root .. "/Config.lua", "w"))
+    fh:write("case-only\n")
+    fh:close()
+  end
+
+  local renamed, errors = fnames.apply({
+    { old_path = ci_root .. "/Config.lua", new_path = ci_root .. "/config.lua", is_dir = false },
+  })
+  check(
+    "fnames: case-only rename is applied, not skipped as a collision",
+    renamed == 1 and #errors == 0,
+    vim.inspect(errors)
+  )
+  check(
+    "fnames: the file survives the case-only rename under its new casing",
+    vim.fn.filereadable(ci_root .. "/config.lua") == 1
+  )
+
+  -- A GENUINE destination collision (a different file already sitting on
+  -- new_path) must still be refused -- the dev+ino identity check must not
+  -- have made this a no-op.
+  local blocked_root = tmp .. "/fn_blocked"
+  vim.fn.mkdir(blocked_root, "p")
+  do
+    local fh = assert(io.open(blocked_root .. "/foo.txt", "w"))
+    fh:write("source\n")
+    fh:close()
+  end
+  do
+    local fh = assert(io.open(blocked_root .. "/bar.txt", "w"))
+    fh:write("pre-existing, different file\n")
+    fh:close()
+  end
+  local renamed_blocked, errors_blocked = fnames.apply({
+    {
+      old_path = blocked_root .. "/foo.txt",
+      new_path = blocked_root .. "/bar.txt",
+      is_dir = false,
+    },
+  })
+  check(
+    "fnames: a genuine destination collision is still refused",
+    renamed_blocked == 0 and #errors_blocked == 1,
+    vim.inspect(errors_blocked)
+  )
+  check(
+    "fnames: the pre-existing destination file is untouched",
+    vim.fn.filereadable(blocked_root .. "/foo.txt") == 1
+  )
+end
+
+--------------------------------------------------------------------------------
 -- 2q) rename_assist: --also-rename-file (single-file scope only)
 --------------------------------------------------------------------------------
 do
