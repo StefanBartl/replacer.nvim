@@ -205,6 +205,27 @@ do
     "as_keymaps: an empty-string value keeps that key's default",
     r3.keymaps.toggle_select == DEFAULTS.keymaps.toggle_select
   )
+
+  -- A typo'd keymaps key (e.g. `toggle_slect`) is a nested unknown key, the
+  -- same failure mode sanitize_keys catches at the top level -- one level
+  -- deeper. Before the fix it was silently dropped with zero diagnostic and
+  -- the intended key silently kept its default (ERR-50). resolve() doesn't
+  -- surface issues (see section 13's docstring), so exercise it via setup().
+  config.setup({ keymaps = { toggle_slect = "<C-x>" } })
+  local issues_km = config.issues()
+  check(
+    "as_keymaps: an unknown nested key is reported with a dotted-path 'did you mean' hint",
+    #issues_km == 1
+      and issues_km[1]:find("keymaps.toggle_slect", 1, true) ~= nil
+      and issues_km[1]:find("keymaps.toggle_select", 1, true) ~= nil,
+    vim.inspect(issues_km)
+  )
+  check(
+    "as_keymaps: the typo'd key never reaches the merged state -- toggle_select keeps its default",
+    config.get().keymaps.toggle_select == DEFAULTS.keymaps.toggle_select
+  )
+  -- restore for hygiene
+  config.setup({ keymaps = DEFAULTS.keymaps })
 end
 
 --------------------------------------------------------------------------------

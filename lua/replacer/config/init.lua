@@ -167,33 +167,17 @@ local function pick_bool(v, default)
 end
 
 ---@internal
---- Merge user-supplied keymaps over the defaults, key by key. An invalid
---- (non-string or empty) value for a given key silently keeps its default
---- instead of disabling the keymap outright.
----@param v any
----@return table<string, string>
-local function as_keymaps(v)
-  local user = tbl(v)
-  local out = vim.deepcopy(assert(Defaults.keymaps, "DEFAULTS always carries keymaps"))
-  for key, default_val in pairs(out) do
-    local uv = user[key]
-    if type(uv) == "string" and uv ~= "" then
-      out[key] = uv
-    else
-      out[key] = default_val
-    end
-  end
-  return out
-end
-
----@internal
---- `key` with the nearest known top-level option as a hint when one is
---- plausible (edit distance <= 3).
+--- `key` with the nearest known option as a hint when one is plausible
+--- (edit distance <= 3). `path_prefix` (e.g. "keymaps.") is prepended to
+--- both the reported key and the suggestion so a nested typo reads as a
+--- full dotted path, not a bare, out-of-context name.
 ---@param key string
 ---@param known table<string, true>
+---@param path_prefix string|nil
 ---@return string
-local function describe_unknown_key(key, known)
+local function describe_unknown_key(key, known, path_prefix)
   local levenshtein = require("lib.lua.strings.distance").levenshtein
+  local prefix = path_prefix or ""
   local best, best_distance = nil, nil
   for candidate in pairs(known) do
     local d = levenshtein(key, candidate)
@@ -202,9 +186,42 @@ local function describe_unknown_key(key, known)
     end
   end
   if best then
-    return string.format("unknown option '%s' (did you mean '%s'?)", key, best)
+    return string.format("unknown option '%s%s' (did you mean '%s%s'?)", prefix, key, prefix, best)
   end
-  return string.format("unknown option '%s'", key)
+  return string.format("unknown option '%s%s'", prefix, key)
+end
+
+---@internal
+--- Merge user-supplied keymaps over the defaults, key by key. An invalid
+--- (non-string or empty) value for a given key silently keeps its default
+--- instead of disabling the keymap outright.
+---
+--- `keymaps` is itself a fixed, fully-typed schema (RP_Keymaps), so a typo
+--- here (e.g. `toggle_slect` for `toggle_select`) is the exact same failure
+--- mode `sanitize_keys` exists to catch at the top level -- one level
+--- deeper: without this check the bogus key is simply never read, the
+--- intended key silently keeps its default, and nothing is reported
+--- anywhere, including `:checkhealth` (ERR-50).
+---@param v any
+---@return table<string, string> out, string[] new_issues
+local function as_keymaps(v)
+  local user = tbl(v)
+  local out = vim.deepcopy(assert(Defaults.keymaps, "DEFAULTS always carries keymaps"))
+  local known = {}
+  for key in pairs(out) do
+    known[key] = true
+  end
+  local new_issues = {}
+  for key, uv in pairs(user) do
+    if known[key] then
+      if type(uv) == "string" and uv ~= "" then
+        out[key] = uv
+      end
+    else
+      new_issues[#new_issues + 1] = describe_unknown_key(tostring(key), known, "keymaps.")
+    end
+  end
+  return out, new_issues
 end
 
 ---@internal
@@ -247,7 +264,7 @@ end
 
 ---@internal
 ---@param cfg table|nil
----@return RP_Config out, string[] field_issues  # field_issues: present-but-invalid single values that degraded to their default (ERR-22)
+---@return RP_Config out, string[] field_issues  # field_issues: present-but-invalid single values that degraded to their default (ERR-22), plus unknown nested keys (e.g. keymaps.<typo>) dropped before their nested merge (ERR-50)
 local function validate(cfg)
   cfg = tbl(cfg)
 
@@ -311,7 +328,9 @@ local function validate(cfg)
   out.globs = as_string_list(cfg.globs)
   out.exclude = as_string_list(cfg.exclude)
 
-  out.keymaps = as_keymaps(cfg.keymaps)
+  local keymaps_v, keymaps_issues = as_keymaps(cfg.keymaps)
+  out.keymaps = keymaps_v
+  vim.list_extend(field_issues, keymaps_issues)
 
   -- nested picker tables (shallow-merge over defaults)
   do
