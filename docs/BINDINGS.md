@@ -56,12 +56,12 @@ via `require("replacer").setup({ keymaps = { ... } })`, see
 | Action | Config key | Default | fzf-lua | Telescope |
 | --- | --- | --- | --- | --- |
 | Apply to selection (multi if present, else single) | *(fixed)* | `<CR>` | fzf's own default key | Telescope's own default key |
-| Toggle select + move to next | `keymaps.toggle_select` | `<Tab>` | ✅ (fzf's native multi-select toggle) | ✅ real Neovim keymap |
-| Toggle select + move to previous | `keymaps.toggle_select_prev` | `<S-Tab>` | ✅ (fzf's native multi-select toggle) | ✅ real Neovim keymap |
-| Apply to ALL matches (respects `confirm_all`) | `keymaps.apply_all` | `<C-a>` | ✅ via fzf action/`--bind` | ✅ real Neovim keymap |
-| Apply entry under cursor, reopen with the rest | `keymaps.replace_and_reopen` | `<C-r>` | ✅ via fzf action/`--bind` | ✅ real Neovim keymap |
-| Filter results (stacked path / content clauses) | `keymaps.filter` | `<C-f>` | ✅ via fzf action | ✅ real Neovim keymap |
-| Close the picker | `keymaps.quit` | `<Esc>` | ✅ (2nd `<Esc>`; 1st leaves terminal-insert, fixed) | ✅ (2nd `<Esc>`; 1st leaves insert mode, fixed) |
+| Toggle select + move to next | `keymaps.toggle_select` | `<Tab>` | Yes (fzf's native multi-select toggle) | Yes real Neovim keymap |
+| Toggle select + move to previous | `keymaps.toggle_select_prev` | `<S-Tab>` | Yes (fzf's native multi-select toggle) | Yes real Neovim keymap |
+| Apply to ALL matches (respects `confirm_all`) | `keymaps.apply_all` | `<C-a>` | Yes via fzf action/`--bind` | Yes real Neovim keymap |
+| Apply entry under cursor, reopen with the rest | `keymaps.replace_and_reopen` | `<C-r>` | Yes via fzf action/`--bind` | Yes real Neovim keymap |
+| Filter results (stacked path / content clauses) | `keymaps.filter` | `<C-f>` | Yes via fzf action | Yes real Neovim keymap |
+| Close the picker | `keymaps.quit` | `<Esc>` | Yes (2nd `<Esc>`; 1st leaves terminal-insert, fixed) | Yes (2nd `<Esc>`; 1st leaves insert mode, fixed) |
 
 `replace_and_reopen` defaults to a modifier key (`<C-r>`), not a bare letter
 like `r`: both pickers' query line is live text input, so a bare letter

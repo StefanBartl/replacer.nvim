@@ -51,20 +51,20 @@ before you have had the chance to look at a diff.
 Start at [docs/README.md](docs/README.md) — the README is the shop window, that
 is the reference, one file per question.
 
-**The Basics**
+### The Basics
 
 - [Requirements](docs/installation.md#requirements) — Neovim version, required plugins and CLI tools.
 - [Installation](docs/installation.md) — the spec, and the declared-CLI-tools popup.
 - [Quickstart](docs/quickstart.md) — the first thing to run after installing.
 
-**Configuration**
+### Configuration
 
 - [What you get with the defaults](docs/what-you-get.md) — the picker keymaps at a glance.
 - [All options](docs/configuration.md) — every `setup()` option with its default, plus hooks and message templates.
 - [Command reference](docs/commands.md) — all fourteen commands, their grammar, and all 41 flags.
 - [Bindings cheatsheet](docs/BINDINGS.md) — commands, picker keymaps and the single autocommand, on one page.
 
-**The Rest**
+### The Rest
 
 - [Features](docs/FEATURES/README.md) — the catalog: every shipped feature against the module, command and config option that implements it, split into [search](docs/FEATURES/SEARCH.md), [apply](docs/FEATURES/APPLY.md), [commands and UI](docs/FEATURES/COMMANDS_UI.md), and [batch and presets](docs/FEATURES/BATCH_AND_PRESETS.md) — plus [where this sits](docs/FEATURES/README.md#where-this-sits) against nvim-spectre and grug-far.nvim.
 - [Workflow](docs/WORKFLOW.md) — not what each feature is, but how they combine into habits worth keeping.
