@@ -9,6 +9,7 @@ jobs:
   lint:
     name: luacheck
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -26,6 +27,7 @@ jobs:
   fmt:
     name: stylua --check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -38,6 +40,7 @@ jobs:
   test:
     name: headless test suite (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       # One platform failing must not cancel the others: which of the three
       # broke is the whole information content of this job.
@@ -107,60 +110,76 @@ jobs:
 
       - name: feature_smoke.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/feature_smoke.lua" -c "qa"
 
       - name: surround_smoke.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/surround_smoke.lua" -c "qa"
 
       - name: async_utf8.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/async_utf8.lua" -c "qa"
 
       - name: refine_wiring.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim" -c "set rtp+=./pickers.nvim"
           -c "luafile TESTS/refine_wiring.lua" -c "qa"
 
       - name: config_merge.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/config_merge.lua" -c "qa"
 
       - name: argtypes_debug_error.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/argtypes_debug_error.lua" -c "qa"
 
       - name: health_pickers_tscode.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/health_pickers_tscode.lua" -c "qa"
 
       - name: bindings_wiring.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/bindings_wiring.lua" -c "qa"
 
       - name: init_dispatch.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/init_dispatch.lua" -c "qa"
 
       - name: pickers_backends.lua
         run: >-
-          nvim --headless -u NONE
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/pickers_backends.lua" -c "qa"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-output-test-${{ matrix.os }}
+          path: ${{ runner.temp }}/test-output.log
+          if-no-files-found: ignore
