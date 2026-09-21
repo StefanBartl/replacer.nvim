@@ -5,10 +5,10 @@
 
 # Run the headless test suites.
 test:
-	nvim -l TESTS/feature_smoke.lua
-	nvim -l TESTS/surround_smoke.lua
-	nvim -l TESTS/async_utf8.lua
-	nvim -l TESTS/refine_wiring.lua
+	nvim -n -i NONE -l TESTS/feature_smoke.lua
+	nvim -n -i NONE -l TESTS/surround_smoke.lua
+	nvim -n -i NONE -l TESTS/async_utf8.lua
+	nvim -n -i NONE -l TESTS/refine_wiring.lua
 
 # Static analysis. Explicit file list (not a bare `luacheck lua/`): some
 # luacheck/OS combinations (observed with a Windows/mingw install) fail

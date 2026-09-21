@@ -179,9 +179,10 @@ jobs:
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/pickers_backends.lua" -c "qa"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-output-test-${{ matrix.os }}
           path: ${{ runner.temp }}/test-output.log
           if-no-files-found: ignore
+          retention-days: 14
