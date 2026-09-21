@@ -117,6 +117,13 @@ jobs:
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
           -c "luafile TESTS/feature_smoke.lua" -c "qa"
 
+      - name: gitfiles_equivalence.lua
+        run: >-
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n -i NONE --headless -u NONE
+          -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
+          -c "luafile TESTS/gitfiles_equivalence.lua" -c "qa"
+
       - name: surround_smoke.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1

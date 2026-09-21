@@ -38,6 +38,11 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
   `--also-rename-file`, soft LSP rename, `--stream`, pure edit computation,
   dry-run/export/patch/JSON, real apply (incl. the wide/chunked async path),
   and quickfix export.
+- `gitfiles_equivalence.lua` — `--changed` against git itself: for every kind
+  combination the selection must equal raw `git … -z` (unstaged/staged/both,
+  added, deleted, renamed, nested and space-named untracked, ignored, non-ASCII
+  names, unmerged paths, byte-order sorting), one `git status` process for all
+  three kinds, and failure reporting for a broken repository.
 - `surround_smoke.lua` — `:Surround`/`:Wrap`: delimiter resolution, the
   shared command tokenizer/flag helpers, the real user command end-to-end
   (buffer/dir scope, no-delimiter prompt via `ui.kit`), and idempotency
