@@ -2,44 +2,34 @@
 --- Changed-files-only mode: resolve the git-modified/staged/untracked file
 --- list, backing --changed[=modified,staged,untracked].
 
-local spawn_env = require("lib.nvim.cross.run.env")
-
 local M = {}
 
+-- The order the kinds are reported in, whatever order the caller listed them.
+local KIND_ORDER = { "modified", "staged", "untracked" }
+
 ---@internal
---- Run a git subcommand and hand its stdout to `cb` as trimmed, non-empty
---- lines.
+--- Which `--changed` kinds one path belongs to, from its two-character XY
+--- status code (X = index vs HEAD, Y = working tree vs index).
 ---
---- Asynchronous. `M.list` fires up to three of these plus a top-level lookup,
---- and all of them used to run through `vim.system(...):wait()` -- four
---- blocking spawns before `--changed` had even started collecting matches,
---- which is itself already asynchronous. Now nothing on that path blocks.
----@param cwd string
----@param args string[]
----@param cb fun(lines: string[], ok: boolean)  invoked on the main loop
----@return nil
-local function git_lines(cwd, args, cb)
-  local cmd = { "git", "-C", cwd }
-  vim.list_extend(cmd, args)
-
-  if not vim.system then
-    local ok, out = require("lib.nvim.cross.run_argv").run_blocking_captured(cmd)
-    if not ok then
-      return cb({}, false)
-    end
-    return cb(vim.split(out or "", "\n", { trimempty = true }), true)
+--- This is the same partition the three queries this module used to run
+--- (`git diff --name-only`, `git diff --staged --name-only`,
+--- `git ls-files --others --exclude-standard`) produced, read off one
+--- `git status` instead: staged is "X set", modified is "Y set", untracked is
+--- `??`. Ignored paths (`!!`) belong to none. An unmerged path (`UU`, `AA`,
+--- `DD`, `AU`, `UA`, `DU`, `UD`) has both columns set, so it lands in both
+--- lists, exactly as it shows up in both diffs.
+---@param code string
+---@return boolean modified
+---@return boolean staged
+---@return boolean untracked
+local function classify(code)
+  if code == "??" then
+    return false, false, true
   end
-
-  vim.system(cmd, spawn_env.apply({ text = true }), function(obj)
-    -- vim.system callbacks run off the main loop; the caller goes on to
-    -- vim.fn.fnamemodify and notify.
-    vim.schedule(function()
-      if not obj or obj.code ~= 0 then
-        return cb({}, false)
-      end
-      cb(vim.split(obj.stdout or "", "\n", { trimempty = true }), true)
-    end)
-  end)
+  if code == "!!" then
+    return false, false, false
+  end
+  return code:sub(2, 2) ~= " ", code:sub(1, 1) ~= " ", false
 end
 
 ---@internal
@@ -69,10 +59,15 @@ end
 --- "staged", "untracked") as absolute paths, deduplicated.
 ---
 --- Asynchronous: the result arrives through `on_done`. `top` is nil there when
---- `start_dir` isn't inside a git repository. `failed_kinds` names any
---- requested kind ("modified"/"staged"/"untracked") whose git query itself
+--- `start_dir` isn't inside a git repository. `failed_kinds` names every
+--- requested kind ("modified"/"staged"/"untracked") when the git query itself
 --- failed (git missing, locked/corrupt index, permission error) -- distinct
 --- from that kind legitimately contributing zero files.
+---
+--- One `git status` (via `lib.nvim.git.status_porcelain_async`, NUL-separated,
+--- so a path with a space or a non-ASCII byte arrives exactly as on disk)
+--- answers all requested kinds; the result is the requested kinds in the order
+--- modified, staged, untracked, each sorted by path.
 ---@param start_dir string
 ---@param kinds string[]
 ---@param on_done fun(files: string[], top: string|nil, failed_kinds: string[]|nil)
@@ -96,59 +91,55 @@ function M.list(start_dir, kinds, on_done)
   for _, k in ipairs(kinds) do
     set[k] = true
   end
-
-  local rel, seen = {}, {}
-  local function add_all(lines)
-    for _, l in ipairs(lines) do
-      if l ~= "" and not seen[l] then
-        seen[l] = true
-        rel[#rel + 1] = l
-      end
+  local wanted = {}
+  for _, kind in ipairs(KIND_ORDER) do
+    if set[kind] then
+      wanted[#wanted + 1] = kind
     end
   end
-
-  -- The kind queries are chained rather than run in parallel: `rel` is order
-  -- sensitive (it is what the caller's scope filter walks) and three git
-  -- invocations against the same repository serialise on the index anyway.
-  local steps = {}
-  if set.modified then
-    steps[#steps + 1] = { kind = "modified", args = { "diff", "--name-only" } }
-  end
-  if set.staged then
-    steps[#steps + 1] = { kind = "staged", args = { "diff", "--staged", "--name-only" } }
-  end
-  if set.untracked then
-    steps[#steps + 1] =
-      { kind = "untracked", args = { "ls-files", "--others", "--exclude-standard" } }
+  if #wanted == 0 then
+    return on_done({}, top)
   end
 
-  -- ERR-11: an empty `rel` can mean "nothing changed" or "the git query for
-  -- this kind failed" (git missing, locked/corrupt index, permission
-  -- error) -- track which kinds failed so the caller can tell those apart
-  -- instead of reporting a silent, possibly-incomplete "no changed files".
-  local failed_kinds = {}
-  local i = 0
-  local function step()
-    i = i + 1
-    if i > #steps then
-      local abs = {}
-      for n, r in ipairs(rel) do
-        abs[n] = top .. "/" .. r
-      end
-      on_done(abs, top, (#failed_kinds > 0) and failed_kinds or nil)
-      return
+  require("lib.nvim.git").status_porcelain_async({ dir = top }, function(map)
+    -- ERR-11: an empty result can mean "nothing changed" or "the git query
+    -- failed" (git missing, locked/corrupt index, permission error) -- report
+    -- the failure so the caller can tell those apart instead of announcing a
+    -- silent, possibly-incomplete "no changed files".
+    if not map then
+      return on_done({}, top, wanted)
     end
-    local s = steps[i]
-    git_lines(top, s.args, function(lines, ok)
-      if ok then
-        add_all(lines)
-      else
-        failed_kinds[#failed_kinds + 1] = s.kind
+
+    ---@type table<string, string[]>
+    local by_kind = { modified = {}, staged = {}, untracked = {} }
+    for path, entry in pairs(map) do
+      local modified, staged, untracked = classify(entry.code)
+      if modified then
+        by_kind.modified[#by_kind.modified + 1] = path
       end
-      step()
-    end)
-  end
-  step()
+      if staged then
+        by_kind.staged[#by_kind.staged + 1] = path
+      end
+      if untracked then
+        by_kind.untracked[#by_kind.untracked + 1] = path
+      end
+    end
+
+    -- `pairs` order is unspecified; the result is order sensitive (it is what
+    -- the caller's scope filter walks), so each kind is sorted by path bytes,
+    -- which is the order git itself lists them in.
+    local abs, seen = {}, {}
+    for _, kind in ipairs(wanted) do
+      table.sort(by_kind[kind])
+      for _, rel in ipairs(by_kind[kind]) do
+        if not seen[rel] then
+          seen[rel] = true
+          abs[#abs + 1] = top .. "/" .. rel
+        end
+      end
+    end
+    on_done(abs, top, nil)
+  end)
 end
 
 return M

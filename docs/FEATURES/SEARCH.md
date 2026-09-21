@@ -108,7 +108,11 @@ a manually typed path, prompting when more than one candidate is found.
 
 `--changed[=<kinds>]` restricts matching to files git reports as
 changed/staged/untracked, intersected with the resolved scope rather than
-widening it.
+widening it. One `git status` (via `lib.nvim.git`, NUL-separated) answers all
+requested kinds — it used to be up to three separate git processes — so paths
+with spaces or non-ASCII characters arrive exactly as on disk. The result is
+the requested kinds in the order modified, staged, untracked, each sorted by
+path.
 
 - **Module:** `gitfiles.lua` (`M.list`), `init.lua` (`cfg._changed_only`
   handling)
