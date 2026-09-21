@@ -65,7 +65,7 @@ end
 --- Escape `text`, echo it, and put it in the unnamed register for immediate
 --- pasting into a :Replace/:Surround invocation.
 ---@param text string
-function M.escape_and_report(text)
+function M.escape_to_register(text)
   local escaped = M.escape(text)
   pcall(vim.fn.setreg, '"', escaped)
   notify.info(string.format('escaped (also copied to the unnamed register ""): %s', escaped))
@@ -176,7 +176,7 @@ function M.register()
       notify.error("Usage: :ReplaceEscape {text}")
       return
     end
-    M.escape_and_report(raw)
+    M.escape_to_register(raw)
   end, { nargs = "+", desc = "Escape text for use as a Vim regex pattern" })
 
   usercmd.create("ReplaceTest", function(opts)
