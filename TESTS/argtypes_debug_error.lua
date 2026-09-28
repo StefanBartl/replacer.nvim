@@ -192,9 +192,10 @@ do
     vim.inspect({ infos = infos, errors = errors })
   )
 
-  -- inspect_buffer / analyze_line are mostly `print`, but must never error --
-  -- this exercises the buffer/line reads and (indirectly, since it is local)
-  -- the char_index() byte->char helper's 0.11 signature probe.
+  -- inspect_buffer / analyze_line dump their result via
+  -- lib.nvim.output.viewer.show_lines rather than print, but must never
+  -- error -- this exercises the buffer/line reads and (indirectly, since it
+  -- is local) the char_index() byte->char helper's 0.11 signature probe.
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "hello Müller world", "second line" })
   vim.api.nvim_set_current_buf(buf)
@@ -252,28 +253,26 @@ do
   vim.api.nvim_buf_set_lines(case_buf, 0, -1, false, { "the answer is FooBar here" })
   vim.api.nvim_set_current_buf(case_buf)
 
-  local printed = {}
-  local orig_print = print
-  _G.print = function(...)
-    local parts = {}
-    for i = 1, select("#", ...) do
-      parts[#parts + 1] = tostring(select(i, ...))
-    end
-    printed[#printed + 1] = table.concat(parts, "\t")
-  end
+  local dumped
+  local orig_viewer = package.loaded["lib.nvim.output.viewer"]
+  package.loaded["lib.nvim.output.viewer"] = {
+    show_lines = function(_title, lines)
+      dumped = lines
+    end,
+  }
   vim.cmd("ReplaceDebug analyze 1 FooBar")
-  _G.print = orig_print
+  package.loaded["lib.nvim.output.viewer"] = orig_viewer
 
   local reported_none = false
-  for _, line in ipairs(printed) do
+  for _, line in ipairs(dumped or {}) do
     if line:find("No occurrences found", 1, true) then
       reported_none = true
     end
   end
   check(
     "debug: :ReplaceDebug analyze finds a mixed-case pattern (case preserved)",
-    not reported_none,
-    vim.inspect(printed)
+    dumped ~= nil and not reported_none,
+    vim.inspect(dumped)
   )
 end
 

@@ -65,18 +65,16 @@ function M.inspect_buffer()
     encoding = vim.bo[bufnr].fileencoding or "utf-8",
   }
 
-  print("\n=== Buffer Inspection ===")
-  print(vim.inspect(info))
-
-  -- Show first few lines with byte offsets
-  print("\n=== First 5 lines (with byte lengths) ===")
+  local out = vim.split(vim.inspect(info), "\n", { plain = true })
+  out[#out + 1] = ""
+  out[#out + 1] = "First 5 lines (with byte lengths):"
   for i = 1, math.min(5, #lines) do
     local line = lines[i]
-    print(
+    out[#out + 1] =
       string.format("Line %d: len=%d bytes, %d chars: '%s'", i, #line, vim.fn.strchars(line), line)
-    )
   end
-  print("")
+
+  require("lib.nvim.output.viewer").show_lines("Buffer Inspection", out)
 end
 
 ---@internal
@@ -114,16 +112,18 @@ function M.analyze_line(lnum, pattern)
   end
 
   local line = lines[1]
-  print(string.format("\n=== Analyzing line %d ===", lnum))
-  print(string.format("Pattern: '%s'", pattern))
-  print(string.format("Line: '%s'", line))
-  print(string.format("Byte length: %d", #line))
-  print(string.format("Char length: %d", vim.fn.strchars(line)))
+  local out = {
+    string.format("Pattern: '%s'", pattern),
+    string.format("Line: '%s'", line),
+    string.format("Byte length: %d", #line),
+    string.format("Char length: %d", vim.fn.strchars(line)),
+    "",
+    "Occurrences:",
+  }
 
   -- Find all occurrences
   local pos = 1
   local count = 0
-  print("\nOccurrences:")
   while true do
     -- find() returns both bounds or neither; guarding only `s` leaves `e`
     -- optional for every read below it.
@@ -134,7 +134,7 @@ function M.analyze_line(lnum, pattern)
     count = count + 1
 
     local matched = line:sub(s, e)
-    print(string.format(
+    out[#out + 1] = string.format(
       "  #%d: bytes [%d:%d] chars [%d:%d] text='%s'",
       count,
       s - 1,
@@ -142,7 +142,7 @@ function M.analyze_line(lnum, pattern)
       char_index(line, s - 1),
       char_index(line, e),
       matched
-    ))
+    )
 
     pos = e + 1
     if pos > #line then
@@ -151,9 +151,10 @@ function M.analyze_line(lnum, pattern)
   end
 
   if count == 0 then
-    print("  No occurrences found")
+    out[#out + 1] = "  No occurrences found"
   end
-  print("")
+
+  require("lib.nvim.output.viewer").show_lines(("Analyzing line %d"):format(lnum), out)
 end
 
 --- Register debug command
