@@ -15,7 +15,9 @@ already misbehaving.
 | `:ReplaceDebug inspect` | Buffer state: path, line count, filetype, encoding, per-line byte lengths |
 | `:ReplaceDebug analyze <line> <pattern>` | Every occurrence on that line, with byte *and* character offsets |
 
-Leave it off outside a debugging session — the output is verbose.
+`inspect`/`analyze` open their result in a read-only viewer panel
+(`q`/`<Esc>` closes) rather than printing it, so it stays yankable. Leave
+debug mode off outside a debugging session — the output is verbose.
 
 ## Quick diagnosis
 
@@ -53,9 +55,8 @@ resets itself when you turn it off or restart.
 :ReplaceDebug analyze 45 "test"
 ```
 
-**Expected output:**
+**Expected output** (viewer panel titled "Analyzing line 45"):
 ```
-=== Analyzing line 45 ===
 Pattern: 'test'
 Line: 'test test test'
 Byte length: 14
