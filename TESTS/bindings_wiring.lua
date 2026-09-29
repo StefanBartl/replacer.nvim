@@ -197,6 +197,16 @@ do
     #marks2 == 0
   )
 
+  -- Regression: this float used to hardcode border="rounded" via a raw
+  -- nvim_open_win, so a ui.kit theme preset switch (:UI kit-preset ascii)
+  -- silently skipped it. It now opens through ui.kit.surface, whose
+  -- winhighlight references a scoped Kit* group instead.
+  local themed_win = vim.api.nvim_get_current_win()
+  check(
+    "ReplaceTest: panel is themed via ui.kit (winhighlight references a Kit* group)",
+    vim.api.nvim_get_option_value("winhighlight", { win = themed_win }):find("Kit", 1, true) ~= nil
+  )
+
   -- q closes the float.
   local win = vim.api.nvim_get_current_win()
   local m_q = vim.fn.maparg("q", "n", false, true)
