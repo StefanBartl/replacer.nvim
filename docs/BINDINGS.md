@@ -85,6 +85,38 @@ fzf backend.
 Telescope's keys are real `vim.keymap.set` calls and are fully labeled.
 `quit` is labeled for both backends.
 
+### Preview navigation (engine-native, not replacer's own)
+
+replacer.nvim only sets the keys in the table above; scrolling and inspecting
+the preview pane itself is entirely the picker engine's own doing. Both ship
+more than it looks like at a glance:
+
+| Action | fzf-lua | Telescope |
+| --- | --- | --- |
+| Scroll preview up/down a page | `<S-Up>` / `<S-Down>` | — |
+| Scroll preview up/down a line | `<M-S-Up>` / `<M-S-Down>` | `<C-u>` / `<C-d>` |
+| Scroll preview left/right | *(none built in — see below)* | `<C-f>` / `<C-k>` |
+| Toggle line-wrap in the preview | `<F3>` | — |
+| Full keymap cheatsheet, on demand | `<F1>` | — |
+
+fzf-lua has no horizontal preview-scroll action, which is exactly what makes
+a long unwrapped line (a URL, a long import path) run off the right edge with
+no way to see the rest — `<F3>` (`toggle-preview-wrap`) is the fix: it wraps
+the preview instead, so the full line becomes visible without scrolling at
+all. `<F1>` (`toggle-help`) opens fzf-lua's own floating cheatsheet, listing
+every key active in the current picker, replacer's own included — this *is*
+the "what can I press here" popup, no separate one is needed.
+
+**Known caveat, both backends:** `keymaps.filter` defaults to `<C-f>`, and on
+both engines that shadows an existing default: Telescope's own `<C-f>` is
+`preview_scrolling_left` (so horizontal preview scroll-left becomes
+unreachable), and fzf-lua's own `ctrl-f` is `half-page-down` on the *results
+list* (a provider's `actions` entry for a key always overrides the matching
+`keymap.fzf` default for it). Neither loses anything essential — the list is
+still fully navigable with the arrows, and Telescope's `<C-k>`
+(scroll-right) is unaffected — but it is worth knowing if `<C-f>` ever seems
+to do the wrong thing. Rebinding `keymaps.filter` sidesteps both.
+
 ---
 
 ## `:ReplaceTest` panel keymaps
