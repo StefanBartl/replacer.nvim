@@ -119,40 +119,42 @@ end
 ---@param pattern string|nil
 ---@param sample string|nil
 function M.open_test_panel(pattern, sample)
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[buf].buftype = "nofile"
-  vim.bo[buf].bufhidden = "wipe"
-  vim.bo[buf].swapfile = false
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-    pattern or "",
-    sample or "",
-    "",
-    "-- line 1: pattern (Vim regex) · line 2: sample text",
-  })
-
   pcall(vim.api.nvim_set_hl, 0, "ReplacerTarget", { link = "Search" })
 
   local width = math.min(80, math.max(40, vim.o.columns - 10))
-  local win = vim.api.nvim_open_win(buf, true, {
+  -- `ui.kit.surface` (a required, unconditional dependency here -- see
+  -- docs/installation.md), not a raw `nvim_open_win`: its border/colors come
+  -- from the active `ui.kit.theme` preset like every other popup in the
+  -- fleet, instead of being pinned to "always rounded" regardless of a
+  -- preset switch (`:UI kit-preset ascii`, say).
+  local opened = require("ui.kit.surface").open({
+    lines = {
+      pattern or "",
+      sample or "",
+      "",
+      "-- line 1: pattern (Vim regex) · line 2: sample text",
+    },
     relative = "editor",
     width = width,
     height = 4,
     row = math.floor((vim.o.lines - 4) / 2),
     col = math.floor((vim.o.columns - width) / 2),
-    style = "minimal",
-    border = "rounded",
+    modifiable = true,
+    enter = true,
     title = " :ReplaceTest — pattern / sample ",
     title_pos = "center",
   })
+  if not opened then
+    return
+  end
+  local buf, win = opened.bufnr, opened.winid
 
   -- Both hooks live in `replacer.bindings` -- see that module's header for why
   -- the wiring is kept apart from the highlighting it drives.
   require("replacer.bindings.autocmds").attach_test_panel(buf, highlight_test_buffer)
 
   local function close()
-    if vim.api.nvim_win_is_valid(win) then
-      vim.api.nvim_win_close(win, true)
-    end
+    opened:close()
   end
   require("replacer.bindings.keymaps").attach_test_panel(buf, close)
 
