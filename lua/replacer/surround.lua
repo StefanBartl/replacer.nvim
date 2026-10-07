@@ -379,8 +379,25 @@ local DELIM_VALUES = {
 }
 
 local FLAGS = vim.deepcopy(command.FLAGS)
-FLAGS[#FLAGS + 1] = { name = "nested", bool = true }
-FLAGS[#FLAGS + 1] = { name = "allow-nested", bool = true }
+FLAGS[#FLAGS + 1] = {
+  name = "nested",
+  bool = true,
+  desc = "Also wrap matches already surrounded by this delimiter",
+}
+FLAGS[#FLAGS + 1] = {
+  name = "allow-nested",
+  bool = true,
+  desc = "Alias of --nested: wrap already-surrounded matches too",
+}
+
+-- build_request() forces literal mode, so the two flags that would switch
+-- :Replace to regex mode do nothing here. The copy above is :Surround's own
+-- (deepcopy), so correcting their text does not touch :Replace's help.
+for _, spec in ipairs(FLAGS) do
+  if spec.name == "regex" or spec.name == "no-literal" then
+    spec.desc = "No effect here: :Surround always matches literally"
+  end
+end
 
 --- Register :Surround (and :Wrap alias), built via lib.nvim.bindings.usercmd.composer.
 --- Same design as :Replace/:Replacer in command.lua: the route's args/flags

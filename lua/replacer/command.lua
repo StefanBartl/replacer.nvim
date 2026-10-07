@@ -527,56 +527,153 @@ end
 --------------------------------------------------------------------------------
 
 -- Shared FlagSpec list for both :Replace and :Surround's composer routes
--- (mirrors BOOL_FLAGS/VALUE_FLAGS above) -- drives <Tab> completion only.
--- Dispatch never reads ctx.flags: see the `run` comment below for why.
+-- (mirrors BOOL_FLAGS/VALUE_FLAGS above) -- drives <Tab> completion and the
+-- option cheatsheet (composer's help float). Dispatch never reads ctx.flags:
+-- see the `run` comment below for why.
+--
+-- Every `desc` is one line and worded for both verbs ("the pattern" / "the
+-- replacement" rather than {old}/{new}, which :Surround calls {pattern}). A
+-- `--no-x` twin deliberately has none: composer shows "Off: <text of --x>"
+-- for it. Only `--no-literal` has its own text, because it means "regex".
+-- TESTS/usrcmd_option_help.lua fails when an option ends up without a text.
 ---@type table[]
 M.FLAGS = {
-  { name = "dry", bool = true },
-  { name = "all", bool = true },
-  { name = "literal", bool = true },
-  { name = "no-literal", bool = true },
-  { name = "regex", bool = true },
-  { name = "smart-case", bool = true },
+  { name = "dry", bool = true, desc = "Show the plan (stats and diff) without writing anything" },
+  { name = "all", bool = true, desc = "Apply to every match, no picker (same as the ! form)" },
+  { name = "literal", bool = true, desc = "Treat the pattern as plain text, not a regex" },
+  { name = "no-literal", bool = true, desc = "Treat the pattern as a regex, same as --regex" },
+  {
+    name = "regex",
+    bool = true,
+    desc = "Treat the pattern as a regex; \\0-\\9 insert captured text",
+  },
+  {
+    name = "smart-case",
+    bool = true,
+    desc = "Case-insensitive unless the pattern has capitals (ripgrep only)",
+  },
   { name = "no-smart-case", bool = true },
-  { name = "hidden", bool = true },
+  { name = "hidden", bool = true, desc = "Include hidden files (dotfiles) in the search" },
   { name = "no-hidden", bool = true },
-  { name = "ignore", bool = true },
+  {
+    name = "ignore",
+    bool = true,
+    desc = "Honor .gitignore and other ignore files (ripgrep only)",
+  },
   { name = "no-ignore", bool = true },
-  { name = "preserve-ws", bool = true },
+  {
+    name = "preserve-ws",
+    bool = true,
+    desc = "Keep the match's leading/trailing whitespace in the result",
+  },
   { name = "no-preserve-ws", bool = true },
-  { name = "case-preserve", bool = true },
+  {
+    name = "case-preserve",
+    bool = true,
+    desc = "Re-case the replacement per hit: foo, Foo, FOO, fooBar",
+  },
   { name = "no-case-preserve", bool = true },
-  { name = "word", bool = true },
+  {
+    name = "word",
+    bool = true,
+    desc = "Keep only whole-word matches (no letter, digit or _ next to it)",
+  },
   { name = "no-word", bool = true },
-  { name = "code-only", bool = true },
+  {
+    name = "code-only",
+    bool = true,
+    desc = "Skip matches in strings and comments (Tree-sitter, best effort)",
+  },
   { name = "no-code-only", bool = true },
-  { name = "safe", bool = true },
+  { name = "safe", bool = true, desc = "Skip read-only, oversized and binary files" },
   { name = "no-safe", bool = true },
-  { name = "max-filesize", type = "INT" },
-  { name = "to-quickfix", bool = true },
-  { name = "to-loclist", bool = true },
-  { name = "also-rename-file", bool = true },
+  { name = "max-filesize", type = "INT", desc = "Largest file size in bytes for --safe mode" },
+  {
+    name = "to-quickfix",
+    bool = true,
+    desc = "Send the matches to the quickfix list, change nothing",
+  },
+  {
+    name = "to-loclist",
+    bool = true,
+    desc = "Send the matches to the location list, change nothing",
+  },
+  {
+    name = "also-rename-file",
+    bool = true,
+    desc = "Offer to also rename a single file if its name has the pattern",
+  },
   { name = "no-also-rename-file", bool = true },
-  { name = "lsp", bool = true },
+  {
+    name = "lsp",
+    bool = true,
+    desc = "Try an LSP rename for identifier-like matches, else plain text",
+  },
   { name = "no-lsp", bool = true },
-  { name = "stream", bool = true },
+  {
+    name = "stream",
+    bool = true,
+    desc = "Parse ripgrep output incrementally for smoother progress",
+  },
   { name = "no-stream", bool = true },
   -- `optional_value`, not a plain value flag: bare `--changed` means "all
   -- kinds" and must not swallow the token after it, which may be the scope
   -- positional (`:Replace a b --changed cwd`). Matches what apply_tokens has
   -- always done -- before this, composer rejected the bare form outright
   -- with "flag '--changed' requires a value", never reaching apply_tokens.
-  { name = "changed", type = "RP_CHANGED_KINDS", optional_value = true },
-  { name = "confirm-per-file", bool = true },
+  {
+    name = "changed",
+    type = "RP_CHANGED_KINDS",
+    optional_value = true,
+    desc = "Only git-changed files; =modified,staged,untracked picks kinds",
+  },
+  {
+    name = "confirm-per-file",
+    bool = true,
+    desc = "With --all: ask All/Skip/Only-some/Quit for each file",
+  },
   { name = "no-confirm-per-file", bool = true },
-  { name = "checkpoint", bool = true },
+  {
+    name = "checkpoint",
+    bool = true,
+    desc = "With --all: snapshot touched files first, for :ReplaceUndo",
+  },
   { name = "no-checkpoint", bool = true },
-  { name = "type", type = "RP_RG_TYPE", repeatable = true },
-  { name = "glob", type = "STRING", repeatable = true },
-  { name = "exclude", type = "STRING", repeatable = true },
-  { name = "engine", type = "STRING", enum = { "fzf", "telescope" } },
-  { name = "context", type = "INT" },
-  { name = "export", type = "PATH" },
+  {
+    name = "type",
+    type = "RP_RG_TYPE",
+    repeatable = true,
+    desc = "Only files of this type, e.g. lua (repeatable)",
+  },
+  {
+    name = "glob",
+    type = "STRING",
+    repeatable = true,
+    desc = "Only files matching this glob (repeatable)",
+  },
+  {
+    name = "exclude",
+    type = "STRING",
+    repeatable = true,
+    desc = "Skip a directory, file or glob (repeatable)",
+  },
+  {
+    name = "engine",
+    type = "STRING",
+    enum = { "fzf", "telescope" },
+    enum_desc = { fzf = "fzf-lua picker", telescope = "telescope.nvim picker" },
+    desc = "Picker UI for this run, instead of the configured one",
+  },
+  {
+    name = "context",
+    type = "INT",
+    desc = "Context lines around a hit in the Telescope preview",
+  },
+  {
+    name = "export",
+    type = "PATH",
+    desc = "Write the plan to a file (.json = JSON, else a patch); no edits",
+  },
 }
 
 --- Register :Replace and :Replacer user commands, built via
