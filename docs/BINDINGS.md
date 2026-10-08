@@ -38,6 +38,10 @@ All support `[range]` and the bang form (`!`) where documented in `:help replace
 | `--export=` | file paths |
 
 `{old}`/`{new}` are arbitrary text and have nothing to complete against.
+A quoted run counts as one argument here, as it does for the command itself:
+after `:Replace "foo bar" ` the slot is `{new}`, not `[scope]` (the four verbs
+set composer's `quotes = true`, so `<Tab>` and the option float cut the line
+the way `ctx.raw.args` is cut).
 `--glob=`/`--exclude=` deliberately do not complete: they take *patterns*, and
 offering existing paths would suggest `lua/replacer/command.lua` where the flag
 wants `**/*.lua` — a candidate that is accepted, matches a single file, and

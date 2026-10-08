@@ -8,6 +8,9 @@
 -- list to empty, so a flag added to command.lua / surround.lua without a text
 -- fails here instead of showing a bare option name in the float.
 --
+-- The handlers cut their line quote-aware, so every verb sets `quotes = true`;
+-- section 1b pins the flag and what it changes for the float and <Tab>.
+--
 -- The body runs under xpcall: under `nvim --headless -c "luafile ..." -c "qa"`
 -- an uncaught error only prints and the process still exits 0, so a crash (for
 -- example a verb that failed to register) would leave CI green. A crash is
@@ -92,17 +95,142 @@ local function main()
   -- 1b) The handler cuts its arguments quote-aware, so the cheatsheet and <Tab> must too
   ------------------------------------------------------------------------------
   -- Neovim splits at blanks only; without `quotes = true` the slot counted after
-  -- `:Replace "foo bar" ` is one too far (the float would offer [{scope}] for {new}).
+  -- `:Replace "foo bar" ` is one too far: the float would offer [{scope}] for {new},
+  -- `:Replace "foo bar" baz ` would offer no argument at all, and <Tab> would offer
+  -- the scope values where the replacement text goes.
+  local tree = require("lib.nvim.bindings.usercmd.composer.tree")
+  local entries = require("lib.nvim.bindings.usercmd.composer.help.entries")
+
+  ---@param list string[]
+  ---@param value string
+  ---@return boolean
+  local function contains(list, value)
+    for _, v in ipairs(list) do
+      if v == value then
+        return true
+      end
+    end
+    return false
+  end
+
+  -- The rows under the "Argument" heading of the float for `line`: what the
+  -- cheatsheet key would show. nil when the verb or the line does not resolve.
+  ---@param verb string
+  ---@param line string
+  ---@return string[]|nil
+  local function argument_rows(verb, line)
+    local spec = spec_of(verb)
+    local state = composer.help.parse_line(line)
+    if spec == nil or state == nil then
+      return nil
+    end
+    local items = entries.compute(tree.build(spec.routes), state.committed, state.lead).items
+    local rows, inside = {}, false
+    for _, item in ipairs(items) do
+      if item.kind == "heading" then
+        inside = item.label == "Argument"
+      elseif inside then
+        rows[#rows + 1] = item.label
+      end
+    end
+    return rows
+  end
+
+  -- What <Tab> offers for `line` (the command line without the colon).
+  ---@param line string
+  ---@return string[]
+  local function tab_candidates(line)
+    return vim.fn.getcompletion(line, "cmdline")
+  end
+
   for _, verb in ipairs(VERBS) do
     local spec = spec_of(verb)
     check("quotes: " .. verb .. " reads its line quote-aware", spec ~= nil and spec.quotes == true)
-  end
-  do
-    local ok_parse, state = pcall(composer.help.parse_line, 'Replace "foo bar" ')
+
+    -- parse_line looks `spec.quotes` up from the registry (no explicit flag), so
+    -- this fails when the flag is missing, not only when the tokenizer is.
+    local ok_parse, state = pcall(composer.help.parse_line, verb .. ' "foo bar" ')
     check(
-      'quotes: `Replace "foo bar" ` has ONE finished token',
-      ok_parse and state ~= nil and #state.committed == 1 and state.lead == "",
-      ok_parse and (state and #state.committed) or state
+      "quotes: `" .. verb .. ' "foo bar" ` has ONE finished token, `foo bar`',
+      ok_parse
+        and state ~= nil
+        and #state.committed == 1
+        and state.committed[1] == "foo bar"
+        and state.lead == "",
+      ok_parse and (state and table.concat(state.committed, "|")) or state
+    )
+  end
+
+  -- {old} {new} [scope]: a quoted pattern fills ONE slot.
+  for _, verb in ipairs({ "Replace", "Replacer" }) do
+    local rows = argument_rows(verb, verb .. ' "foo bar" ')
+    check(
+      "quotes: " .. verb .. ' "foo bar" <M-h> asks for {new}',
+      rows ~= nil and rows[1] == "{new}",
+      rows and table.concat(rows, ",")
+    )
+
+    rows = argument_rows(verb, verb .. ' "foo bar" baz ')
+    check(
+      "quotes: " .. verb .. ' "foo bar" baz <M-h> shows the [{scope}] row',
+      rows ~= nil and rows[1] == "[{scope}]" and contains(rows, "cwd"),
+      rows and table.concat(rows, ",")
+    )
+
+    -- Unchanged where no blank sits inside a quote: plain words, an open quote.
+    rows = argument_rows(verb, verb .. " foo ")
+    check(
+      "quotes: " .. verb .. " foo <M-h> still asks for {new}",
+      rows ~= nil and rows[1] == "{new}",
+      rows and table.concat(rows, ",")
+    )
+    rows = argument_rows(verb, verb .. ' foo "ba')
+    check(
+      "quotes: "
+        .. verb
+        .. ' foo "ba <M-h> still asks for {new} (the open quote is the token being typed)',
+      rows ~= nil and rows[1] == "{new}",
+      rows and table.concat(rows, ",")
+    )
+
+    check(
+      "quotes: <Tab> after " .. verb .. ' "foo bar" baz  offers the scopes',
+      contains(tab_candidates(verb .. ' "foo bar" baz '), "cwd")
+    )
+    check(
+      "quotes: <Tab> after " .. verb .. ' "foo bar"  (the {new} slot) offers no scope',
+      not contains(tab_candidates(verb .. ' "foo bar" '), "cwd")
+    )
+  end
+
+  -- {pattern} [delim] [scope]: same, with the delimiter in between.
+  for _, verb in ipairs({ "Surround", "Wrap" }) do
+    local rows = argument_rows(verb, verb .. ' "foo bar" ')
+    check(
+      "quotes: " .. verb .. ' "foo bar" <M-h> offers [{delim}] and its values',
+      rows ~= nil
+        and rows[1] == "[{delim}]"
+        and contains(rows, "paren")
+        and not contains(rows, "cwd"),
+      rows and table.concat(rows, ",")
+    )
+
+    rows = argument_rows(verb, verb .. ' "foo bar" paren ')
+    check(
+      "quotes: " .. verb .. ' "foo bar" paren <M-h> shows the [{scope}] row',
+      rows ~= nil and rows[1] == "[{scope}]" and contains(rows, "cwd"),
+      rows and table.concat(rows, ",")
+    )
+
+    local delims = tab_candidates(verb .. ' "foo bar" ')
+    check(
+      "quotes: <Tab> after " .. verb .. ' "foo bar"  offers the delimiters, not the scopes',
+      contains(delims, "paren") and not contains(delims, "cwd"),
+      table.concat(delims, " ")
+    )
+    check(
+      "quotes: <Tab> after " .. verb .. ' "foo bar" paren  offers the scopes',
+      contains(tab_candidates(verb .. ' "foo bar" paren '), "cwd")
     )
   end
 
