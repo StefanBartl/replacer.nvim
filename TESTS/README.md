@@ -117,7 +117,11 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
   show a text too (`undocumented(verb, { args = true })` is empty, `enum_desc`
   keys are real values), and `:Surround` carries its own `--nested`/`--allow-nested` texts plus the
   corrected "no effect" text for `--regex`/`--no-literal` without touching
-  `:Replace`'s copy.
+  `:Replace`'s copy. It also pins `spec.quotes = true` on all four verbs and
+  its effect: `parse_line` counts `"foo bar"` as one token, the float asks for
+  `{new}` (`[{delim}]` for `:Surround`) after a quoted pattern and shows the
+  `[{scope}]` row after the next argument, and `getcompletion()` offers the
+  scopes only from there on.
 
 ## Present but not run by CI
 

@@ -1002,6 +1002,11 @@ Backslash escapes work outside quotes too: >vim
     :Replace \"test\" ok %
 <
 
+<Tab> completion and the option cheatsheet (the float of lib.nvim's composer)
+cut the line the same way, so a quoted run counts as ONE argument: after
+`:Replace "foo bar" ` the slot on offer is {new}, not [scope]. This holds for
+:Replace, :Replacer, :Surround and :Wrap.
+
 ==============================================================================
 10. TROUBLESHOOTING                                *replacer-troubleshooting*
 
