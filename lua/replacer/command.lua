@@ -676,6 +676,27 @@ M.FLAGS = {
   },
 }
 
+--- The `[scope]` positional shared by :Replace and :Surround (both resolve it
+--- through `resolve_scope`). The four keywords are completion values; any file
+--- or directory path is accepted too, hence the text on the argument itself.
+--- A fresh table per call so the verbs never share (and mutate) one spec.
+---@return table
+function M.scope_arg()
+  return {
+    name = "scope",
+    type = "STRING",
+    optional = true,
+    values = { "%", "cwd", ".", "root" },
+    desc = "Where to search; a file or directory path also works",
+    enum_desc = {
+      ["%"] = "Current buffer's file only (alias: buf)",
+      cwd = "Current working directory",
+      ["."] = "Same as cwd",
+      root = "Project root, found from the buffer's directory",
+    },
+  }
+end
+
 --- Register :Replace and :Replacer user commands, built via
 --- lib.nvim.bindings.usercmd.composer. The route declares `args`/`flags` purely to
 --- drive <Tab> completion; dispatch bypasses composer's own bound
@@ -721,14 +742,17 @@ function M.register(run_fun)
       {
         path = {},
         args = {
-          { name = "old", type = "STRING" },
-          { name = "new", type = "STRING" },
           {
-            name = "scope",
+            name = "old",
             type = "STRING",
-            optional = true,
-            values = { "%", "cwd", ".", "root" },
+            desc = "The pattern to search for; quote it if it has spaces",
           },
+          {
+            name = "new",
+            type = "STRING",
+            desc = 'The replacement text; "" deletes each match',
+          },
+          M.scope_arg(),
         },
         flags = M.FLAGS,
         range = true,

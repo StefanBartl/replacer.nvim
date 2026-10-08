@@ -99,8 +99,10 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
 - `usrcmd_option_help.lua` — the option cheatsheet (composer's help float) of
   `:Replace`/`:Replacer`/`:Surround`/`:Wrap`: `composer.help.undocumented()`
   must list no flag for any of the four verbs (a `--no-x` twin counts as
-  described when `--x` is), the texts stay one line / at most 70 chars, and
-  `:Surround` carries its own `--nested`/`--allow-nested` texts plus the
+  described when `--x` is), the texts stay one line / at most 70 chars, the
+  positional arguments (`{old}`, `{new}`, `[scope]`, `{pattern}`, `[delim]`)
+  show a text too (`undocumented(verb, { args = true })` is empty, `enum_desc`
+  keys are real values), and `:Surround` carries its own `--nested`/`--allow-nested` texts plus the
   corrected "no effect" text for `--regex`/`--no-literal` without touching
   `:Replace`'s copy.
 
