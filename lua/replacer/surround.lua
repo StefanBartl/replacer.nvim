@@ -432,6 +432,8 @@ function M.register(run_fun)
   local spec = {
     desc = "Wrap every match of a pattern: :[range]Surround[!] {pattern} [delim] [scope] [--flags]",
     bang = true,
+    -- Same quote-aware tokenizing as :Replace: <Tab> and the option float count a quoted run as one token.
+    quotes = true,
     routes = {
       {
         path = {},
