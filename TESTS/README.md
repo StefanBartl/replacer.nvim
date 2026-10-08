@@ -3,7 +3,8 @@
 Standalone Lua scripts, not a `plenary`/`busted` suite. Each file is a
 self-contained headless test run via `nvim -l TESTS/<name>.lua` or
 `nvim --headless -u NONE -c "luafile TESTS/<name>.lua" -c "qa"` — there is no
-shared `run.lua` aggregator and no `_spec` suffix convention.
+`run.lua` aggregator and no `_spec` suffix convention. (CI wraps the second
+form in `TESTS/ci_guard.lua`, see below.)
 
 ## Running a suite
 
@@ -17,6 +18,18 @@ additionally uses `pickers.nvim` as a soft dependency (only the picker
 nvim --headless -u NONE \
   -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim" \
   -c "luafile TESTS/feature_smoke.lua" -c "qa"
+```
+
+`-c "luafile ..." -c "qa"` exits 0 even when the suite dies halfway on an
+uncaught Lua error (the error is only printed, the next `-c` still runs), so
+a crash before the closing `cquit 1` would leave a CI step green. CI therefore
+runs every suite through `TESTS/ci_guard.lua`, which turns a crash (or an
+unloadable file) into a `FAIL` line with the traceback and exit code 1:
+
+```sh
+nvim --headless -u NONE \
+  -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim" \
+  -c "lua dofile('TESTS/ci_guard.lua')('TESTS/feature_smoke.lua')" -c "qa"
 ```
 
 `TESTS/resolve_lib_nvim.lua`/`resolve_ui_nvim.lua` are shared helpers each

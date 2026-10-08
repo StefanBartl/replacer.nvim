@@ -115,84 +115,84 @@ jobs:
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/feature_smoke.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/feature_smoke.lua')" -c "qa"
 
       - name: gitfiles_equivalence.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/gitfiles_equivalence.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/gitfiles_equivalence.lua')" -c "qa"
 
       - name: surround_smoke.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/surround_smoke.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/surround_smoke.lua')" -c "qa"
 
       - name: async_utf8.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/async_utf8.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/async_utf8.lua')" -c "qa"
 
       - name: refine_wiring.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim" -c "set rtp+=./pickers.nvim"
-          -c "luafile TESTS/refine_wiring.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/refine_wiring.lua')" -c "qa"
 
       - name: config_merge.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/config_merge.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/config_merge.lua')" -c "qa"
 
       - name: argtypes_debug_error.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/argtypes_debug_error.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/argtypes_debug_error.lua')" -c "qa"
 
       - name: health_pickers_tscode.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/health_pickers_tscode.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/health_pickers_tscode.lua')" -c "qa"
 
       - name: bindings_wiring.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/bindings_wiring.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/bindings_wiring.lua')" -c "qa"
 
       - name: init_dispatch.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/init_dispatch.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/init_dispatch.lua')" -c "qa"
 
       - name: pickers_backends.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/pickers_backends.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/pickers_backends.lua')" -c "qa"
 
       - name: usrcmd_option_help.lua
         run: >-
           exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
           nvim -n -i NONE --headless -u NONE
           -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim"
-          -c "luafile TESTS/usrcmd_option_help.lua" -c "qa"
+          -c "lua dofile('TESTS/ci_guard.lua')('TESTS/usrcmd_option_help.lua')" -c "qa"
 
       - uses: actions/upload-artifact@v7
         if: failure()
