@@ -209,6 +209,24 @@ do
   local ok4 = pcall(dbg.analyze_line, 99, "x")
   check("debug: analyze_line() on an out-of-range line reports via notify.error, not a crash", ok4)
 
+  -- The dumps above really landed in a viewer float, and it is still open: the
+  -- viewer takes focus and is `winfixbuf`, so a later nvim_set_current_buf()
+  -- dies with E1513 until the float is closed (a user closes it with q/<Esc>).
+  local function open_floats()
+    local floats = {}
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      if vim.api.nvim_win_get_config(win).relative ~= "" then
+        floats[#floats + 1] = win
+      end
+    end
+    return floats
+  end
+  check("debug: the dump is shown in a viewer float", #open_floats() > 0)
+  for _, win in ipairs(open_floats()) do
+    pcall(vim.api.nvim_win_close, win, true)
+  end
+  check("debug: the viewer floats are closed again", #open_floats() == 0)
+
   notify.info = orig_info
   notify.error = orig_error
 
