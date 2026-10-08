@@ -738,6 +738,9 @@ function M.register(run_fun)
   local spec = {
     desc = "Interactive replace: :[range]Replace[!] {old} {new} [scope] [--flags]",
     bang = true,
+    -- The handler cuts ctx.raw.args with its own quote-aware tokenizer (tokenize), so <Tab> and the
+    -- option float must count a quoted run as one token too.
+    quotes = true,
     routes = {
       {
         path = {},

@@ -89,6 +89,24 @@ local function main()
   end
 
   ------------------------------------------------------------------------------
+  -- 1b) The handler cuts its arguments quote-aware, so the cheatsheet and <Tab> must too
+  ------------------------------------------------------------------------------
+  -- Neovim splits at blanks only; without `quotes = true` the slot counted after
+  -- `:Replace "foo bar" ` is one too far (the float would offer [{scope}] for {new}).
+  for _, verb in ipairs(VERBS) do
+    local spec = spec_of(verb)
+    check("quotes: " .. verb .. " reads its line quote-aware", spec ~= nil and spec.quotes == true)
+  end
+  do
+    local ok_parse, state = pcall(composer.help.parse_line, 'Replace "foo bar" ')
+    check(
+      'quotes: `Replace "foo bar" ` has ONE finished token',
+      ok_parse and state ~= nil and #state.committed == 1 and state.lead == "",
+      ok_parse and (state and #state.committed) or state
+    )
+  end
+
+  ------------------------------------------------------------------------------
   -- 2) Every flag / key=value of every verb shows a text
   ------------------------------------------------------------------------------
   for _, verb in ipairs(VERBS) do
