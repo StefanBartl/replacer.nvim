@@ -56,8 +56,8 @@ with kinds already named dropped from the candidates), `--engine=`, and
 `--glob=`/`--exclude=` deliberately do not complete: they take *patterns*, so
 offering an existing path would be a candidate that is accepted, matches that
 one file, and silently narrows the replacement. `--context=`/`--max-filesize=`
-are integers. `{old}`/`{new}` are free text; a quoted run (`"foo bar"`) counts
-as one of them, because the verbs set composer's `quotes = true` and `<Tab>` and
+are integers. `{old}`/`{new}` (`{pattern}` on `:Surround`/`:Wrap`) are free
+text; a quoted run (`"foo bar"`) counts as one of them, because the verbs set composer's `quotes = true` and `<Tab>` and
 the option float cut the line the way the handler does.
 
 - **Module:** `argtypes.lua` (`RP_RG_TYPE`, `RP_CHANGED_KINDS`), `command.lua`

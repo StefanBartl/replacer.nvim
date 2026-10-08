@@ -234,6 +234,68 @@ local function main()
     )
   end
 
+  -- Inside an open quote the words are text: no flag is completed there (the flag
+  -- changes this from `--dry` to nothing), while a real flag after a closed quote is.
+  for _, verb in ipairs(VERBS) do
+    local open = tab_candidates(verb .. ' "foo --d')
+    check(
+      "quotes: <Tab> inside an open quote after " .. verb .. " offers nothing",
+      #open == 0,
+      table.concat(open, " ")
+    )
+    check(
+      "quotes: <Tab> on a flag after " .. verb .. ' "foo bar" baz still offers --dry',
+      contains(tab_candidates(verb .. ' "foo bar" baz --d'), "--dry")
+    )
+  end
+
+  ------------------------------------------------------------------------------
+  -- 1c) The handler's tokenizer and composer's quote-aware cut agree
+  ------------------------------------------------------------------------------
+  -- The flag is only right while command.tokenize (what the handlers use) and
+  -- composer.tokens.split_quoted (what <Tab> and the float use) cut a line the
+  -- same way; neither repo's own suite compares them.
+  do
+    local split_quoted = require("lib.nvim.bindings.usercmd.composer.tokens").split_quoted
+    local CORPUS = {
+      [["foo bar" baz]],
+      [['a b' c]],
+      [["say \"hi\" now" x]],
+      [[foo\ bar baz]],
+      [[C:\Users\x "C:\my dir\a"]],
+      [[a\\b]],
+      [["foo"bar]],
+      [[a"b c"]],
+      [[""]],
+      [['']],
+      [["foo bar]],
+      [['foo bar]],
+      [[foo\]],
+      [["foo bar" ]],
+      "a\tb  c",
+      [["it's here" x]],
+      "",
+      "   ",
+    }
+    local bad = {}
+    for _, line in ipairs(CORPUS) do
+      local got, got_unterminated = command.tokenize(line)
+      local parts, _, unclosed = split_quoted(line)
+      local want = {}
+      for i, part in ipairs(parts) do
+        want[i] = part.value
+      end
+      if not vim.deep_equal(got, want) or got_unterminated ~= unclosed then
+        bad[#bad + 1] = line
+      end
+    end
+    check(
+      "tokenizer parity: command.tokenize == composer split_quoted",
+      #bad == 0,
+      table.concat(bad, " ; ")
+    )
+  end
+
   ------------------------------------------------------------------------------
   -- 2) Every flag / key=value of every verb shows a text
   ------------------------------------------------------------------------------

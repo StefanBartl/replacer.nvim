@@ -127,6 +127,29 @@ do
   check("cmd: no bare word remains", not c:match("[^`]alpha[^`]") and not c:match("^alpha[^`]"), c)
 end
 
+-- A quoted pattern that holds a blank and a flag-looking word reaches the
+-- handler as ONE argument: composer validates the quote-aware tokens
+-- (spec.quotes), not Neovim's blank split, which would refuse `--dry"` as a flag.
+do
+  local fq = tmp .. "/q.txt"
+  local fh = assert(io.open(fq, "w"))
+  fh:write("say x --dry now\n")
+  fh:close()
+  vim.cmd(string.format('Surround! "x --dry" b %s', fq))
+  vim.wait(300)
+  local c = assert(io.open(fq, "r")):read("*a")
+  check(
+    "cmd: quoted pattern with a flag-looking word is wrapped whole",
+    c == "say `x --dry` now\n",
+    c
+  )
+
+  vim.cmd(string.format('Replace! "`x --dry`" "y z" %s', fq))
+  vim.wait(300)
+  c = assert(io.open(fq, "r")):read("*a")
+  check("cmd: :Replace takes a quoted pattern and a quoted replacement", c == "say y z now\n", c)
+end
+
 --------------------------------------------------------------------------------
 -- 4) Directory-scope wrap with a multi-char delimiter (markdown bold)
 --------------------------------------------------------------------------------
