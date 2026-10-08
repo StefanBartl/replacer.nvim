@@ -378,6 +378,27 @@ local DELIM_VALUES = {
   "angle",
 }
 
+-- Texts for the values that are not obvious from their spelling: the aliases
+-- (see ALIASES) and the bracket openers whose closing partner is implied
+-- (BRACKET_CLOSE). The literal quote/star characters explain themselves.
+---@type table<string, string>
+local DELIM_DESCS = {
+  b = "Alias for a backtick",
+  q = "Alias for a double quote",
+  s = "Alias for a single quote",
+  star = "Alias for *",
+  bold = "Alias for ** (Markdown bold)",
+  italic = "Alias for _",
+  ["("] = "Wrap in ( and )",
+  ["["] = "Wrap in [ and ]",
+  ["{"] = "Wrap in { and }",
+  ["<"] = "Wrap in < and >",
+  paren = "Wrap in ( and )",
+  bracket = "Wrap in [ and ]",
+  brace = "Wrap in { and }",
+  angle = "Wrap in < and >",
+}
+
 local FLAGS = vim.deepcopy(command.FLAGS)
 FLAGS[#FLAGS + 1] = {
   name = "nested",
@@ -415,14 +436,20 @@ function M.register(run_fun)
       {
         path = {},
         args = {
-          { name = "pattern", type = "STRING" },
-          { name = "delim", type = "STRING", optional = true, values = DELIM_VALUES },
           {
-            name = "scope",
+            name = "pattern",
+            type = "STRING",
+            desc = "The pattern to wrap; matched literally, never as a regex",
+          },
+          {
+            name = "delim",
             type = "STRING",
             optional = true,
-            values = { "%", "cwd", ".", "root" },
+            values = DELIM_VALUES,
+            desc = "What to wrap each match in; asked for when omitted",
+            enum_desc = DELIM_DESCS,
           },
+          command.scope_arg(),
         },
         flags = FLAGS,
         range = true,

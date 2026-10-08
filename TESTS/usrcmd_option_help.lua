@@ -79,6 +79,19 @@ for _, verb in ipairs(VERBS) do
     #missing == 0,
     "no text for: " .. table.concat(names, ", ")
   )
+
+  -- The positional arguments ({old} {new} [scope] / {pattern} [delim] [scope])
+  -- too: each one shows a line in the float for the slot you are typing.
+  local missing_args = composer.help.undocumented(verb, { args = true })
+  local arg_names = {}
+  for _, m in ipairs(missing_args) do
+    arg_names[#arg_names + 1] = m.kind .. ":" .. m.name
+  end
+  check(
+    "undocumented(" .. verb .. ", { args = true }) is empty",
+    #missing_args == 0,
+    "no text for: " .. table.concat(arg_names, ", ")
+  )
 end
 
 --------------------------------------------------------------------------------
@@ -101,6 +114,55 @@ do
   check("flags: the table is not empty", #command.FLAGS > 0 and with_desc > 0)
   check("flags: every one has a text or is a --no-x twin", with_desc + twins == #command.FLAGS)
   check("flags: texts are one line, <= 70 chars, no period", #bad == 0, table.concat(bad, ", "))
+end
+
+--------------------------------------------------------------------------------
+-- 3b) The positional-argument texts follow the same style
+--------------------------------------------------------------------------------
+do
+  local bad, seen_args, seen_enum = {}, 0, 0
+  local function style(label, text)
+    if text:find("\n", 1, true) or #text > 70 or text:sub(-1) == "." or text == "" then
+      bad[#bad + 1] = label
+    end
+  end
+  for _, verb in ipairs(VERBS) do
+    for _, route in ipairs(registry[verb]:spec().routes or {}) do
+      for _, arg in ipairs(route.args or {}) do
+        seen_args = seen_args + 1
+        if arg.desc then
+          style(verb .. "/" .. arg.name, arg.desc)
+        end
+        for value, text in pairs(arg.enum_desc or {}) do
+          seen_enum = seen_enum + 1
+          style(verb .. "/" .. arg.name .. "=" .. value, text)
+        end
+      end
+    end
+  end
+  check("args: the check is not vacuous", seen_args >= 12 and seen_enum > 0)
+  check("args: texts are one line, <= 70 chars, no period", #bad == 0, table.concat(bad, ", "))
+
+  -- Every enum_desc key is a real value (a typo would describe nothing).
+  local stray = {}
+  for _, verb in ipairs(VERBS) do
+    for _, arg in ipairs(registry[verb]:spec().routes[1].args) do
+      local values = {}
+      for _, v in ipairs(arg.enum or arg.values or {}) do
+        values[v] = true
+      end
+      for value in pairs(arg.enum_desc or {}) do
+        if not values[value] then
+          stray[#stray + 1] = verb .. "/" .. arg.name .. "=" .. value
+        end
+      end
+    end
+  end
+  check(
+    "args: every enum_desc key is one of the arg's values",
+    #stray == 0,
+    table.concat(stray, ", ")
+  )
 end
 
 --------------------------------------------------------------------------------
