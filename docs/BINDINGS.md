@@ -39,7 +39,8 @@ All support `[range]` and the bang form (`!`) where documented in `:help replace
 
 `{old}`/`{new}` are arbitrary text and have nothing to complete against.
 A quoted run counts as one argument here, as it does for the command itself:
-after `:Replace "foo bar" ` the slot is `{new}`, not `[scope]` (the four verbs
+after `:Replace "foo bar" ` the slot is `{new}`, not `[scope]` (for
+`:Surround`/`:Wrap` it is `[delim]`; the four verbs
 set composer's `quotes = true`, so `<Tab>` and the option float cut the line
 the way `ctx.raw.args` is cut).
 `--glob=`/`--exclude=` deliberately do not complete: they take *patterns*, and

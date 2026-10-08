@@ -121,7 +121,7 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
   its effect: `parse_line` counts `"foo bar"` as one token, the float asks for
   `{new}` (`[{delim}]` for `:Surround`) after a quoted pattern and shows the
   `[{scope}]` row after the next argument, and `getcompletion()` offers the
-  scopes only from there on.
+  scopes only from there on. Also pins that `command.tokenize` and composer's `split_quoted` cut a corpus of lines identically and that `<Tab>` inside an open quote offers nothing; `surround_smoke.lua` drives a quoted, flag-looking pattern through the real commands.
 
 ## Present but not run by CI
 
