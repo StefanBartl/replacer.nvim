@@ -1,6 +1,6 @@
 ---@module 'replacer.debug'
 --- Debug utilities for troubleshooting replacer issues.
---- Usage: :ReplaceDebug {on|off|status|test|inspect|analyze <line> <pattern>}
+--- Usage: :ReplaceDebug {on|off|status|inspect|analyze <line> <pattern>}
 
 local notify = require("replacer.util.notify")
 local usercmd = require("lib.nvim.bindings.usercmd")
@@ -26,28 +26,6 @@ end
 function M.status()
   notify.info(string.format("Debug: %s", debug_enabled and "ON" or "OFF"))
   return debug_enabled
-end
-
---- Run test suite
---- The suite lives at TESTS/utf8_offsets.lua, outside `lua/`'s search path,
---- so it is loaded by file path (relative to this module's own location)
---- rather than `require()`.
-function M.test()
-  notify.info("Running test suite...")
-  local this_file = debug.getinfo(1, "S").source:sub(2):gsub("\\", "/")
-  local repo_root = this_file:match("^(.*)/lua/replacer/debug%.lua$")
-  local ok, test = false, nil
-  if repo_root then
-    ok, test = pcall(dofile, repo_root .. "/TESTS/utf8_offsets.lua")
-  end
-  if not ok or type(test) ~= "table" or type(test.run_all) ~= "function" then
-    notify.error("Test suite not found")
-    return
-  end
-
-  vim.schedule(function()
-    test.run_all()
-  end)
 end
 
 --- Inspect current buffer for debugging
@@ -169,8 +147,6 @@ function M.register_command()
       M.disable()
     elseif cmd == "status" then
       M.status()
-    elseif cmd == "test" then
-      M.test()
     elseif cmd == "inspect" then
       M.inspect_buffer()
     elseif cmd:match("^analyze%s+") then
@@ -186,12 +162,12 @@ function M.register_command()
         notify.error("Usage: :ReplaceDebug analyze <line> <pattern>")
       end
     else
-      notify.info("Usage: :ReplaceDebug {on|off|status|test|inspect|analyze <line> <pattern>}")
+      notify.info("Usage: :ReplaceDebug {on|off|status|inspect|analyze <line> <pattern>}")
     end
   end, {
     nargs = "*",
     complete = function()
-      return { "on", "off", "status", "test", "inspect", "analyze" }
+      return { "on", "off", "status", "inspect", "analyze" }
     end,
     desc = "Replacer debug utilities",
   })

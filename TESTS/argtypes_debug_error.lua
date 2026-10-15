@@ -181,16 +181,8 @@ do
   check("debug: disable() clears the flag", dbg.status() == false)
   check("debug: status() reports OFF when disabled", infos[#infos] == "Debug: OFF", infos[#infos])
 
-  infos, errors = {}, {}
-  dbg.test()
-  vim.wait(50, function()
-    return false
-  end)
-  check(
-    "debug: :ReplaceDebug test finds and runs the real suite at TESTS/utf8_offsets.lua",
-    #errors == 0 and infos[#infos] == "Running test suite...",
-    vim.inspect({ infos = infos, errors = errors })
-  )
+  -- The `test` subcommand went away with the legacy TESTS/utf8_offsets.lua it loaded.
+  check("debug: there is no test() entry point left", dbg.test == nil)
 
   -- inspect_buffer / analyze_line dump their result via
   -- lib.nvim.output.viewer.show_lines rather than print, but must never

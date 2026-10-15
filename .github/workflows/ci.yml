@@ -22,7 +22,7 @@ jobs:
         run: luarocks install luacheck 1.2.0
 
       - name: Run luacheck
-        run: find lua plugin -name '*.lua' | xargs luacheck
+        run: find lua plugin TESTS -name '*.lua' | xargs luacheck
 
   fmt:
     name: stylua --check
@@ -35,7 +35,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: v2.5.2
-          args: --check lua/
+          args: --check lua/ TESTS/
 
   test:
     name: headless test suite (${{ matrix.os }})
