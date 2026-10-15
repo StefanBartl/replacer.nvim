@@ -127,11 +127,13 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
 
 - `resolve_lib_nvim.lua` / `resolve_ui_nvim.lua` — shared `dofile()` helpers,
   not test files themselves.
-- `health_debug.lua` / `utf8_offsets.lua` — pre-existing standalone
-  diagnostic/legacy scripts (`:lua require('test.health_debug').diagnose()`
-  style), never wired into `.github/workflows/ci.yml`. Left as-is; their
-  real assertions now live in `argtypes_debug_error.lua` (`:ReplaceDebug`)
-  and `async_utf8.lua`/`feature_smoke.lua` (UTF-8 offsets).
+- `health_debug.lua` — a pre-existing standalone diagnostic script
+  (`:lua require('test.health_debug').diagnose()` style), never wired into
+  `.github/workflows/ci.yml`. Left as-is; its real assertions now live in
+  `argtypes_debug_error.lua` (`:ReplaceDebug`). The legacy
+  `utf8_offsets.lua` (and the `:ReplaceDebug test` subcommand that ran it)
+  was deleted: `async_utf8.lua` and `feature_smoke.lua` cover the UTF-8
+  offsets, and two of its checks had been failing for a long time.
 
 ## Deliberately excluded from any suite
 
@@ -194,4 +196,5 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
   at `TESTS/utf8_offsets.lua`, outside `lua/`'s search path, so `:ReplaceDebug
   test` always reported "Test suite not found". Fixed to load the suite by
   file path (relative to `debug.lua`'s own location) instead of `require()`.
-  Both pinned and verified fixed in `argtypes_debug_error.lua`.
+  Both pinned and verified fixed in `argtypes_debug_error.lua`. (Since then
+  the `test` subcommand and the suite it loaded are gone altogether.)

@@ -137,8 +137,7 @@ do
   )
   check(
     "fzf.run: candidate carries a hidden \\tIDn tag",
-    call1.source[1]:find("\tID1", 1, true) ~= nil
-      and call1.source[2]:find("\tID2", 1, true) ~= nil,
+    call1.source[1]:find("\tID1", 1, true) ~= nil and call1.source[2]:find("\tID2", 1, true) ~= nil,
     vim.inspect(call1.source)
   )
   check(
@@ -167,7 +166,10 @@ do
   check("fzf.actions.default: unresolvable id -> no apply_func call", #applied == 2)
 
   -- apply_all ("<C-a>" -> "ctrl-a" via to_fzf_key), confirm_all = false
-  check("fzf.actions: ctrl-a key present (to_fzf_key translated <C-a>)", call1.opts.actions["ctrl-a"] ~= nil)
+  check(
+    "fzf.actions: ctrl-a key present (to_fzf_key translated <C-a>)",
+    call1.opts.actions["ctrl-a"] ~= nil
+  )
   call1.opts.actions["ctrl-a"]()
   check(
     "fzf.actions.apply_all (confirm_all=false): applies every item directly",
@@ -218,7 +220,13 @@ do
     applied[#applied + 1] = chosen
   end
 
-  fzfp.run("foo", items, "bar", { keymaps = {}, write_changes = true, confirm_all = true }, apply_func)
+  fzfp.run(
+    "foo",
+    items,
+    "bar",
+    { keymaps = {}, write_changes = true, confirm_all = true },
+    apply_func
+  )
   local call = fzf_calls[#fzf_calls]
 
   answer_with = false
@@ -398,10 +406,7 @@ do
   local prev = p1.__spec.previewer
   prev.define_preview(prev, nil)
   local lines_nosel = vim.api.nvim_buf_get_lines(preview_buf, 0, -1, false)
-  check(
-    "telescope.previewer: no selection -> '[no selection]'",
-    lines_nosel[1] == "[no selection]"
-  )
+  check("telescope.previewer: no selection -> '[no selection]'", lines_nosel[1] == "[no selection]")
 
   -- previewer: real selection, cfg._old_len > 0 -> extmark highlight
   local pns = vim.api.nvim_create_namespace("replacer_preview")
@@ -531,7 +536,10 @@ do
   }
   package.loaded["telescope.previewers"] = {
     new_buffer_previewer = function(o)
-      return { state = { bufnr = vim.api.nvim_create_buf(false, true) }, define_preview = o.define_preview }
+      return {
+        state = { bufnr = vim.api.nvim_create_buf(false, true) },
+        define_preview = o.define_preview,
+      }
     end,
   }
   package.loaded["telescope.config"] = {
@@ -564,9 +572,14 @@ do
 
   local items = { { id = 1, path = tmp .. "/a.txt", lnum = 1, col0 = 0, old = "x", line = "x" } }
   local applied = {}
-  telescopep.run(items, "y", { keymaps = {}, write_changes = true, confirm_all = true }, function(chosen)
-    applied[#applied + 1] = chosen
-  end)
+  telescopep.run(
+    items,
+    "y",
+    { keymaps = {}, write_changes = true, confirm_all = true },
+    function(chosen)
+      applied[#applied + 1] = chosen
+    end
+  )
   local p1 = picker_calls[1]
 
   answer_with = false

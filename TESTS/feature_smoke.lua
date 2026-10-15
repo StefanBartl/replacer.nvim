@@ -859,7 +859,10 @@ do
   package.loaded["replacer.history"] = nil
   local history_corrupt = require("replacer.history")
   local loaded = history_corrupt.load()
-  check("history: corrupt file loads as empty, not an error", type(loaded) == "table" and #loaded == 0)
+  check(
+    "history: corrupt file loads as empty, not an error",
+    type(loaded) == "table" and #loaded == 0
+  )
   check(
     "history: corrupt file backed up to history.json.corrupt",
     vim.fn.filereadable(corrupt_path) == 1
