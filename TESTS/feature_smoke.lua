@@ -749,6 +749,50 @@ do
       "hooks: a non-callable config entry never aborts the apply",
       ok_bad == true and proceed_bad == true
     )
+
+    -- a nil hole in a config list (`cond and fn or nil`) keeps the hooks behind it
+    local vetoed_after_hole = hooks.run("before_apply", {}, {
+      hooks = {
+        before_apply = {
+          nil,
+          function()
+            return false
+          end,
+        },
+      },
+    })
+    check(
+      "hooks: a nil hole in a config list keeps the hooks behind it (and their veto)",
+      vetoed_after_hole == false
+    )
+
+    -- only before_apply is a gate
+    hooks.on("before_write", function()
+      return false
+    end)
+    check(
+      "hooks: only before_apply can veto",
+      hooks.run("before_write", {}, nil) == true and hooks.run("before_apply", {}, nil) == true
+    )
+    hooks.clear()
+
+    -- an erroring hook is reported through the notifier
+    local notify_mod = require("replacer.util.notify")
+    local warned
+    local real_warn = notify_mod.warn
+    notify_mod.warn = function(msg)
+      warned = msg
+    end
+    hooks.on("after_write", function()
+      error("boom")
+    end)
+    hooks.run("after_write", {}, nil)
+    notify_mod.warn = real_warn
+    check(
+      "hooks: an erroring hook is reported as hook '<event>' errored",
+      type(warned) == "string" and warned:find("hook 'after_write' errored", 1, true) ~= nil,
+      tostring(warned)
+    )
   end
 
   hooks.clear()
