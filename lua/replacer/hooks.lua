@@ -4,8 +4,11 @@
 ---   - config.hooks = { before_apply = fn|fn[], ... } via setup()
 ---   - require("replacer.hooks").on(event, fn) programmatically
 --- Both fire for a given event; config hooks run first. A hook error is
---- caught and warned, never allowed to abort the apply. A before_apply
---- hook may return `false` to veto (skip) that file.
+--- caught and warned, never allowed to abort the apply. A hook may return
+--- `false` to veto (skip) that file.
+---
+--- The registry itself (order, veto, error isolation) is `lib.nvim.hooks`;
+--- this module only names the four events and routes errors to the notifier.
 
 local notify = require("replacer.util.notify")
 
@@ -13,27 +16,42 @@ local M = {}
 
 ---@alias RP_HookEvent "before_apply"|"after_apply"|"before_write"|"after_write"
 
----@type table<RP_HookEvent, (fun(ctx: table): boolean|nil)[]>
-local registered = { before_apply = {}, after_apply = {}, before_write = {}, after_write = {} }
+local EVENTS = { "before_apply", "after_apply", "before_write", "after_write" }
+
+---@return Lib.Hooks.Registry
+local function new_registry()
+  return require("lib.nvim.hooks").new({
+    events = EVENTS,
+    -- every event keeps the answer it always had: `run` returns false when any hook returned false
+    vetoable = EVENTS,
+    on_error = function(event, err)
+      notify.warn(string.format("hook '%s' errored: %s", event, tostring(err)))
+    end,
+  })
+end
+
+local registry = new_registry()
 
 --- Register a hook programmatically (in addition to config.hooks).
 ---@param event RP_HookEvent
 ---@param fn fun(ctx: table): boolean|nil
 ---@return nil
 function M.on(event, fn)
-  if not registered[event] then
-    error("replacer.hooks: unknown event '" .. tostring(event) .. "'")
+  local ok, err = pcall(registry.on, event, fn)
+  if not ok then
+    -- (the message stays the one this module always raised for an unknown event)
+    if not vim.tbl_contains(EVENTS, event) then
+      error("replacer.hooks: unknown event '" .. tostring(event) .. "'", 2)
+    end
+    error(err, 2)
   end
-  registered[event][#registered[event] + 1] = fn
 end
 
 --- Remove every programmatically-registered hook (config.hooks is
 --- untouched). Mainly for tests.
 ---@return nil
 function M.clear()
-  for event in pairs(registered) do
-    registered[event] = {}
-  end
+  registry.clear()
 end
 
 --- Run every hook registered for `event` (config.hooks[event], then
@@ -41,28 +59,9 @@ end
 ---@param event RP_HookEvent
 ---@param ctx table
 ---@param cfg RP_Config|nil
----@return boolean proceed  # false when any before_apply hook returned false
+---@return boolean proceed  # false when any hook returned false
 function M.run(event, ctx, cfg)
-  local proceed = true
-
-  local fns = {} ---@type (fun(ctx: table): boolean|nil)[]
-  local from_cfg = cfg and cfg.hooks and cfg.hooks[event]
-  if type(from_cfg) == "function" then
-    fns[#fns + 1] = from_cfg
-  elseif type(from_cfg) == "table" then
-    vim.list_extend(fns, from_cfg)
-  end
-  vim.list_extend(fns, registered[event])
-
-  for _, fn in ipairs(fns) do
-    local ok, result = pcall(fn, ctx)
-    if not ok then
-      notify.warn(string.format("hook '%s' errored: %s", event, tostring(result)))
-    elseif result == false then
-      proceed = false
-    end
-  end
-
+  local proceed = registry.run(event, ctx, cfg and cfg.hooks and cfg.hooks[event] or nil)
   return proceed
 end
 

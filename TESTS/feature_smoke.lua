@@ -689,6 +689,70 @@ do
 
   hooks.clear()
 
+  -- Characterisation of the contract (the registry underneath is lib.nvim.hooks): config hooks run
+  -- before programmatic ones, a list of config hooks runs in order, a hook after a vetoing one still
+  -- runs, an unknown event is refused with this module's own message, and a config entry that is not
+  -- callable is reported instead of aborting.
+  do
+    local order = {}
+    hooks.on("after_apply", function()
+      order[#order + 1] = "on"
+    end)
+    hooks.run("after_apply", {}, {
+      hooks = {
+        after_apply = {
+          function()
+            order[#order + 1] = "cfg1"
+          end,
+          function()
+            order[#order + 1] = "cfg2"
+          end,
+        },
+      },
+    })
+    check(
+      "hooks: config hooks (in list order) run before M.on() hooks",
+      table.concat(order, ",") == "cfg1,cfg2,on",
+      table.concat(order, ",")
+    )
+    hooks.clear()
+
+    local ran_after_veto = false
+    hooks.on("before_apply", function()
+      return false
+    end)
+    hooks.on("before_apply", function()
+      ran_after_veto = true
+    end)
+    local vetoed = hooks.run("before_apply", {}, nil)
+    check(
+      "hooks: a hook after a vetoing one still runs",
+      vetoed == false and ran_after_veto == true
+    )
+    hooks.clear()
+
+    local ok_on, err_on = pcall(hooks.on, "nope_event", function() end)
+    check(
+      "hooks: an unknown event is refused with this module's message",
+      ok_on == false
+        and tostring(err_on):find("replacer.hooks: unknown event 'nope_event'", 1, true) ~= nil,
+      tostring(err_on)
+    )
+
+    local ok_bad, proceed_bad = pcall(
+      hooks.run,
+      "before_apply",
+      {},
+      { hooks = { before_apply = { "not callable" } } }
+    )
+    check(
+      "hooks: a non-callable config entry never aborts the apply",
+      ok_bad == true and proceed_bad == true
+    )
+  end
+
+  hooks.clear()
+
   -- End-to-end: a before_apply hook vetoing one file via apply_matches.
   local file_h1 = tmp .. "/hook1.txt"
   local file_h2 = tmp .. "/hook2.txt"
