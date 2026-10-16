@@ -333,6 +333,67 @@ do
   check("health.check(): at least one 'ok' entry was reported", #vim.tbl_filter(function(c)
     return c.kind == "ok"
   end, calls) > 0)
+  check("health.check(): reports lib.nvim.hooks as available", #vim.tbl_filter(function(c)
+    return c.kind == "ok" and c.msg and c.msg:find("lib.nvim.hooks available", 1, true) ~= nil
+  end, calls) == 1)
+end
+
+--------------------------------------------------------------------------------
+-- 5b) replacer.hooks sits on lib.nvim.hooks (a hard dependency on every apply).
+--    An older lib.nvim without that module must show up in :checkhealth as an
+--    error naming it, without taking the rest of the report down. Simulated
+--    with package.preload, like section 6.
+--------------------------------------------------------------------------------
+do
+  local health_mod = require("replacer.health")
+  local mod_name = "lib.nvim.hooks"
+  local real_mod = package.loaded[mod_name]
+  package.loaded[mod_name] = nil
+  package.preload[mod_name] = function()
+    error("simulated: " .. mod_name .. " unavailable (e.g. an older lib.nvim checkout)")
+  end
+
+  local seen = {}
+  local orig_health = vim.health
+  vim.health = {
+    start = function(name)
+      seen[#seen + 1] = { kind = "start", msg = name }
+    end,
+    ok = function(msg)
+      seen[#seen + 1] = { kind = "ok", msg = msg }
+    end,
+    warn = function(msg, advice)
+      seen[#seen + 1] = { kind = "warn", msg = msg, advice = advice }
+    end,
+    error = function(msg, advice)
+      seen[#seen + 1] = { kind = "error", msg = msg, advice = advice }
+    end,
+    info = function(msg)
+      seen[#seen + 1] = { kind = "info", msg = msg }
+    end,
+  } --[[@as table]]
+
+  local ok_check, err = pcall(health_mod.check)
+
+  vim.health = orig_health
+  package.preload[mod_name] = nil
+  package.loaded[mod_name] = real_mod
+
+  check("hooks missing: health.check() still runs to completion", ok_check, err)
+  local reported
+  for _, c in ipairs(seen) do
+    if c.kind == "error" and c.msg and c.msg:find("lib.nvim.hooks not found", 1, true) then
+      reported = c
+    end
+  end
+  check("hooks missing: reported as an error naming lib.nvim.hooks", reported ~= nil)
+  check(
+    "hooks missing: the error carries an update hint",
+    reported ~= nil and type(reported.advice) == "table" and #reported.advice >= 1
+  )
+  check("hooks missing: no 'available' ok entry", #vim.tbl_filter(function(c)
+    return c.kind == "ok" and c.msg and c.msg:find("lib.nvim.hooks available", 1, true) ~= nil
+  end, seen) == 0)
 end
 
 --------------------------------------------------------------------------------

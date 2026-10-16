@@ -87,6 +87,17 @@ local function check_lib_nvim(health)
       { "Add 'StefanBartl/lib.nvim' as a dependency" }
     )
   end
+
+  -- replacer.hooks builds its registry on lib.nvim.hooks and apply.lua runs it on every
+  -- apply, so an older lib.nvim that has the composer but not this module fails at the
+  -- first :Replace/:Surround apply.
+  if pcall(require, "lib.nvim.hooks") then
+    health.ok("lib.nvim.hooks available (apply hooks)")
+  else
+    health.error("lib.nvim.hooks not found — every apply will fail", {
+      "Update 'StefanBartl/lib.nvim' (replacer.hooks needs lib.nvim.hooks)",
+    })
+  end
 end
 
 ---@internal
