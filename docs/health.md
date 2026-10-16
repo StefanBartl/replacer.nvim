@@ -11,7 +11,7 @@ order:
 | Section | Fails when | Degrades when |
 | --- | --- | --- |
 | **Neovim** | version below 0.9.0 | — |
-| **lib.nvim** | `lib.nvim.bindings.usercmd.composer` does not resolve — the commands cannot register at all | — |
+| **lib.nvim** | `lib.nvim.bindings.usercmd.composer` does not resolve — the commands cannot register at all; `lib.nvim.hooks` does not resolve — every apply fails (an older lib.nvim has the composer but not this module). Each is reported as either *not found* (install/update lib.nvim) or *installed but fails to load*, quoting the module's own load error (a half-applied update or a local edit; updating may not help) | — |
 | **ripgrep** | — | `rg` missing (the native `vimgrep` backend takes over), or older than 11.0 (`--json` support) |
 | **Pickers** | neither fzf-lua nor telescope.nvim is installed | the configured `engine` names a picker that is not installed |
 | **Configuration** | `replacer.config` fails to load | an unknown top-level `setup()` key, or a present-but-invalid single value — both degrade to the default and are listed as a warning here (see `config.issues()`) |

@@ -76,7 +76,9 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
   dispatch, and `replacer.error`'s structured errors / `safe_call` envelope.
 - `health_pickers_tscode.lua` — `replacer.health` (`vim.health` stubbed to
   capture the report regardless of which optional tools happen to be
-  installed), the picker-engine-agnostic halves of
+  installed; the required lib.nvim modules each in the "not found" and the
+  "installed but throws on load" state, plus the matching row of
+  `docs/health.md`), the picker-engine-agnostic halves of
   `replacer.pickers.common`/`replacer.pickers.utils`, `replacer.tscode`'s
   real Tree-sitter string/comment classification, and a smoke check of
   `replacer.util.notify`.
@@ -165,9 +167,10 @@ See `.github/workflows/ci.yml` for the exact invocation of every file below.
   pre-flight"), with no guard — so on a lib.nvim checkout old enough to be
   missing just that one submodule, `:checkhealth replacer` reports the clean
   warning and then crashes on the exact same missing dependency instead of
-  degrading to it. Pinned in `health_pickers_tscode.lua` (section 6, via a
-  `package.preload` stub that makes the require genuinely fail rather than
-  swapping in a fake module) rather than fixed here, per this campaign's rule
+  degrading to it. Pinned in `health_pickers_tscode.lua` (section 6, via
+  `hide_module()`, which wraps every package loader so the require genuinely
+  fails with Lua's own "module ... not found" rather than swapping in a fake
+  module) rather than fixed here, per this campaign's rule
   for a real behavior bug that isn't a trivial, zero-risk infra fix — the
   right degradation (skip the pre-flight entirely? report a third error
   section instead?) is a product decision, not this audit's to make quietly.

@@ -71,6 +71,51 @@ local function check_neovim(health)
 end
 
 ---@internal
+--- Require a module for a health probe and tell "not installed" apart from
+--- "installed, but throws while loading". `pcall(require, name)` is false in
+--- both cases, yet only the first one is fixed by installing/updating the
+--- dependency; the second needs the module's own load error to be diagnosed.
+--- Only a "not found" for `name` itself counts as missing: a module that loads
+--- but requires some other missing module is broken, not absent.
+---@param name string
+---@return "ok"|"missing"|"broken" status
+---@return string|nil err the require error, for "missing" and "broken"
+local function probe_module(name)
+  local ok, err = pcall(require, name)
+  if ok then
+    return "ok", nil
+  end
+  err = tostring(err)
+  if err:find("module '" .. name .. "' not found", 1, true) then
+    return "missing", err
+  end
+  return "broken", err
+end
+
+---@internal
+--- Report one required module: ok, missing (with the install/update advice) or
+--- broken (with the module's own load error in the message).
+---@param health table vim.health module
+---@param name string module to require
+---@param spec {ok: string, missing: string, missing_advice: string[], consequence: string}
+local function report_required_module(health, name, spec)
+  local status, err = probe_module(name)
+  if status == "ok" then
+    health.ok(spec.ok)
+  elseif status == "missing" then
+    health.error(spec.missing, spec.missing_advice)
+  else
+    health.error(
+      string.format("%s is installed but fails to load — %s: %s", name, spec.consequence, err),
+      {
+        "The module was found, so updating may not help: check the lib.nvim checkout "
+          .. "for a half-applied update or a local edit (the load error is quoted above)",
+      }
+    )
+  end
+end
+
+---@internal
 --- Check lib.nvim: required for the :Replace/:Replacer/:Surround/:Wrap
 --- command layer (lib.nvim.bindings.usercmd.composer). Notify/confirm/export also
 --- depend on it directly; only progress_style (see check_optional) stays
@@ -79,25 +124,22 @@ end
 local function check_lib_nvim(health)
   health.start("lib.nvim")
 
-  if pcall(require, "lib.nvim.bindings.usercmd.composer") then
-    health.ok("lib.nvim detected (:Replace/:Surround command layer available)")
-  else
-    health.error(
-      "lib.nvim not found — commands will fail to register",
-      { "Add 'StefanBartl/lib.nvim' as a dependency" }
-    )
-  end
+  report_required_module(health, "lib.nvim.bindings.usercmd.composer", {
+    ok = "lib.nvim detected (:Replace/:Surround command layer available)",
+    missing = "lib.nvim not found — commands will fail to register",
+    missing_advice = { "Add 'StefanBartl/lib.nvim' as a dependency" },
+    consequence = "commands will fail to register",
+  })
 
   -- replacer.hooks builds its registry on lib.nvim.hooks and apply.lua runs it on every
   -- apply, so an older lib.nvim that has the composer but not this module fails at the
   -- first :Replace/:Surround apply.
-  if pcall(require, "lib.nvim.hooks") then
-    health.ok("lib.nvim.hooks available (apply hooks)")
-  else
-    health.error("lib.nvim.hooks not found — every apply will fail", {
-      "Update 'StefanBartl/lib.nvim' (replacer.hooks needs lib.nvim.hooks)",
-    })
-  end
+  report_required_module(health, "lib.nvim.hooks", {
+    ok = "lib.nvim.hooks available (apply hooks)",
+    missing = "lib.nvim.hooks not found — every apply will fail",
+    missing_advice = { "Update 'StefanBartl/lib.nvim' (replacer.hooks needs lib.nvim.hooks)" },
+    consequence = "every apply will fail",
+  })
 end
 
 ---@internal

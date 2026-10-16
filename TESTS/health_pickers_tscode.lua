@@ -339,45 +339,95 @@ do
 end
 
 --------------------------------------------------------------------------------
--- 5b) replacer.hooks sits on lib.nvim.hooks (a hard dependency on every apply).
---    An older lib.nvim without that module must show up in :checkhealth as an
---    error naming it, without taking the rest of the report down. Simulated
---    with package.preload, like section 6.
+-- Shared helpers for 5b..6b: two ways a lib.nvim submodule can fail to
+-- require, which :checkhealth has to tell apart.
+--
+-- hide_module(): the module is genuinely NOT FOUND -- every package loader
+-- (preload, Neovim's runtimepath loader, vim.loader, ...) is wrapped so it
+-- reports nothing for that one name, and require raises Lua's own
+-- "module '<name>' not found" error. That is what an older lib.nvim checkout
+-- without the module looks like.
+--
+-- break_module(): the module IS found but throws while loading (a syntax error
+-- in a half-updated checkout, say) -- simulated with package.preload, whose
+-- loader runs before the runtimepath one.
+--
+-- Both return a restore function.
 --------------------------------------------------------------------------------
-do
-  local health_mod = require("replacer.health")
-  local mod_name = "lib.nvim.hooks"
+local function hide_module(mod_name)
+  local loaders = package.loaders or package.searchers
+  local saved = {}
+  for i, loader in ipairs(loaders) do
+    saved[i] = loader
+    loaders[i] = function(name, ...)
+      if name == mod_name then
+        return "\n\t(hidden by TESTS/health_pickers_tscode.lua)"
+      end
+      return loader(name, ...)
+    end
+  end
+  local real_mod = package.loaded[mod_name]
+  package.loaded[mod_name] = nil
+  return function()
+    for i, loader in ipairs(saved) do
+      loaders[i] = loader
+    end
+    package.loaded[mod_name] = real_mod
+  end
+end
+
+local BROKEN_MARKER = "simulated load error: unexpected symbol near 'end'"
+
+local function break_module(mod_name)
   local real_mod = package.loaded[mod_name]
   package.loaded[mod_name] = nil
   package.preload[mod_name] = function()
-    error("simulated: " .. mod_name .. " unavailable (e.g. an older lib.nvim checkout)")
+    error(BROKEN_MARKER .. " (" .. mod_name .. ")")
   end
+  return function()
+    package.preload[mod_name] = nil
+    package.loaded[mod_name] = real_mod
+  end
+end
 
+--- Run health.check() against a recording vim.health; returns the recorded
+--- entries plus pcall's ok/err.
+local function run_health()
   local seen = {}
+  local function rec(kind)
+    return function(msg, advice)
+      seen[#seen + 1] = { kind = kind, msg = msg, advice = advice }
+    end
+  end
   local orig_health = vim.health
   vim.health = {
-    start = function(name)
-      seen[#seen + 1] = { kind = "start", msg = name }
-    end,
-    ok = function(msg)
-      seen[#seen + 1] = { kind = "ok", msg = msg }
-    end,
-    warn = function(msg, advice)
-      seen[#seen + 1] = { kind = "warn", msg = msg, advice = advice }
-    end,
-    error = function(msg, advice)
-      seen[#seen + 1] = { kind = "error", msg = msg, advice = advice }
-    end,
-    info = function(msg)
-      seen[#seen + 1] = { kind = "info", msg = msg }
-    end,
+    start = rec("start"),
+    ok = rec("ok"),
+    warn = rec("warn"),
+    error = rec("error"),
+    info = rec("info"),
   } --[[@as table]]
-
-  local ok_check, err = pcall(health_mod.check)
-
+  local ok_check, err = pcall(require("replacer.health").check)
   vim.health = orig_health
-  package.preload[mod_name] = nil
-  package.loaded[mod_name] = real_mod
+  return seen, ok_check, err
+end
+
+--- Every non-section entry whose message mentions `needle` (plain find).
+local function entries_naming(seen, needle)
+  return vim.tbl_filter(function(c)
+    return c.kind ~= "start" and type(c.msg) == "string" and c.msg:find(needle, 1, true) ~= nil
+  end, seen)
+end
+
+--------------------------------------------------------------------------------
+-- 5b) replacer.hooks sits on lib.nvim.hooks (a hard dependency on every apply).
+--    An older lib.nvim without that module must show up in :checkhealth as an
+--    error naming it, without taking the rest of the report down.
+--------------------------------------------------------------------------------
+do
+  local restore = hide_module("lib.nvim.hooks")
+  local seen, ok_check, err = run_health()
+  restore()
 
   check("hooks missing: health.check() still runs to completion", ok_check, err)
   local reported
@@ -391,9 +441,94 @@ do
     "hooks missing: the error carries an update hint",
     reported ~= nil and type(reported.advice) == "table" and #reported.advice >= 1
   )
-  check("hooks missing: no 'available' ok entry", #vim.tbl_filter(function(c)
-    return c.kind == "ok" and c.msg and c.msg:find("lib.nvim.hooks available", 1, true) ~= nil
-  end, seen) == 0)
+  -- Exactly one entry names lib.nvim.hooks and it is that error: red if the
+  -- check is gone (no entry), if it reports ok anyway, or if it reports twice.
+  local naming = entries_naming(seen, "lib.nvim.hooks")
+  check(
+    "hooks missing: the only lib.nvim.hooks entry is the 'not found' error",
+    #naming == 1 and naming[1] == reported,
+    vim.inspect(naming)
+  )
+end
+
+--------------------------------------------------------------------------------
+-- 5c) lib.nvim.hooks is installed but throws on load. That is NOT "not found"
+--    (updating lib.nvim is the wrong advice for a half-applied update or a
+--    local edit), and the module's own load error must reach the report.
+--------------------------------------------------------------------------------
+do
+  local restore = break_module("lib.nvim.hooks")
+  local seen, ok_check, err = run_health()
+  restore()
+
+  check("hooks broken: health.check() still runs to completion", ok_check, err)
+  local naming = entries_naming(seen, "lib.nvim.hooks")
+  check(
+    "hooks broken: one error entry, saying the module fails to load",
+    #naming == 1
+      and naming[1].kind == "error"
+      and naming[1].msg:find("lib.nvim.hooks is installed but fails to load", 1, true) ~= nil,
+    vim.inspect(naming)
+  )
+  check(
+    "hooks broken: the error quotes the module's own load error",
+    #naming == 1 and naming[1].msg:find(BROKEN_MARKER, 1, true) ~= nil,
+    vim.inspect(naming)
+  )
+  check(
+    "hooks broken: not reported as 'not found'",
+    #entries_naming(seen, "lib.nvim.hooks not found") == 0
+  )
+end
+
+--------------------------------------------------------------------------------
+-- 5d) Same distinction for the composer probe. (health.check() itself still
+--    crashes afterwards on the unguarded composer pre-flight -- the bug pinned
+--    in section 6 -- which is why ok/err are not asserted here.)
+--------------------------------------------------------------------------------
+do
+  local mod_name = "lib.nvim.bindings.usercmd.composer"
+  local restore = break_module(mod_name)
+  local seen = run_health()
+  restore()
+
+  local naming = entries_naming(seen, mod_name .. " is installed but fails to load")
+  check(
+    "composer broken: reported as failing to load, with the load error quoted",
+    #naming == 1 and naming[1].kind == "error" and naming[1].msg:find(BROKEN_MARKER, 1, true),
+    vim.inspect(seen)
+  )
+  check(
+    "composer broken: not reported as 'lib.nvim not found'",
+    #entries_naming(seen, "lib.nvim not found") == 0
+  )
+end
+
+--------------------------------------------------------------------------------
+-- 5e) docs/health.md describes the lib.nvim section: its row has to name every
+--    module that section probes, or the "Fails when" column is wrong.
+--------------------------------------------------------------------------------
+do
+  local doc_path = (this_file:match("^(.*)/[^/]+$") or ".") .. "/../docs/health.md"
+  local fh = io.open(doc_path, "r")
+  local text = fh and fh:read("*a") or ""
+  if fh then
+    fh:close()
+  end
+  local row = text:match("\n(| %*%*lib%.nvim%*%* |[^\n]*)") or ""
+  check("docs/health.md: has a lib.nvim row", row ~= "", doc_path)
+  for _, mod_name in ipairs({ "lib.nvim.bindings.usercmd.composer", "lib.nvim.hooks" }) do
+    check(
+      "docs/health.md: the lib.nvim row names " .. mod_name,
+      row:find("`" .. mod_name .. "`", 1, true) ~= nil,
+      row
+    )
+  end
+  check(
+    "docs/health.md: the lib.nvim row distinguishes 'not found' from 'fails to load'",
+    row:find("not found", 1, true) ~= nil and row:find("fails to load", 1, true) ~= nil,
+    row
+  )
 end
 
 --------------------------------------------------------------------------------
@@ -402,47 +537,16 @@ end
 --    lib.nvim.bindings.usercmd.composer is missing, but M.check() itself
 --    then unconditionally requires that exact module again a few lines
 --    later for the "composer route pre-flight" (:Replace/:Surround
---    checkhealth), with no pcall guard. Simulated via package.preload so the
---    require genuinely fails (lib.nvim is otherwise present and required for
---    this whole suite -- only this one submodule is made to look missing,
---    e.g. an older lib.nvim checkout without it), rather than swapping in a
---    fake table that would just mask the real crash.
+--    checkhealth), with no pcall guard. Simulated with hide_module() so the
+--    require genuinely fails with "not found" (lib.nvim is otherwise present
+--    and required for this whole suite -- only this one submodule is made to
+--    look missing, e.g. an older lib.nvim checkout without it), rather than
+--    swapping in a fake table that would just mask the real crash.
 --------------------------------------------------------------------------------
 do
-  local health_mod = require("replacer.health")
-  local mod_name = "lib.nvim.bindings.usercmd.composer"
-  local real_mod = package.loaded[mod_name]
-  package.loaded[mod_name] = nil
-  package.preload[mod_name] = function()
-    error("simulated: " .. mod_name .. " unavailable (e.g. an older lib.nvim checkout)")
-  end
-
-  local calls2 = {}
-  local fake_health2 = {
-    start = function(name)
-      calls2[#calls2 + 1] = { kind = "start", name = name }
-    end,
-    ok = function(msg)
-      calls2[#calls2 + 1] = { kind = "ok", msg = msg }
-    end,
-    warn = function(msg, advice)
-      calls2[#calls2 + 1] = { kind = "warn", msg = msg, advice = advice }
-    end,
-    error = function(msg, advice)
-      calls2[#calls2 + 1] = { kind = "error", msg = msg, advice = advice }
-    end,
-    info = function(msg)
-      calls2[#calls2 + 1] = { kind = "info", msg = msg }
-    end,
-  }
-  local orig_health2 = vim.health
-  vim.health = fake_health2 --[[@as table]]
-
-  local ok_check2, err2 = pcall(health_mod.check)
-
-  vim.health = orig_health2
-  package.preload[mod_name] = nil
-  package.loaded[mod_name] = real_mod
+  local restore = hide_module("lib.nvim.bindings.usercmd.composer")
+  local calls2, ok_check2, err2 = run_health()
+  restore()
 
   local reported_missing = false
   for _, c in ipairs(calls2) do
