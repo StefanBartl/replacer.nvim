@@ -420,6 +420,34 @@ local function entries_naming(seen, needle)
 end
 
 --------------------------------------------------------------------------------
+-- 5a) replacer.casing delegates to lib.lua.strings.identifier_style / apply_style. An older
+--    lib.nvim without them must show up as an error; the real one as ok.
+--------------------------------------------------------------------------------
+do
+  local seen_ok = run_health()
+  check(
+    "casing: health reports identifier_style available with the real lib.nvim",
+    #vim.tbl_filter(function(c)
+        return c.kind == "ok" and c.msg and c.msg:find("identifier_style available", 1, true) ~= nil
+      end, seen_ok) == 1
+  )
+  local real_strings = package.loaded["lib.lua.strings"]
+  package.loaded["lib.lua.strings"] = {}
+  local seen, ok_check, err = run_health()
+  package.loaded["lib.lua.strings"] = real_strings
+  check("casing missing: health.check() still runs to completion", ok_check, err)
+  local naming = entries_naming(seen, "identifier_style")
+  check(
+    "casing missing: reported once, as an error with an update hint",
+    #naming == 1
+      and naming[1].kind == "error"
+      and type(naming[1].advice) == "table"
+      and #naming[1].advice >= 1,
+    vim.inspect(naming)
+  )
+end
+
+--------------------------------------------------------------------------------
 -- 5b) replacer.hooks sits on lib.nvim.hooks (a hard dependency on every apply).
 --    An older lib.nvim without that module must show up in :checkhealth as an
 --    error naming it, without taking the rest of the report down.
