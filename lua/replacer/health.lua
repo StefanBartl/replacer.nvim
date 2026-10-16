@@ -140,6 +140,24 @@ local function check_lib_nvim(health)
     missing_advice = { "Update 'StefanBartl/lib.nvim' (replacer.hooks needs lib.nvim.hooks)" },
     consequence = "every apply will fail",
   })
+
+  -- replacer.casing delegates to lib.lua.strings (case_preserve); an older lib.nvim lacks the functions
+  local loaded, strings = pcall(require, "lib.lua.strings")
+  if
+    loaded
+    and type(strings) == "table"
+    and type(strings.identifier_style) == "function"
+    and type(strings.apply_style) == "function"
+  then
+    health.ok("lib.lua.strings.identifier_style available (case_preserve)")
+  else
+    health.error(
+      "lib.lua.strings.identifier_style / apply_style not found — case_preserve will fail",
+      {
+        "Update 'StefanBartl/lib.nvim' (replacer.casing needs lib.lua.strings.identifier_style)",
+      }
+    )
+  end
 end
 
 ---@internal

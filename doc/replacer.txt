@@ -520,7 +520,8 @@ case_preserve~
 
     When true, the replacement is re-cased to match each match's own case
     style before being applied: foo->bar, Foo->Bar, FOO->BAR,
-    fooBar->bazQux, FooBar->BazQux. See lua/replacer/casing.lua.
+    fooBar->bazQux, FooBar->BazQux. See lua/replacer/casing.lua (the detection and re-casing live in
+    lib.lua.strings: identifier_style / apply_style).
 
                                             *replacer-config-word_boundary*
 word_boundary~
