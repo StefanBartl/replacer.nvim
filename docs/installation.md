@@ -62,6 +62,7 @@ vim.g.lib_nvim_deps_disable_first_run = true          -- every plugin
 :checkhealth replacer
 ```
 
-reports Neovim's version, whether `lib.nvim` resolved, which search backend
-and picker were detected, config validity, UTF-8 support, and the declared
-tools. See [health.md](health.md).
+reports Neovim's version, whether `lib.nvim` and the two modules replacer
+needs from it (`lib.nvim.bindings.usercmd.composer`, `lib.nvim.hooks`)
+resolved, which search backend and picker were detected, config validity,
+UTF-8 support, and the declared tools. See [health.md](health.md).
