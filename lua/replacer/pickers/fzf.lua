@@ -42,8 +42,9 @@ end
 ---@param rstate? { original?: RP_Match[], handle?: table|false, on_close?: fun() }  session state, threaded across reopens (on_close: see pickers.common "Session end signal")
 local function run(old, items, new_text, cfg, apply_func, rstate)
   rstate = rstate or {}
-  -- A reopen starts with nothing pending; an action marks it again.
-  rstate.busy = false
+  -- A reopen starts with nothing pending; an action marks it again. Only
+  -- this window's close (gen) can end the session from here on.
+  local gen = common.session_open(rstate)
 
   local ok_fzf, fzf = pcall(require, "fzf-lua")
   if not ok_fzf then
@@ -269,7 +270,7 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
           pattern = tostring(win),
           once = true,
           callback = function()
-            common.session_closed(rstate)
+            common.session_closed(rstate, gen)
           end,
         })
       end
@@ -293,7 +294,7 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
       if type(prev_on_close) == "function" then
         pcall(prev_on_close, ...)
       end
-      common.session_closed(rstate)
+      common.session_closed(rstate, gen)
     end
   end
 

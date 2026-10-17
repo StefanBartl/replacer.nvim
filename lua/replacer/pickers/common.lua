@@ -153,6 +153,20 @@ end
 -- `rstate.busy` means "an action owns the end of the session": the window
 -- closing then does not end it, the action does (through `M.session_end`,
 -- or by reopening, which clears `busy` again at the start of run()).
+--
+-- `rstate.gen` counts the picker windows of the session. A close is only
+-- heard for the newest one: Telescope wipes the prompt buffer on a later
+-- tick (layout:unmount schedules it), so a replace_and_reopen's old window
+-- can report its close after the reopened picker is already up.
+
+--- A picker window of the session opens: nothing is pending any more.
+---@param rstate table
+---@return integer gen  pass to `M.session_closed` for this window
+function M.session_open(rstate)
+  rstate.busy = false
+  rstate.gen = (rstate.gen or 0) + 1
+  return rstate.gen
+end
 
 --- End the session: fire `rstate.on_close` once, on a later tick so the
 --- picker's own close/action code unwinds first.
@@ -166,13 +180,14 @@ function M.session_end(rstate)
   vim.schedule(cb)
 end
 
---- The picker window went away. Ends the session unless an action took it
---- over. Checked on a later tick: fzf-lua closes its window before it runs
---- the action that sets `busy`.
+--- The picker window `gen` went away. Ends the session unless an action took
+--- it over or a newer window of the session is open. Checked on a later
+--- tick: fzf-lua closes its window before it runs the action that sets `busy`.
 ---@param rstate table
-function M.session_closed(rstate)
+---@param gen integer  from `M.session_open` for that window
+function M.session_closed(rstate, gen)
   vim.schedule(function()
-    if not rstate.busy then
+    if rstate.gen == gen and not rstate.busy then
       M.session_end(rstate)
     end
   end)

@@ -34,8 +34,10 @@ local NS = vim.api.nvim_create_namespace("replacer_preview")
 ---@return nil
 local function run(items, new_text, cfg, apply_func, rstate)
   rstate = rstate or {}
-  -- A reopen starts with nothing pending; an action marks it again.
-  rstate.busy = false
+  -- A reopen starts with nothing pending; an action marks it again. Only
+  -- this picker's close (gen) can end the session from here on: the old
+  -- picker's prompt buffer is wiped on a later tick, after this reopen.
+  local gen = common.session_open(rstate)
 
   local ok, _ = pcall(require, "telescope")
   if not ok then
@@ -137,7 +139,7 @@ local function run(items, new_text, cfg, apply_func, rstate)
           buffer = prompt_bufnr,
           once = true,
           callback = function()
-            common.session_closed(rstate)
+            common.session_closed(rstate, gen)
           end,
         })
       end
