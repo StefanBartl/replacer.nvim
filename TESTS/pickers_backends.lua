@@ -706,7 +706,7 @@ end
 --------------------------------------------------------------------------------
 -- 7) replacer.pickers.telescope: session end signal (rstate.on_close), with a
 --    real prompt buffer that the stubbed actions.close wipes the way
---    Telescope does.
+--    Telescope does (on a later tick).
 --------------------------------------------------------------------------------
 do
   local picker_calls = {}
@@ -754,8 +754,14 @@ do
         default_action = fn
       end,
     },
+    -- Like Telescope's layout:unmount(): the windows close at once, the
+    -- prompt buffer is deleted on a later tick (vim.schedule) -- so its
+    -- BufWipeout lands after anything the action itself scheduled, e.g. a
+    -- replace_and_reopen's run().
     close = function(bufnr)
-      pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+      vim.schedule(function()
+        pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+      end)
     end,
     toggle_selection = function() end,
     move_selection_next = function() end,
