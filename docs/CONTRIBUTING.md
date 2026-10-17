@@ -26,9 +26,9 @@ The same three CI runs on every push and PR
 ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)):
 
 ```sh
-make lint       # luacheck lua/
-make fmt-check  # stylua --check lua/
-make test       # headless test suite
+make lint       # luacheck lua/ plugin/ TESTS/
+make fmt-check  # stylua --check lua/ TESTS/
+make test       # headless test suites (same list as ci.yml)
 make check      # all three
 ```
 
