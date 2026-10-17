@@ -535,24 +535,26 @@ do
 end
 
 --------------------------------------------------------------------------------
--- 2h-2) perfile: "Only some" hands off to the picker and stops the loop
--- (UI-53) -- it must not fall through to the next file's confirm while the
--- picker session for this one is still open.
+-- 2h-2) perfile: "Only some" hands the file to the picker, waits while that
+-- picker session is open (UI-53: no confirm float over it), and goes on with
+-- the remaining files once the picker reports its end (UI-05: the choice for
+-- one file must not take the independent rest with it).
 --------------------------------------------------------------------------------
 do
   ---@diagnostic disable: missing-fields
   local items = {
     { id = 1, path = "a.txt", lnum = 1, col0 = 0, old = "foo", line = "foo" },
     { id = 2, path = "b.txt", lnum = 1, col0 = 0, old = "foo", line = "foo" },
+    { id = 3, path = "c.txt", lnum = 1, col0 = 0, old = "foo", line = "foo" },
   }
   ---@diagnostic enable: missing-fields
 
-  local answers = { "Only some" }
-  local call_n = 0
+  local answers = { "Only some", "All", "Skip" }
+  local asked = {}
   package.loaded["ui.kit.confirm"] = {
     open = function(opts)
-      call_n = call_n + 1
-      opts.on_answer(answers[call_n])
+      asked[#asked + 1] = opts.question
+      opts.on_answer(answers[#asked])
     end,
   }
   package.loaded["replacer.perfile"] = nil
@@ -567,8 +569,10 @@ do
     return 1, #list
   end
   local picked_files2 = {}
-  local function fake_pick2(list)
+  local picker_close
+  local function fake_pick2(list, on_close)
     picked_files2[#picked_files2 + 1] = list[1].path
+    picker_close = on_close
   end
 
   local files2, spots2
@@ -576,19 +580,47 @@ do
     files2, spots2 = f, s
   end)
 
-  package.loaded["ui.kit.confirm"] = nil
-  package.loaded["replacer.perfile"] = nil
-
   check(
     "perfile: Only-some hands the file to the picker",
     #picked_files2 == 1 and picked_files2[1] == "a.txt",
     vim.inspect(picked_files2)
   )
-  check("perfile: Only-some stops the loop -- b.txt's confirm never opens", call_n == 1, call_n)
-  check("perfile: Only-some never calls apply_func itself", #applied_paths2 == 0)
   check(
-    "perfile: on_done still fires (0/0 -- nothing applied by perfile itself)",
-    files2 == 0 and spots2 == 0
+    "perfile: Only-some waits while the picker is open -- b.txt's confirm not yet opened",
+    #asked == 1,
+    vim.inspect(asked)
+  )
+  check("perfile: Only-some never calls apply_func itself", #applied_paths2 == 0)
+  check("perfile: the loop has not ended while the picker is open", files2 == nil)
+  check(
+    "perfile: the picker gets an on_close callback to report its end",
+    type(picker_close) == "function"
+  )
+
+  if type(picker_close) == "function" then
+    picker_close()
+    picker_close() -- a second report must not ask about the files twice
+  end
+
+  package.loaded["ui.kit.confirm"] = nil
+  package.loaded["replacer.perfile"] = nil
+
+  check(
+    "perfile: after the picker closes, the review goes on with b.txt and c.txt",
+    #asked == 3
+      and asked[2]:find("b.txt", 1, true) ~= nil
+      and asked[3]:find("c.txt", 1, true) ~= nil,
+    vim.inspect(asked)
+  )
+  check(
+    "perfile: b.txt (All after the resume) got applied",
+    #applied_paths2 == 1 and applied_paths2[1] == "b.txt",
+    vim.inspect(applied_paths2)
+  )
+  check(
+    "perfile: on_done fires once all files are seen, with perfile's own totals",
+    files2 == 1 and spots2 == 1,
+    tostring(files2) .. " " .. tostring(spots2)
   )
 end
 

@@ -243,17 +243,31 @@ local function dispatch(request, cfg, single_file, items)
 
   -- Interactive picker over `pick_items` (auto-detected when engine = "auto").
   -- Shared by the default interactive path and --confirm-per-file's "Only
-  -- some" choice, which scopes it to a single file's matches.
-  local function open_picker(pick_items)
+  -- some" choice, which scopes it to a single file's matches and passes
+  -- `on_close` to hear when that picker session is over.
+  ---@param pick_items RP_Match[]
+  ---@param on_close? fun()
+  local function open_picker(pick_items, on_close)
     local engine = pick_picker(cfg)
     if not engine then
       notify.error("no picker available — install fzf-lua or telescope.nvim")
+      if on_close then
+        vim.schedule(on_close)
+      end
       return
     end
+    local rstate = on_close and { on_close = on_close } or nil
     if engine == "fzf" then
-      require("replacer.pickers.fzf").run(request.old, pick_items, request.new, cfg, apply_func)
+      require("replacer.pickers.fzf").run(
+        request.old,
+        pick_items,
+        request.new,
+        cfg,
+        apply_func,
+        rstate
+      )
     else
-      require("replacer.pickers.telescope").run(pick_items, request.new, cfg, apply_func)
+      require("replacer.pickers.telescope").run(pick_items, request.new, cfg, apply_func, rstate)
     end
   end
 
