@@ -8,12 +8,11 @@
 --- is therefore callback-recursive: each file's confirm only advances to the
 --- next one from inside its own on_answer callback, and the final totals are
 --- delivered via `on_done` instead of a synchronous return. "Only some"
---- hands off to an open-ended picker session and stops the loop right
---- there (like "Quit") rather than racing the next file's confirm float
---- against that still-open picker -- see the "Only some" branch below.
+--- hands the file to a picker and waits for that picker session to end
+--- before it asks about the next file, so no confirm float ever opens over
+--- the still-open picker -- see the "Only some" branch below.
 
 local confirm = require("ui.kit.confirm")
-local notify = require("replacer.util.notify")
 
 local M = {}
 
@@ -46,8 +45,8 @@ end
 ---@param new_text string
 ---@param write_changes boolean
 ---@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean, on_result?: fun(files: integer, spots: integer))
----@param on_pick_file fun(items: RP_Match[])   # "Only some": open a picker scoped to this file
----@param on_done fun(files: integer, spots: integer)  # called once the loop ends (Quit/<Esc>/Only-some or all files seen)
+---@param on_pick_file fun(items: RP_Match[], on_close: fun())   # "Only some": open a picker scoped to this file; call on_close once that picker session is over
+---@param on_done fun(files: integer, spots: integer)  # called once the loop ends (Quit/<Esc> or all files seen); the totals count only perfile's own "All" applies
 function M.run(items, new_text, write_changes, apply_func, on_pick_file, on_done)
   local by_path, paths = group_by_path_sorted(items)
   local total_files, total_spots = 0, 0
@@ -78,28 +77,23 @@ function M.run(items, new_text, write_changes, apply_func, on_pick_file, on_done
           end)
           return
         elseif choice == "Only some" then
-          -- UI-53: hand off to the picker for this file and STOP the loop
-          -- here instead of immediately advancing to the next file's
-          -- confirm float. `on_pick_file` opens an open-ended, asynchronous
-          -- UI session (telescope/fzf-lua) with no completion signal back
-          -- to this loop; stacking the next confirm float on top of it
-          -- while it's still open corrupts the picker's internal registry
-          -- (the same class of bug pickers/telescope.lua's `do_all` already
-          -- guards against by closing its own picker before opening a
-          -- second float). Remaining files are simply not reviewed by this
-          -- run -- re-run with --confirm-per-file to continue with them.
-          on_pick_file(list)
-          local remaining = #paths - i
-          if remaining > 0 then
-            notify.info(
-              string.format(
-                "confirm-per-file: stopped after handing '%s' to the picker -- %d file(s) not yet reviewed",
-                rel,
-                remaining
-              )
-            )
-          end
-          on_done(total_files, total_spots)
+          -- UI-53: hand the file to the picker and do NOT advance yet.
+          -- Stacking the next confirm float over the still-open picker
+          -- corrupts its internal registry (the same class of bug
+          -- pickers/telescope.lua's `do_all` guards against by closing its
+          -- own picker before opening a second float). The picker calls
+          -- on_close once its session is over -- window closed, its apply
+          -- or confirm settled, no reopen pending -- and only then does
+          -- the review go on with the remaining files (UI-05: the choice
+          -- for this file must not take the independent rest with it).
+          local resumed = false
+          on_pick_file(list, function()
+            if resumed then
+              return
+            end
+            resumed = true
+            step(i + 1)
+          end)
           return
         elseif choice == nil or choice == "Quit" then -- <Esc>/q or explicit Quit
           on_done(total_files, total_spots)

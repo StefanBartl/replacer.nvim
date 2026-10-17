@@ -30,12 +30,17 @@ local NS = vim.api.nvim_create_namespace("replacer_preview")
 ---@param new_text string
 ---@param cfg RP_Config            -- receives _old_len optionally (we cast below)
 ---@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean, on_result?: fun(files: integer, spots: integer))
----@param rstate? { original: RP_Match[], handle: table|false }  refine state, threaded across reopens
+---@param rstate? { original?: RP_Match[], handle?: table|false, on_close?: fun() }  session state, threaded across reopens (on_close: see pickers.common "Session end signal")
 ---@return nil
 local function run(items, new_text, cfg, apply_func, rstate)
+  rstate = rstate or {}
+  -- A reopen starts with nothing pending; an action marks it again.
+  rstate.busy = false
+
   local ok, _ = pcall(require, "telescope")
   if not ok then
     notify.error("telescope.nvim not found")
+    common.session_end(rstate)
     return
   end
 
@@ -49,6 +54,7 @@ local function run(items, new_text, cfg, apply_func, rstate)
     not (pickers_ok and finders_ok and previewers_ok and conf_ok and actions_ok and action_state_ok)
   then
     notify.error("telescope submodules missing")
+    common.session_end(rstate)
     return
   end
 
@@ -58,7 +64,6 @@ local function run(items, new_text, cfg, apply_func, rstate)
   -- Refine state, created once and threaded across reopens. `handle` is a
   -- `pickers.refine` handle, or `false` once we have checked and pickers.nvim
   -- is absent. `original` is the full match set the filters run against.
-  rstate = rstate or {}
   rstate.original = rstate.original or items
   if rstate.handle == nil then
     rstate.handle = common.new_refine() or false
@@ -125,6 +130,18 @@ local function run(items, new_text, cfg, apply_func, rstate)
     previewer = previewer,
 
     attach_mappings = function(prompt_bufnr, map)
+      -- Telescope wipes the prompt buffer on every close (any key, any
+      -- path), which makes it the one place that sees the picker go away.
+      if rstate.on_close then
+        pcall(vim.api.nvim_create_autocmd, "BufWipeout", {
+          buffer = prompt_bufnr,
+          once = true,
+          callback = function()
+            common.session_closed(rstate)
+          end,
+        })
+      end
+
       local function apply_selected_or_one()
         local sel = action_state.get_selected_entry()
         if not sel then
@@ -142,19 +159,17 @@ local function run(items, new_text, cfg, apply_func, rstate)
               chosen[#chosen + 1] = e.value
             end
           end
+          common.session_hold(rstate)
           actions.close(prompt_bufnr)
-          apply_func(chosen, new_text, cfg.write_changes, function(files, spots)
-            common.notify_result(files, spots, cfg)
-          end)
+          apply_func(chosen, new_text, cfg.write_changes, common.session_result(rstate, cfg))
         else
           if not sel.value then
             return
           end
           ---@cast sel { value: RP_Match }
+          common.session_hold(rstate)
           actions.close(prompt_bufnr)
-          apply_func({ sel.value }, new_text, cfg.write_changes, function(files, spots)
-            common.notify_result(files, spots, cfg)
-          end)
+          apply_func({ sel.value }, new_text, cfg.write_changes, common.session_result(rstate, cfg))
         end
       end
 
@@ -189,24 +204,23 @@ local function run(items, new_text, cfg, apply_func, rstate)
           -- underneath a second focus-stealing float corrupts Telescope's
           -- internal picker registry, so closing it afterward (from
           -- on_answer) crashes on a nil picker lookup inside actions.close.
+          common.session_hold(rstate)
           actions.close(prompt_bufnr)
           confirm.open({
             question = msg,
             on_answer = function(yes)
               if not yes then
+                common.session_end(rstate)
                 return
               end
-              apply_func(items, new_text, cfg.write_changes, function(files, spots)
-                common.notify_result(files, spots, cfg)
-              end)
+              apply_func(items, new_text, cfg.write_changes, common.session_result(rstate, cfg))
             end,
           })
           return
         end
+        common.session_hold(rstate)
         actions.close(prompt_bufnr)
-        apply_func(items, new_text, cfg.write_changes, function(files, spots)
-          common.notify_result(files, spots, cfg)
-        end)
+        apply_func(items, new_text, cfg.write_changes, common.session_result(rstate, cfg))
       end
       local key_all = keys.apply_all or "<C-a>"
       map("i", key_all, do_all)
@@ -222,6 +236,8 @@ local function run(items, new_text, cfg, apply_func, rstate)
         end
         local it = sel.value ---@type RP_Match
 
+        -- The session goes on in the reopened picker (or ends below).
+        common.session_hold(rstate)
         actions.close(prompt_bufnr)
 
         apply_func({ it }, new_text, cfg.write_changes, function(files, spots)
@@ -236,6 +252,7 @@ local function run(items, new_text, cfg, apply_func, rstate)
         end
         if #remaining == 0 then
           notify.info("no more matches")
+          common.session_end(rstate)
           return
         end
         -- Drop the applied match from the full set too, so a later "clear

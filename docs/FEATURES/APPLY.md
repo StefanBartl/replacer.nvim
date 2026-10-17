@@ -37,8 +37,8 @@ quickfix/location list and open it, without writing any changes.
 `--confirm-per-file` prompts All/Skip/Only-some/Quit for each file
 individually instead of one global "apply ALL?" confirmation; supersedes
 `confirm_all`/`confirm_wide_scope` when enabled. "Only some" hands the file
-off to the picker and stops the loop there (like "Quit") instead of also
-prompting for later files — re-run with `--confirm-per-file` to continue.
+to the picker; once that picker is closed and its apply has finished, the
+prompts go on with the remaining files. No prompt opens over the open picker.
 
 - **Module:** `perfile.lua` (`M.run`)
 - **Config:** `opts.confirm_per_file` (default `false`)

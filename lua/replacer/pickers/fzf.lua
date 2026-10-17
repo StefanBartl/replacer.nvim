@@ -39,15 +39,19 @@ end
 ---@param new_text string
 ---@param cfg RP_Config            -- expects: literal, write_changes, fzf?, _last_query?
 ---@param apply_func fun(items: RP_Match[], new_text: string, write_changes: boolean, on_result?: fun(files: integer, spots: integer))
----@param rstate? { original: RP_Match[], handle: table|false }  refine state, threaded across reopens
+---@param rstate? { original?: RP_Match[], handle?: table|false, on_close?: fun() }  session state, threaded across reopens (on_close: see pickers.common "Session end signal")
 local function run(old, items, new_text, cfg, apply_func, rstate)
+  rstate = rstate or {}
+  -- A reopen starts with nothing pending; an action marks it again.
+  rstate.busy = false
+
   local ok_fzf, fzf = pcall(require, "fzf-lua")
   if not ok_fzf then
     notify.error("fzf-lua not found")
+    common.session_end(rstate)
     return
   end
 
-  rstate = rstate or {}
   rstate.original = rstate.original or items
   if rstate.handle == nil then
     rstate.handle = common.new_refine() or false
@@ -124,9 +128,8 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
       if #chosen == 0 then
         return
       end
-      apply_func(chosen, new_text, cfg.write_changes, function(files, spots)
-        common.notify_result(files, spots, cfg)
-      end)
+      common.session_hold(rstate)
+      apply_func(chosen, new_text, cfg.write_changes, common.session_result(rstate, cfg))
     end,
     [key_all] = function()
       local all = {} ---@type RP_Match[]
@@ -150,23 +153,22 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
         for _ in pairs(fileset) do
           fc = fc + 1
         end
+        common.session_hold(rstate)
         confirm.open({
           question = messages.fmt(cfg, "confirm_all", #all, fc),
           on_answer = function(yes)
             if not yes then
               messages.info(cfg, messages.fmt(cfg, "cancelled"))
+              common.session_end(rstate)
               return
             end
-            apply_func(all, new_text, cfg.write_changes, function(files, spots)
-              common.notify_result(files, spots, cfg)
-            end)
+            apply_func(all, new_text, cfg.write_changes, common.session_result(rstate, cfg))
           end,
         })
         return
       end
-      apply_func(all, new_text, cfg.write_changes, function(files, spots)
-        common.notify_result(files, spots, cfg)
-      end)
+      common.session_hold(rstate)
+      apply_func(all, new_text, cfg.write_changes, common.session_result(rstate, cfg))
     end,
     [key_reopen] = function(selected)
       if not selected or #selected == 0 then
@@ -179,6 +181,8 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
         return
       end
 
+      -- The session goes on in the reopened picker (or ends below).
+      common.session_hold(rstate)
       apply_func({ it }, new_text, cfg.write_changes, function(files, spots)
         common.notify_result(files, spots, cfg)
       end)
@@ -191,6 +195,7 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
       end
       if #remaining == 0 then
         notify.info("no more matches")
+        common.session_end(rstate)
         return
       end
       rstate.original = common.without(rstate.original, it.id)
@@ -207,6 +212,7 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
       -- fzf-lua has already closed the picker window by the time an action
       -- runs, so reopen unconditionally (on_done) — with the current filtered
       -- view, which is unchanged when the prompt was cancelled.
+      common.session_hold(rstate)
       refine_h:prompt(nil, function()
         local filtered = refine_h:apply(rstate.original)
         vim.schedule(function()
@@ -257,6 +263,16 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
         map("t", "<Esc>", [[<C-\><C-n>]], { buffer = buf, nowait = true, silent = true })
       end)
       window.nice_quit(win, { keys = { key_quit }, force = true })
+      if rstate.on_close then
+        -- Also covers the quit key above, which closes the window directly.
+        pcall(vim.api.nvim_create_autocmd, "WinClosed", {
+          pattern = tostring(win),
+          once = true,
+          callback = function()
+            common.session_closed(rstate)
+          end,
+        })
+      end
 
       -- Only "quit" is a real Neovim keymap which-key can see: toggle_select
       -- and apply_all are fzf's own terminal-native bindings (--bind/actions
@@ -265,6 +281,19 @@ local function run(old, items, new_text, cfg, apply_func, rstate)
       common.register_which_key(buf, {
         { lhs = key_quit, desc = "replacer: close picker", modes = { "n" } },
       })
+    end
+  end
+
+  -- Session end signal: fzf-lua calls winopts.on_close when it closes the
+  -- window, right before it runs the chosen action (if any) -- hence
+  -- session_closed's check on a later tick.
+  if rstate.on_close then
+    local prev_on_close = opts.winopts.on_close
+    opts.winopts.on_close = function(...)
+      if type(prev_on_close) == "function" then
+        pcall(prev_on_close, ...)
+      end
+      common.session_closed(rstate)
     end
   end
 

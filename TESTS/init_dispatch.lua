@@ -519,6 +519,96 @@ do
   package.loaded["replacer"] = nil
 end
 
+--------------------------------------------------------------------------------
+-- 10) cfg.confirm_per_file + "Only some", wired through dispatch's REAL
+--     open_picker: the picker gets an on_close, and only once that fires does
+--     the review go on with the next file (no confirm float over the open
+--     picker, no re-run needed for the rest).
+--------------------------------------------------------------------------------
+do
+  local asked = {}
+  local answers = { "Only some", "All" }
+  package.loaded["ui.kit.confirm"] = {
+    open = function(opts)
+      asked[#asked + 1] = opts.question
+      opts.on_answer(answers[#asked])
+    end,
+  }
+  local picker_runs = {}
+  package.loaded["replacer.pickers.fzf"] = {
+    run = function(_old, items, _new, _cfg, _apply, rstate)
+      picker_runs[#picker_runs + 1] = { items = items, rstate = rstate }
+    end,
+  }
+  -- perfile binds ui.kit.confirm at load time; section 9 loaded it with
+  -- that section's stub, so reload it to see this one.
+  package.loaded["replacer.perfile"] = nil
+  package.loaded["replacer"] = nil
+  local replacer_pf = require("replacer")
+
+  replacer_pf.setup({
+    search_engine = "vimgrep",
+    engine = "fzf",
+    confirm_all = false,
+    confirm_wide_scope = false,
+    confirm_per_file = true,
+    checkpoint = false,
+    write_changes = true,
+  })
+  local dir = tmp .. "/perfile_only_some"
+  vim.fn.mkdir(dir, "p")
+  local fa, fb = dir .. "/a.txt", dir .. "/b.txt"
+  write_file(fa, "pfsome here\n")
+  write_file(fb, "pfsome there\n")
+
+  local req = base_request()
+  req.old, req.new, req.scope, req.all = "pfsome", "PFSOME", dir, true
+  replacer_pf.run(req)
+  vim.wait(300, function()
+    return #picker_runs > 0
+  end, 10)
+
+  check("confirm_per_file + Only some: the picker opens for the first file", #picker_runs == 1)
+  check(
+    "confirm_per_file + Only some: no second confirm while the picker is open",
+    #asked == 1,
+    vim.inspect(asked)
+  )
+  local rstate = picker_runs[1] and picker_runs[1].rstate
+  check(
+    "confirm_per_file + Only some: dispatch hands the picker an on_close",
+    rstate ~= nil and type(rstate.on_close) == "function"
+  )
+
+  if rstate and type(rstate.on_close) == "function" then
+    rstate.on_close()
+  end
+  vim.wait(300, function()
+    return read_file(fb):match("PFSOME") ~= nil
+  end, 10)
+
+  check(
+    "confirm_per_file + Only some: after the picker closes, b.txt is asked about",
+    #asked == 2 and asked[2]:find("b.txt", 1, true) ~= nil,
+    vim.inspect(asked)
+  )
+  check(
+    "confirm_per_file + Only some: b.txt (All) is applied without re-running the command",
+    read_file(fb):match("PFSOME") ~= nil,
+    read_file(fb)
+  )
+  check(
+    "confirm_per_file + Only some: a.txt is left to the picker (untouched here)",
+    read_file(fa):match("pfsome") ~= nil,
+    read_file(fa)
+  )
+
+  package.loaded["ui.kit.confirm"] = nil
+  package.loaded["replacer.pickers.fzf"] = nil
+  package.loaded["replacer.perfile"] = nil
+  package.loaded["replacer"] = nil
+end
+
 print(string.format("\n=== %d passed, %d failed ===", pass, fail))
 if fail > 0 then
   vim.cmd("cquit 1")

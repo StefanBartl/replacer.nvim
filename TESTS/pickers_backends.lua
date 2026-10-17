@@ -594,6 +594,241 @@ do
   )
 end
 
+--------------------------------------------------------------------------------
+-- 6) replacer.pickers.fzf: session end signal (rstate.on_close) -- what
+--    --confirm-per-file's "Only some" waits for before it asks about the next
+--    file. It fires once the window is gone AND whatever the action started
+--    (apply, confirm, reopen) is over; never while a picker of the session is
+--    still open.
+--------------------------------------------------------------------------------
+do
+  local fzf_calls = {}
+  package.loaded["fzf-lua"] = {
+    fzf_exec = function(source, opts)
+      fzf_calls[#fzf_calls + 1] = { source = source, opts = opts }
+    end,
+  }
+  local fzfp = require("replacer.pickers.fzf")
+
+  local items = {
+    { id = 1, path = tmp .. "/a.txt", lnum = 1, col0 = 0, old = "foo", line = "foo" },
+    { id = 2, path = tmp .. "/a.txt", lnum = 2, col0 = 0, old = "foo", line = "foo" },
+  }
+  local pending = {}
+  local function slow_apply(_chosen, _new, _write, on_result)
+    pending[#pending + 1] = on_result
+  end
+  local cfg = { keymaps = {}, write_changes = true, confirm_all = false }
+
+  local function settle()
+    vim.wait(50, function()
+      return false
+    end, 5)
+  end
+
+  -- without on_close nothing is hooked (the plain picker path is unchanged)
+  fzfp.run("foo", items, "bar", cfg, slow_apply)
+  check(
+    "fzf session: no on_close given -> winopts.on_close stays unset",
+    fzf_calls[#fzf_calls].opts.winopts.on_close == nil
+  )
+
+  -- quit: window closes, no action runs
+  local closes = 0
+  local function on_close()
+    closes = closes + 1
+  end
+  fzfp.run("foo", items, "bar", cfg, slow_apply, { on_close = on_close })
+  local c = fzf_calls[#fzf_calls]
+  c.opts.winopts.on_close()
+  settle()
+  check("fzf session: quit -> on_close fires once", closes == 1, closes)
+
+  -- default action: window closes first, then the apply; ends when it settles
+  closes = 0
+  fzfp.run("foo", items, "bar", cfg, slow_apply, { on_close = on_close })
+  c = fzf_calls[#fzf_calls]
+  c.opts.winopts.on_close()
+  c.opts.actions["default"]({ c.source[1] })
+  settle()
+  check("fzf session: apply still running -> on_close not yet fired", closes == 0, closes)
+  pending[#pending](1, 1)
+  settle()
+  check("fzf session: apply settled -> on_close fires once", closes == 1, closes)
+
+  -- replace_and_reopen: the session goes on in the reopened picker
+  closes = 0
+  fzfp.run("foo", items, "bar", cfg, slow_apply, { on_close = on_close })
+  c = fzf_calls[#fzf_calls]
+  local n_before = #fzf_calls
+  c.opts.winopts.on_close()
+  c.opts.actions["ctrl-r"]({ c.source[1] })
+  pending[#pending](1, 1)
+  vim.wait(200, function()
+    return #fzf_calls > n_before
+  end, 5)
+  settle()
+  check("fzf session: reopen -> a second picker opens", #fzf_calls == n_before + 1)
+  check("fzf session: reopen -> on_close not fired while it is open", closes == 0, closes)
+  fzf_calls[#fzf_calls].opts.winopts.on_close()
+  settle()
+  check("fzf session: the reopened picker closes -> on_close fires once", closes == 1, closes)
+
+  -- apply_all behind a confirm that is answered No
+  closes = 0
+  answer_with = false
+  fzfp.run(
+    "foo",
+    items,
+    "bar",
+    { keymaps = {}, write_changes = true, confirm_all = true },
+    slow_apply,
+    { on_close = on_close }
+  )
+  c = fzf_calls[#fzf_calls]
+  c.opts.winopts.on_close()
+  c.opts.actions["ctrl-a"]()
+  settle()
+  check("fzf session: confirm answered No -> on_close fires once", closes == 1, closes)
+
+  -- the quit key closes the window directly (nice_quit): WinClosed covers it
+  closes = 0
+  fzfp.run("foo", items, "bar", cfg, slow_apply, { on_close = on_close })
+  c = fzf_calls[#fzf_calls]
+  vim.cmd("split")
+  local win = vim.api.nvim_get_current_win()
+  c.opts.winopts.on_create()
+  vim.api.nvim_win_close(win, true)
+  settle()
+  check("fzf session: window closed directly -> on_close fires once", closes == 1, closes)
+end
+
+--------------------------------------------------------------------------------
+-- 7) replacer.pickers.telescope: session end signal (rstate.on_close), with a
+--    real prompt buffer that the stubbed actions.close wipes the way
+--    Telescope does.
+--------------------------------------------------------------------------------
+do
+  local picker_calls = {}
+  local default_action
+  package.loaded["telescope"] = {}
+  package.loaded["telescope.pickers"] = {
+    new = function(_theme_opts, spec)
+      local picker_obj = { __spec = spec, prompt_border = { change_title = function() end } }
+      picker_obj.find = function(self)
+        local maps = {}
+        self.__buf = vim.api.nvim_create_buf(false, true)
+        spec.attach_mappings(self.__buf, function(mode, key, fn)
+          maps[key] = maps[key] or {}
+          maps[key][mode] = fn
+        end)
+        self.__maps = maps
+      end
+      picker_calls[#picker_calls + 1] = picker_obj
+      return picker_obj
+    end,
+  }
+  package.loaded["telescope.finders"] = {
+    new_table = function(o)
+      return { __results = o.results, __entry_maker = o.entry_maker }
+    end,
+  }
+  package.loaded["telescope.previewers"] = {
+    new_buffer_previewer = function(o)
+      return {
+        state = { bufnr = vim.api.nvim_create_buf(false, true) },
+        define_preview = o.define_preview,
+      }
+    end,
+  }
+  package.loaded["telescope.config"] = {
+    values = {
+      generic_sorter = function()
+        return {}
+      end,
+    },
+  }
+  package.loaded["telescope.actions"] = {
+    select_default = {
+      replace = function(_, fn)
+        default_action = fn
+      end,
+    },
+    close = function(bufnr)
+      pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+    end,
+    toggle_selection = function() end,
+    move_selection_next = function() end,
+    move_selection_previous = function() end,
+  }
+  local selected
+  package.loaded["telescope.actions.state"] = {
+    get_selected_entry = function()
+      return selected
+    end,
+    get_current_picker = function()
+      return nil
+    end,
+  }
+  local telescopep = require("replacer.pickers.telescope")
+
+  local items = {
+    { id = 1, path = tmp .. "/a.txt", lnum = 1, col0 = 0, old = "x", line = "x" },
+    { id = 2, path = tmp .. "/a.txt", lnum = 2, col0 = 0, old = "x", line = "x" },
+  }
+  local pending = {}
+  local function slow_apply(_chosen, _new, _write, on_result)
+    pending[#pending + 1] = on_result
+  end
+  local cfg = { keymaps = {}, write_changes = true, confirm_all = false }
+  local closes = 0
+  local function on_close()
+    closes = closes + 1
+  end
+  local function settle()
+    vim.wait(50, function()
+      return false
+    end, 5)
+  end
+
+  -- quit key (normal mode) -> actions.close -> prompt buffer wiped
+  telescopep.run(items, "y", cfg, slow_apply, { on_close = on_close })
+  local p = picker_calls[#picker_calls]
+  p.__maps["<Esc>"]["n"](p.__buf)
+  settle()
+  check("telescope session: quit -> on_close fires once", closes == 1, closes)
+
+  -- <CR> on one entry: ends when its apply settles
+  closes = 0
+  telescopep.run(items, "y", cfg, slow_apply, { on_close = on_close })
+  selected = { value = items[1] }
+  default_action()
+  settle()
+  check("telescope session: apply still running -> on_close not yet fired", closes == 0, closes)
+  pending[#pending](1, 1)
+  settle()
+  check("telescope session: apply settled -> on_close fires once", closes == 1, closes)
+
+  -- replace_and_reopen: the session goes on in the reopened picker
+  closes = 0
+  telescopep.run(items, "y", cfg, slow_apply, { on_close = on_close })
+  p = picker_calls[#picker_calls]
+  local n_before = #picker_calls
+  selected = { value = items[1] }
+  p.__maps["<C-r>"]["i"]()
+  pending[#pending](1, 1)
+  vim.wait(200, function()
+    return #picker_calls > n_before
+  end, 5)
+  settle()
+  check("telescope session: reopen -> a second picker opens", #picker_calls == n_before + 1)
+  check("telescope session: reopen -> on_close not fired while it is open", closes == 0, closes)
+  p = picker_calls[#picker_calls]
+  p.__maps["<Esc>"]["n"](p.__buf)
+  settle()
+  check("telescope session: the reopened picker closes -> on_close fires once", closes == 1, closes)
+end
+
 print(string.format("\n=== %d passed, %d failed ===", pass, fail))
 if fail > 0 then
   vim.cmd("cquit 1")

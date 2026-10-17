@@ -142,6 +142,61 @@ function M.notify_result(files, spots, cfg)
 end
 
 --------------------------------------------------------------------------------
+-- Session end signal (rstate.on_close)
+--------------------------------------------------------------------------------
+-- A picker session spans every reopen (replace_and_reopen, fzf's filter) and
+-- whatever an action does after the window is gone (the apply, a confirm
+-- float). `rstate.on_close`, when set, fires exactly once when all of that is
+-- over: --confirm-per-file uses it to go on with the next file only once no
+-- picker window and no float of the session is left (UI-53).
+--
+-- `rstate.busy` means "an action owns the end of the session": the window
+-- closing then does not end it, the action does (through `M.session_end`,
+-- or by reopening, which clears `busy` again at the start of run()).
+
+--- End the session: fire `rstate.on_close` once, on a later tick so the
+--- picker's own close/action code unwinds first.
+---@param rstate table
+function M.session_end(rstate)
+  local cb = rstate.on_close
+  if type(cb) ~= "function" or rstate.ended then
+    return
+  end
+  rstate.ended = true
+  vim.schedule(cb)
+end
+
+--- The picker window went away. Ends the session unless an action took it
+--- over. Checked on a later tick: fzf-lua closes its window before it runs
+--- the action that sets `busy`.
+---@param rstate table
+function M.session_closed(rstate)
+  vim.schedule(function()
+    if not rstate.busy then
+      M.session_end(rstate)
+    end
+  end)
+end
+
+--- An action takes over the end of the session.
+---@param rstate table
+function M.session_hold(rstate)
+  rstate.busy = true
+end
+
+--- `on_result` for an apply started by a picker action: report the result,
+--- then end the session.
+---@param rstate table
+---@param cfg RP_Config|nil
+---@return fun(files: integer, spots: integer)
+function M.session_result(rstate, cfg)
+  return function(files, spots)
+    M.notify_result(files, spots, cfg)
+    M.session_end(rstate)
+  end
+end
+
+--------------------------------------------------------------------------------
 -- which-key (optional)
 --------------------------------------------------------------------------------
 
