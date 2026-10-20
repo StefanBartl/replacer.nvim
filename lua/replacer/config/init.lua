@@ -358,7 +358,7 @@ end
 --- @return nil
 function M.setup(opts)
   local clean, key_issues = sanitize_keys(tbl(opts))
-  local new_state, field_issues = validate(vim.tbl_deep_extend("force", {}, state, clean))
+  local new_state, field_issues = validate(clean)
   state = new_state
   issues = vim.list_extend(vim.list_extend({}, key_issues), field_issues)
   if #issues > 0 then

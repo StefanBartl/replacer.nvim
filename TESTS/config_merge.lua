@@ -264,23 +264,38 @@ do
 end
 
 --------------------------------------------------------------------------------
--- 11) setup() merges onto the CURRENT state, not back onto DEFAULTS --
---     calling setup({}) is a no-op merge, not a reset to factory defaults.
---     Documented behavior (not a bug): M.resolve()/M.get() are the tools for
---     a one-off override that doesn't persist; setup() is cumulative by
---     design, same as :Replace flags never wanting to force a config reset.
+-- 11) every setup() starts from DEFAULTS: an option left out of a later call
+--     is back at its default, and setup({}) / setup() are the defaults.
+--     (It used to merge onto the current state and the spec called that "by
+--     design"; an option deleted from the user's config then lived on until
+--     the editor restarted. M.resolve()/M.get() stay the tools for a one-off
+--     override that does not persist.)
 --------------------------------------------------------------------------------
 do
-  config.setup({ preview_context = 9 })
+  config.setup({ preview_context = 9, hidden = not DEFAULTS.hidden })
   check("setup(): override applied", config.get().preview_context == 9)
-  config.setup({}) -- would reset to 3 if setup() re-based on DEFAULTS -- it doesn't
+  config.setup({ literal = not DEFAULTS.literal })
   check(
-    "setup({}): accumulates onto current state rather than resetting to DEFAULTS",
-    config.get().preview_context == 9,
+    "setup(): an option left out of the next call is back at its default",
+    config.get().preview_context == DEFAULTS.preview_context
+      and config.get().hidden == DEFAULTS.hidden,
     config.get().preview_context
   )
-  -- restore for hygiene, in case any later suite run in the same process cares
-  config.setup({ preview_context = DEFAULTS.preview_context })
+  check("setup(): the option of this call applies", config.get().literal == not DEFAULTS.literal)
+  config.setup({})
+  check("setup({}): the defaults", config.get().literal == DEFAULTS.literal)
+  config.setup({ preview_context = 9 })
+  config.setup()
+  check("setup(): the defaults", config.get().preview_context == DEFAULTS.preview_context)
+  config.setup({ preview_context = 9 })
+  config.setup(nil)
+  check("setup(nil): the defaults", config.get().preview_context == DEFAULTS.preview_context)
+  config.setup({ fzf = { prompt = "x> " } })
+  config.setup({})
+  check(
+    "setup(): a nested section left out is back too",
+    vim.deep_equal(config.get().fzf, DEFAULTS.fzf)
+  )
 end
 
 --------------------------------------------------------------------------------
