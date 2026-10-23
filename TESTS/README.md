@@ -1,46 +1,44 @@
 # TESTS
 
 Standalone Lua scripts, not a `plenary`/`busted` suite. Each file is a
-self-contained headless test run via `nvim -l TESTS/<name>.lua` or
-`nvim --headless -u NONE -c "luafile TESTS/<name>.lua" -c "qa"` — there is no
-`run.lua` aggregator and no `_spec` suffix convention. (CI wraps the second
-form in `TESTS/ci_guard.lua`, see below.)
+self-contained headless test that runs itself, counts its own checks and ends
+in `cquit 1` when one failed. They are run by
+[testing.nvim](https://github.com/StefanBartl/testing.nvim) (configured in
+`.testing.lua`; dialect `script`, one editor per file): the exit code and the
+printed `[FAIL]` lines are the verdict. There is no `run.lua` aggregator and
+no `_spec` suffix convention; the files are named in `spec_pattern` of
+`.testing.lua`, so a new script has to be added there.
 
-## Running a suite
-
-Every suite that requires the plugin needs `lib.nvim` and `ui.nvim` on the
-runtimepath (hard dependencies of `replacer.notify`/`replacer.gitfiles` and
-`replacer.init`'s `ui.kit.confirm` require, respectively). `refine_wiring.lua`
-additionally uses `pickers.nvim` as a soft dependency (only the picker
-`filter` key needs it — its checks are skipped with a note when absent).
+## Running the suites
 
 ```sh
-nvim --headless -u NONE \
-  -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim" \
-  -c "luafile TESTS/feature_smoke.lua" -c "qa"
+bash scripts/test.sh                    # every script under TESTS/
+bash scripts/test.sh --file feature     # script files whose name contains "feature"
+bash scripts/test.sh --json ir.json     # also write the machine-readable result
 ```
 
-`-c "luafile ..." -c "qa"` exits 0 even when the suite dies halfway on an
-uncaught Lua error (the error is only printed, the next `-c` still runs), so
-a crash before the closing `cquit 1` would leave a CI step green. CI therefore
-runs every suite through `TESTS/ci_guard.lua`, which turns a crash (or an
-unloadable file) into a `FAIL` line with the traceback and exit code 1:
+`make test` is the same call. `testing.nvim`, `lib.nvim` and `ui.nvim` are
+required; each is looked up in `$<NAME>_DIR` (e.g. `$LIB_NVIM_DIR`),
+`.deps/<name>`, a sibling checkout (`../<name>`) and `stdpath("data")/lazy`,
+and a missing one is a fatal error naming all four places. `pickers.nvim` is
+a soft dependency of `refine_wiring.lua` only: its checks are skipped with a
+note when it is absent.
 
-```sh
-nvim --headless -u NONE \
-  -c "set rtp+=." -c "set rtp+=./lib.nvim" -c "set rtp+=./ui.nvim" \
-  -c "lua dofile('TESTS/ci_guard.lua')('TESTS/feature_smoke.lua')" -c "qa"
-```
+A script that dies halfway on an uncaught Lua error is an `error` case and a
+script that ends in `cquit 1` is a failed one; both make the run red (exit 1).
+This replaces `TESTS/ci_guard.lua`, which did the same for the old
+`nvim -c "luafile ..." -c "qa"` call, whose exit code is 0 after a crash.
 
 `TESTS/resolve_lib_nvim.lua`/`resolve_ui_nvim.lua` are shared helpers each
-suite `dofile()`s at the top (never `require`d — they have to run *before*
-either dependency is on the path). They look for `$LIB_NVIM_PATH`/
-`$UI_NVIM_PATH` first, then a sibling checkout (`../lib.nvim`, `../ui.nvim`),
-then the lazy.nvim-managed copy under `stdpath("data")/lazy`.
-`$PICKERS_NVIM_PATH` follows the same pattern for `refine_wiring.lua`
-(resolved inline there, not via a shared helper — it is soft, not hard).
+suite `dofile()`s at the top (never `require`d). They look for
+`$LIB_NVIM_PATH`/`$UI_NVIM_PATH` first, then a sibling checkout
+(`../lib.nvim`, `../ui.nvim`), then the lazy.nvim-managed copy under
+`stdpath("data")/lazy`; `.testing.lua` lets these variables through to the
+child editor (`env_allow`). `$PICKERS_NVIM_PATH` follows the same pattern for
+`refine_wiring.lua` (resolved inline there, not via a shared helper -- it is
+soft, not hard).
 
-See `.github/workflows/ci.yml` for the exact invocation of every file below.
+See `.github/workflows/ci.yml` for the CI call.
 
 ## Suites (CI-run)
 

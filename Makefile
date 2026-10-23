@@ -3,20 +3,9 @@
 
 .PHONY: test lint fmt fmt-check check
 
-# Run the headless test suites (same set as .github/workflows/ci.yml).
+# Run the headless test suites on testing.nvim (same call as .github/workflows/ci.yml).
 test:
-	nvim -n -i NONE -l TESTS/feature_smoke.lua
-	nvim -n -i NONE -l TESTS/surround_smoke.lua
-	nvim -n -i NONE -l TESTS/async_utf8.lua
-	nvim -n -i NONE -l TESTS/refine_wiring.lua
-	nvim -n -i NONE -l TESTS/gitfiles_equivalence.lua
-	nvim -n -i NONE -l TESTS/config_merge.lua
-	nvim -n -i NONE -l TESTS/argtypes_debug_error.lua
-	nvim -n -i NONE -l TESTS/health_pickers_tscode.lua
-	nvim -n -i NONE -l TESTS/bindings_wiring.lua
-	nvim -n -i NONE -l TESTS/init_dispatch.lua
-	nvim -n -i NONE -l TESTS/pickers_backends.lua
-	nvim -n -i NONE -l TESTS/usrcmd_option_help.lua
+	bash scripts/test.sh
 
 # Static analysis. Explicit file list (not a bare `luacheck lua/`): some
 # luacheck/OS combinations (observed with a Windows/mingw install) fail

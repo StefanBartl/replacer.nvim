@@ -28,18 +28,20 @@ The same three CI runs on every push and PR
 ```sh
 make lint       # luacheck lua/ plugin/ TESTS/
 make fmt-check  # stylua --check lua/ TESTS/
-make test       # headless test suites (same list as ci.yml)
+make test       # headless test suites (on testing.nvim, same call as ci.yml)
 make check      # all three
 ```
 
-`make test` needs [`lib.nvim`](https://github.com/StefanBartl/lib.nvim) and
-[`ui.nvim`](https://github.com/StefanBartl/ui.nvim) on the runtimepath — both
-are the plugin's hard dependencies, so nothing loads without either:
+`make test` runs `scripts/test.sh` (testing.nvim, see [`TESTS/README.md`](../TESTS/README.md)).
+It needs [`testing.nvim`](https://github.com/StefanBartl/testing.nvim),
+[`lib.nvim`](https://github.com/StefanBartl/lib.nvim) and
+[`ui.nvim`](https://github.com/StefanBartl/ui.nvim) — the last two are the
+plugin's hard dependencies, so nothing loads without either. Each is found via
+`$TESTING_NVIM_DIR` / `$LIB_NVIM_DIR` / `$UI_NVIM_DIR`, `.deps/<name>` or a
+sibling checkout. One script on its own:
 
 ```sh
-nvim --headless -u NONE -c "set rtp+=." -c "set rtp+=/path/to/lib.nvim" \
-  -c "set rtp+=/path/to/ui.nvim" \
-  -c "luafile TESTS/feature_smoke.lua" -c "qa"
+bash scripts/test.sh --file feature_smoke
 ```
 
 ## Working on it locally
