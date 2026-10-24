@@ -63,7 +63,7 @@ function M.format(err)
   end
   local msg = string.format("[%s] %s", err.type or "Error", err.message or "")
   -- Surface a string cause (e.g. ripgrep's stderr) so failures are diagnosable.
-  if type(err.cause) == "string" and err.cause:match("%S") then
+  if type(err.cause) == "string" and err.cause:match("%S") and err.cause ~= err.message then
     msg = msg .. ": " .. vim.trim(err.cause):sub(1, 500)
   end
   return msg

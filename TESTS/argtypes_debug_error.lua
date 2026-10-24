@@ -84,6 +84,15 @@ do
     error_mod.format("plain string") == "plain string"
   )
   check("error.format: missing type/message still renders", error_mod.format({}) == "[Error] ")
+  check(
+    "error.format: string cause (rg stderr) is appended",
+    error_mod.format(error_mod.search_error("ripgrep failed", "rg: boom\n"))
+      == "[SearchError] ripgrep failed: rg: boom"
+  )
+  check(
+    "error.format: cause equal to the message is not repeated (safe_call envelope)",
+    error_mod.format(error_mod.new("RuntimeError", "kaboom", "kaboom")) == "[RuntimeError] kaboom"
+  )
 end
 
 --------------------------------------------------------------------------------

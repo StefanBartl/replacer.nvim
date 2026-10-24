@@ -338,6 +338,21 @@ local function is_partial_failure(code, stderr)
 end
 
 ---@internal
+--- Normalise rg's exit code: a partial failure (see is_partial_failure) is
+--- reported to the user as a warning and counts as success (0).
+---@param code integer
+---@param stderr string|nil
+---@return integer
+local function tolerate_partial_failure(code, stderr)
+  if not is_partial_failure(code, stderr) then
+    return code
+  end
+  local _, n = stderr:gsub("[^\r\n]+", "")
+  notify.warn(string.format("%d unreadable path(s) skipped (broken symlink?)", n))
+  return 0
+end
+
+---@internal
 --- Run ripgrep synchronously and parse the result. Errors are returned (not
 --- notified here) so the calling layer decides how to surface them — matches
 --- the async sibling `collect_ripgrep_async` below.
@@ -349,8 +364,8 @@ local function collect_ripgrep(old, roots, cfg)
   local args = build_rg_args(old, roots, cfg)
   if vim.system then
     local obj = vim.system(args, spawn_env.apply({ text = true })):wait()
-    local code = obj and obj.code or 1
-    if code ~= 0 and code ~= 1 and not is_partial_failure(code, obj and obj.stderr) then
+    local code = tolerate_partial_failure(obj and obj.code or 1, obj and obj.stderr)
+    if code ~= 0 and code ~= 1 then
       return {}, require("replacer.error").search_error("rg failed", obj and obj.stderr or nil)
     end
     return parse_rg_json(obj and obj.stdout or "", old, cfg), nil
@@ -424,12 +439,7 @@ local function collect_ripgrep_async(old, roots, cfg, on_done)
     function(obj)
       -- on_exit runs off the main loop; re-enter it before any vim.* work.
       vim.schedule(function()
-        local code = obj and obj.code or 1
-        if is_partial_failure(code, obj and obj.stderr) then
-          local _, n = obj.stderr:gsub("[^\r\n]+", "")
-          notify.warn(string.format("%d unreadable path(s) skipped (broken symlink?)", n))
-          code = 0
-        end
+        local code = tolerate_partial_failure(obj and obj.code or 1, obj and obj.stderr)
         if code ~= 0 and code ~= 1 then
           local err = (h and h.cancelled)
               and require("replacer.error").search_error("search cancelled")
@@ -1056,12 +1066,7 @@ function M.collect_streaming(old, roots, cfg, on_batch, on_done)
           feed("\n")
         end -- flush a trailing line with no final newline
 
-        local code = obj and obj.code or 1
-        if is_partial_failure(code, obj and obj.stderr) then
-          local _, n = obj.stderr:gsub("[^\r\n]+", "")
-          notify.warn(string.format("%d unreadable path(s) skipped (broken symlink?)", n))
-          code = 0
-        end
+        local code = tolerate_partial_failure(obj and obj.code or 1, obj and obj.stderr)
         if code ~= 0 and code ~= 1 then
           local err = (h and h.cancelled)
               and require("replacer.error").search_error("search cancelled")
