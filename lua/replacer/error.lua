@@ -61,7 +61,12 @@ function M.format(err)
   if type(err) ~= "table" then
     return tostring(err)
   end
-  return string.format("[%s] %s", err.type or "Error", err.message or "")
+  local msg = string.format("[%s] %s", err.type or "Error", err.message or "")
+  -- Surface a string cause (e.g. ripgrep's stderr) so failures are diagnosable.
+  if type(err.cause) == "string" and err.cause:match("%S") then
+    msg = msg .. ": " .. vim.trim(err.cause):sub(1, 500)
+  end
+  return msg
 end
 
 return M
