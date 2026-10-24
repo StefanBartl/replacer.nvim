@@ -60,6 +60,8 @@ See `.github/workflows/ci.yml` for the CI call.
   (skip-already-wrapped vs. `--nested`).
 - `async_utf8.lua` — the async ripgrep collection path, and UTF-8 (umlauts +
   emoji) byte-offset correctness through search/compute/apply.
+- `rg_partial_failure.lua` — ripgrep exit 2 from unreadable paths only (broken
+  symlinks) is a partial success (matches kept); a real rg error still fails.
 - `refine_wiring.lua` — `replacer.pickers.common`'s `without()` and the
   `pickers.refine` handle (`new_refine()`) stacked path/content filters.
 - `config_merge.lua` — `replacer.config`/`replacer.config.DEFAULTS`: every
