@@ -5,15 +5,15 @@
 | | |
 | --- | --- |
 | **Neovim** | 0.9 or newer |
-| **[`lib.nvim`](https://github.com/StefanBartl/lib.nvim)** | **required** — the `:Replace`/`:Surround` command layer, notifications, confirm dialogs, file writes and the progress indicator all resolve through it at load time |
-| **[`ui.nvim`](https://github.com/StefanBartl/ui.nvim)** | **required** — `ui.kit.confirm`/`ui.kit.select`/`ui.kit.input` back the confirm dialogs, root/rename pickers and prompts; `replacer.init` requires it unconditionally, same tier as `lib.nvim` |
+| **[`lib.nvim`](https://github.com/WKDSteve/lib.nvim)** | **required** — the `:Replace`/`:Surround` command layer, notifications, confirm dialogs, file writes and the progress indicator all resolve through it at load time |
+| **[`ui.nvim`](https://github.com/WKDSteve/ui.nvim)** | **required** — `ui.kit.confirm`/`ui.kit.select`/`ui.kit.input` back the confirm dialogs, root/rename pickers and prompts; `replacer.init` requires it unconditionally, same tier as `lib.nvim` |
 | **A picker** | **required** — [`fzf-lua`](https://github.com/ibhagwan/fzf-lua), or [`telescope.nvim`](https://github.com/nvim-telescope/telescope.nvim) (+ [`plenary.nvim`](https://github.com/nvim-lua/plenary.nvim)). `engine = "auto"` prefers fzf-lua when both are present |
 | **[ripgrep](https://github.com/BurntSushi/ripgrep)** | recommended, not required — without `rg` on `PATH` the native `vimgrep` backend takes over automatically, at the cost of `.gitignore` awareness and rich `--type` filtering |
 | [`fidget.nvim`](https://github.com/j-hui/fidget.nvim) | optional — only for `progress_style = "fidget"` |
 | [`which-key.nvim`](https://github.com/folke/which-key.nvim) | optional — labels the picker keymaps it can see, see [BINDINGS.md](BINDINGS.md) |
 | Tree-sitter parsers | optional — `--code-only`, which skips matches in comments and strings |
 | An LSP server | optional — `--lsp`, which upgrades an identifier-shaped match to a real symbol rename |
-| [pickers.nvim](https://github.com/StefanBartl/pickers.nvim) | optional — `<C-f>`, the stacked path and content filter over the result list |
+| [pickers.nvim](https://github.com/WKDSteve/pickers.nvim) | optional — `<C-f>`, the stacked path and content filter over the result list |
 
 `lib.nvim` and `ui.nvim` are both hard dependencies, not soft ones. Roughly
 every module in `lua/replacer/` opens with a bare `require("lib.nvim…")` or
@@ -26,11 +26,11 @@ the indicator, never to `lib.nvim`/`ui.nvim` themselves.
 
 ```lua
 {
-  "StefanBartl/replacer.nvim",
+  "WKDSteve/replacer.nvim",
   cmd = { "Replace", "Replacer", "Surround", "Wrap" }, -- lazy-load on first use
   dependencies = {
-    "StefanBartl/lib.nvim",
-    "StefanBartl/ui.nvim",
+    "WKDSteve/lib.nvim",
+    "WKDSteve/ui.nvim",
     "ibhagwan/fzf-lua", -- or nvim-telescope/telescope.nvim + nvim-lua/plenary.nvim
   },
   opts = {}, -- engine defaults to "auto": fzf-lua first, then telescope
@@ -43,7 +43,7 @@ Every option that can go into `opts` is listed in
 ## Declared CLI tools
 
 replacer declares ripgrep in [`install.json`](install.json), which
-`lib.nvim`'s [`deps`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md)
+`lib.nvim`'s [`deps`](https://github.com/WKDSteve/lib.nvim/blob/main/lua/lib/nvim/deps/README.md)
 module reads: a popup explains the tool and its package names once, on the
 first `setup()` after installing. `:Lib deps show replacer.nvim` repeats it on
 demand, and `:checkhealth replacer` folds the same information in.

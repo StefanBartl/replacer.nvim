@@ -127,7 +127,7 @@ local function check_lib_nvim(health)
   report_required_module(health, "lib.nvim.bindings.usercmd.composer", {
     ok = "lib.nvim detected (:Replace/:Surround command layer available)",
     missing = "lib.nvim not found — commands will fail to register",
-    missing_advice = { "Add 'StefanBartl/lib.nvim' as a dependency" },
+    missing_advice = { "Add 'WKDSteve/lib.nvim' as a dependency" },
     consequence = "commands will fail to register",
   })
 
@@ -137,7 +137,7 @@ local function check_lib_nvim(health)
   report_required_module(health, "lib.nvim.hooks", {
     ok = "lib.nvim.hooks available (apply hooks)",
     missing = "lib.nvim.hooks not found — every apply will fail",
-    missing_advice = { "Update 'StefanBartl/lib.nvim' (replacer.hooks needs lib.nvim.hooks)" },
+    missing_advice = { "Update 'WKDSteve/lib.nvim' (replacer.hooks needs lib.nvim.hooks)" },
     consequence = "every apply will fail",
   })
 
@@ -154,7 +154,7 @@ local function check_lib_nvim(health)
     health.error(
       "lib.lua.strings.identifier_style / apply_style not found — case_preserve will fail",
       {
-        "Update 'StefanBartl/lib.nvim' (replacer.casing needs lib.lua.strings.identifier_style)",
+        "Update 'WKDSteve/lib.nvim' (replacer.casing needs lib.lua.strings.identifier_style)",
       }
     )
   end
@@ -264,7 +264,7 @@ local function check_pickers(health)
     -- dropped in silence (LLS-29) — so the hint lives in the message.
     health.info(
       "pickers.nvim not found — the picker 'filter' key is disabled; install "
-        .. "StefanBartl/pickers.nvim for stacked path/content filters"
+        .. "WKDSteve/pickers.nvim for stacked path/content filters"
     )
   end
 end
@@ -367,7 +367,7 @@ local function check_optional(health)
     -- hint lives in the message.
     health.info(
       "lib.nvim.progress not available — progress_style has no effect; update "
-        .. "'StefanBartl/lib.nvim' to enable the progress indicator"
+        .. "'WKDSteve/lib.nvim' to enable the progress indicator"
     )
   end
 

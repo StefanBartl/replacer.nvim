@@ -3,7 +3,7 @@
 Standalone Lua scripts, not a `plenary`/`busted` suite. Each file is a
 self-contained headless test that runs itself, counts its own checks and ends
 in `cquit 1` when one failed. They are run by
-[testing.nvim](https://github.com/StefanBartl/testing.nvim) (configured in
+[testing.nvim](https://github.com/WKDSteve/testing.nvim) (configured in
 `.testing.lua`; dialect `script`, one editor per file): the exit code and the
 printed `[FAIL]` lines are the verdict. There is no `run.lua` aggregator and
 no `_spec` suffix convention; the files are named in `spec_pattern` of

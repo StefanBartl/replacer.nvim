@@ -45,7 +45,7 @@ Replacer provides project-wide search-and-replace with:
 • ONE of the following pickers:
   - telescope.nvim (+ plenary.nvim): https://github.com/nvim-telescope/telescope.nvim
   - fzf-lua: https://github.com/ibhagwan/fzf-lua
-• lib.nvim (https://github.com/StefanBartl/lib.nvim) — REQUIRED: the
+• lib.nvim (https://github.com/WKDSteve/lib.nvim) — REQUIRED: the
   :Replace/:Surround command layer (lib.nvim.bindings.usercmd.composer), notifications,
   the confirm dialog, and file export all depend on it directly. The
   progress indicator specifically (see |replacer-progress|) stays optional
@@ -57,10 +57,10 @@ Replacer provides project-wide search-and-replace with:
 
 With lazy.nvim: >lua
     {
-      "StefanBartl/replacer.nvim",
+      "WKDSteve/replacer.nvim",
       name = "replacer.nvim",
       main = "replacer",
-      dependencies = { "StefanBartl/lib.nvim" }, -- required
+      dependencies = { "WKDSteve/lib.nvim" }, -- required
       opts = {
         engine = "telescope",  -- or "fzf"
         write_changes = true,
@@ -71,7 +71,7 @@ With lazy.nvim: >lua
 
 With packer.nvim: >lua
     use {
-      "StefanBartl/replacer.nvim",
+      "WKDSteve/replacer.nvim",
       config = function()
         require("replacer").setup({
           engine = "telescope",
@@ -1093,7 +1093,7 @@ delay-guard). Confirm the dependency loads: >lua
     :lua print(pcall(require, "lib.nvim.progress"))
 <
 Should print `true`. If it prints `false`, add
-`dependencies = { "StefanBartl/lib.nvim" }` to replacer's lazy.nvim spec.
+`dependencies = { "WKDSteve/lib.nvim" }` to replacer's lazy.nvim spec.
 
 ==============================================================================
 11. API                                                      *replacer-api*
@@ -1151,8 +1151,8 @@ require("replacer.config").get()
 ==============================================================================
 12. ABOUT                                                    *replacer-about*
 
-Project: https://github.com/StefanBartl/replacer.nvim
-Issues:  https://github.com/StefanBartl/replacer.nvim/issues
+Project: https://github.com/WKDSteve/replacer.nvim
+Issues:  https://github.com/WKDSteve/replacer.nvim/issues
 Documentation index (installation, configuration, commands, features,
 workflow, troubleshooting): docs/README.md
 

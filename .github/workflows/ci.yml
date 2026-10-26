@@ -76,7 +76,7 @@ jobs:
       # can be added via `set rtp+=./lib.nvim` below.
       - uses: actions/checkout@v5
         with:
-          repository: StefanBartl/lib.nvim
+          repository: WKDSteve/lib.nvim
           path: lib.nvim
           ref: ci-verified
 
@@ -84,7 +84,7 @@ jobs:
       # require()d unconditionally by replacer.init, not soft.
       - uses: actions/checkout@v5
         with:
-          repository: StefanBartl/ui.nvim
+          repository: WKDSteve/ui.nvim
           path: ui.nvim
           ref: ci-verified
 
@@ -93,7 +93,7 @@ jobs:
       # checkout it would only run the engine-agnostic half.
       - uses: actions/checkout@v5
         with:
-          repository: StefanBartl/pickers.nvim
+          repository: WKDSteve/pickers.nvim
           path: pickers.nvim
           ref: ci-verified
 
@@ -119,7 +119,7 @@ jobs:
       # Checked out from the branch that only moves once the dependency's own CI is green.
       - uses: actions/checkout@v5
         with:
-          repository: "StefanBartl/testing.nvim"
+          repository: "WKDSteve/testing.nvim"
           path: testing.nvim
           ref: ci-verified
       # Every script under TESTS/ runs on testing.nvim (dialect "script", one

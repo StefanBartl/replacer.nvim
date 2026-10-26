@@ -5,7 +5,7 @@ phases that can each take anywhere from instant to several seconds: the
 **search** (repo size, ripgrep vs. the vimgrep fallback) and — for `--all` /
 `:Replace!` — the **apply**, which loads and rewrites every matched file.
 Without any feedback either one looks like a hang. Replacer solves this via
-[`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md):
+[`lib.nvim.progress`](https://github.com/WKDSteve/lib.nvim/blob/main/lua/lib/nvim/progress/README.md):
 a small, reusable progress-indicator abstraction that decouples "an operation
 is running" from "how that gets shown".
 
@@ -40,8 +40,8 @@ second plugin.
 
 ```lua
 {
-  "StefanBartl/replacer.nvim",
-  dependencies = { "StefanBartl/lib.nvim", "ibhagwan/fzf-lua" },
+  "WKDSteve/replacer.nvim",
+  dependencies = { "WKDSteve/lib.nvim", "ibhagwan/fzf-lua" },
   opts = { progress_style = "auto" },
 }
 ```
@@ -129,7 +129,7 @@ showing the final result text first. Recorded:
 
 Identical interaction model to `"float"` — same non-focus-stealing window,
 same focus + `<Esc>` + confirm-prompt cancel flow — but rendered through
-[`ui.kit`](https://github.com/StefanBartl/ui.nvim/blob/main/lua/ui/kit/README.md)'s
+[`ui.kit`](https://github.com/WKDSteve/ui.nvim/blob/main/lua/ui/kit/README.md)'s
 themed `surface` primitive instead of a hardcoded border. If you already use
 `ui.kit` for other popups in your config (notes, toasts, confirms),
 `"kit"` gives the progress window the same border/highlight preset instead of
@@ -235,6 +235,6 @@ Both snippets guard with `pcall` so your statusline never errors if `lib.nvim`
 - `--dry`/`--export` runs still go through the same search/collect step, so
   the progress indicator applies to them too — cancelling one just aborts the
   plan computation, nothing was ever written anyway.
-- See [`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md)
+- See [`lib.nvim.progress`](https://github.com/WKDSteve/lib.nvim/blob/main/lua/lib/nvim/progress/README.md)
   if you want to reuse the same indicator in your own plugins, or add a new
   style (e.g. a corner-notification plugin you already use).

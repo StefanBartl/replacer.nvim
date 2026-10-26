@@ -8,7 +8,7 @@ In the picker:
 | `<CR>` | Apply the selection |
 | `<C-a>` | Apply to everything in the list |
 | `<C-r>` | Apply this one entry and reopen with the rest |
-| `<C-f>` | Filter the list by stacked path and content clauses (needs [pickers.nvim](https://github.com/StefanBartl/pickers.nvim)) |
+| `<C-f>` | Filter the list by stacked path and content clauses (needs [pickers.nvim](https://github.com/WKDSteve/pickers.nvim)) |
 | `<Esc>` `<Esc>` | Close — the second press, so one `<Esc>` never loses a selection |
 
 All of them are configurable and all of them are buffer-local. The full set,

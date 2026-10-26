@@ -75,7 +75,7 @@ would swallow that character instead of reaching the search box.
 `filter` opens a small `vim.ui.select` → `vim.ui.input` flow to add a filter
 clause — *path contains*, *content excludes*, … — that narrows the match
 list; clauses stack and are removable, a term in `/…/` is a Lua pattern.
-It is backed by [pickers.nvim](https://github.com/StefanBartl/pickers.nvim)'s
+It is backed by [pickers.nvim](https://github.com/WKDSteve/pickers.nvim)'s
 `pickers.refine` module: **with pickers.nvim not installed the key reports
 that and does nothing else.** On Telescope the list refreshes in place; on
 fzf-lua the picker reopens with the filtered set. The active filter shows in

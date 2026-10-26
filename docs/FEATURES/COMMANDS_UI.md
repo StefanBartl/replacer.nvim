@@ -83,7 +83,7 @@ The matched span is highlighted in the preview window via the
 ## Progress indicator
 
 Large-scope searches show a progress indicator via
-[lib.nvim.progress](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md),
+[lib.nvim.progress](https://github.com/WKDSteve/lib.nvim/blob/main/lua/lib/nvim/progress/README.md),
 styled `notify`/`statusline`/`fidget`/`float`; silently skipped when
 lib.nvim isn't installed.
 
@@ -128,7 +128,7 @@ substring. The active filter shows in the prompt title
 (`Select matches — path~src · ¬content~test (42/380)`). On Telescope the list
 refreshes in place; on fzf-lua the picker reopens with the filtered set.
 
-Backed by [pickers.nvim](https://github.com/StefanBartl/pickers.nvim)'s
+Backed by [pickers.nvim](https://github.com/WKDSteve/pickers.nvim)'s
 `pickers.refine` (the shared filter-stack model). **It is a soft dependency:**
 without pickers.nvim the key reports that filtering needs it and does nothing
 else — every other picker key is unaffected.

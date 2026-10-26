@@ -33,9 +33,9 @@ make check      # all three
 ```
 
 `make test` runs `scripts/test.sh` (testing.nvim, see [`TESTS/README.md`](../TESTS/README.md)).
-It needs [`testing.nvim`](https://github.com/StefanBartl/testing.nvim),
-[`lib.nvim`](https://github.com/StefanBartl/lib.nvim) and
-[`ui.nvim`](https://github.com/StefanBartl/ui.nvim) — the last two are the
+It needs [`testing.nvim`](https://github.com/WKDSteve/testing.nvim),
+[`lib.nvim`](https://github.com/WKDSteve/lib.nvim) and
+[`ui.nvim`](https://github.com/WKDSteve/ui.nvim) — the last two are the
 plugin's hard dependencies, so nothing loads without either. Each is found via
 `$TESTING_NVIM_DIR` / `$LIB_NVIM_DIR` / `$UI_NVIM_DIR`, `.deps/<name>` or a
 sibling checkout. One script on its own:
@@ -51,7 +51,7 @@ Point your plugin manager at the checkout instead of GitHub:
 ```lua
 {
   dir = "/path/to/replacer.nvim",
-  dependencies = { "StefanBartl/lib.nvim", "StefanBartl/ui.nvim" },
+  dependencies = { "WKDSteve/lib.nvim", "WKDSteve/ui.nvim" },
 }
 ```
 
