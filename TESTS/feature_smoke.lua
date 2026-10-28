@@ -1506,7 +1506,7 @@ do
 
   -- No match in the basename -> no-op, no prompt at all.
   local confirm_calls = 0
-  package.loaded["ui.kit.confirm"].open = function(opts)
+  require("ui.kit.confirm").open = function(opts)
     confirm_calls = confirm_calls + 1
     opts.on_answer(answer_with)
   end
