@@ -33,6 +33,9 @@ end
 local registry = new_registry()
 
 --- Register a hook programmatically (in addition to config.hooks).
+--- Strict by design: an unknown `event` or a `fn` that is not a function raises here, at the call
+--- site, and registers nothing. (A non-callable entry in `config.hooks` is lenient instead: it is
+--- only reported as a warning when the hook runs.)
 ---@param event RP_HookEvent
 ---@param fn fun(ctx: table): boolean|nil
 ---@return nil

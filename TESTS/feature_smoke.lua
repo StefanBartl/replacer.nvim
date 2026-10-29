@@ -771,6 +771,17 @@ do
       tostring(err_on)
     )
 
+    -- a programmatic registration is strict: a non-function is a call-site error raised at on(),
+    -- naming the problem (config entries stay lenient, see the next check)
+    local ok_fn, err_fn = pcall(hooks.on, "before_apply", 42)
+    check(
+      "hooks: on() with a non-function raises at registration and names the problem",
+      ok_fn == false and tostring(err_fn):find("a hook must be a function", 1, true) ~= nil,
+      tostring(err_fn)
+    )
+    local proceed_after_bad_on = hooks.run("before_apply", {}, nil)
+    check("hooks: a rejected on() registered nothing", proceed_after_bad_on == true)
+
     local ok_bad, proceed_bad = pcall(
       hooks.run,
       "before_apply",

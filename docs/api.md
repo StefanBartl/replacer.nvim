@@ -90,5 +90,9 @@ end)
 `false` skips that file. A hook error is caught and warned, never allowed to
 abort the apply.
 
+`on()` is strict: an unknown `event`, or a `fn` that is not a function, raises
+right at the call (and registers nothing). Entries in `config.hooks` are more
+lenient — a non-callable one is only reported as a warning when the hook runs.
+
 `require("replacer.hooks").clear()` removes every programmatic registration
 (`config.hooks` is untouched) — mainly for tests.
