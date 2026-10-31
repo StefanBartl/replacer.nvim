@@ -379,6 +379,29 @@ local function check_optional(health)
 end
 
 ---@internal
+--- Character index -> byte index, across the signature change in 0.11.
+---
+--- Since 0.11 the signature is `(s, encoding, index, strict_indexing)` and the
+--- old `(s, index, use_utf16)` form goes through `vim.deprecate`. The README
+--- supports Neovim 0.9+, so this probes the new form first and only falls back
+--- to the old one (UTF-32 default) where the new one raises.
+---@param str string
+---@param char_index integer
+---@return integer|nil # byte index, or nil when it cannot be determined
+local function byte_index(str, char_index)
+  local ok, idx = pcall(vim.str_byteindex, str, "utf-32", char_index, false)
+  if ok and type(idx) == "number" then
+    return idx
+  end
+  ---@diagnostic disable-next-line: param-type-mismatch
+  ok, idx = pcall(vim.str_byteindex, str, char_index)
+  if ok and type(idx) == "number" then
+    return idx
+  end
+  return nil
+end
+
+---@internal
 --- Check UTF-8 support
 ---@param health table vim.health module
 local function check_utf8(health)
@@ -388,10 +411,9 @@ local function check_utf8(health)
   if vim.str_byteindex then
     health.ok("vim.str_byteindex available")
 
-    -- Test UTF-8 conversion
-    local test_line = "Müller test" -- ü = 2 bytes
-    local ok, result = pcall(vim.str_byteindex, test_line, 2, true)
-    if ok and result == 2 then
+    -- Test UTF-8 conversion: character 2 ("l") starts at byte 3, ü is 2 bytes
+    local test_line = "Müller test"
+    if byte_index(test_line, 2) == 3 then
       health.ok("UTF-8 byte index conversion working")
     else
       health.warn("UTF-8 conversion test inconclusive", {
