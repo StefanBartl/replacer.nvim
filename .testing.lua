@@ -38,6 +38,11 @@ return {
   host = "c",
   -- Environment variables the specs read; a child editor inherits an allowlist only (never secrets).
   env_allow = { "LIB_NVIM_PATH", "PICKERS_NVIM_PATH", "UI_NVIM_PATH" },
+  -- Guards (docs/GUARDS.md of testing.nvim); the rest keep the runner defaults.
+  guards = {
+    -- Real processes are started on purpose (see guard_allow.spawn); anything else is an error.
+    process_net = "error",
+  },
   -- What the guards let through on purpose (shown in the report, never silent).
   guard_allow = {
     -- rg and git are the real tools the plugin drives: specs run rg searches and probes
