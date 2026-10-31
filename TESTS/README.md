@@ -7,7 +7,9 @@ in `cquit 1` when one failed. They are run by
 `.testing.lua`; dialect `script`, one editor per file): the exit code and the
 printed `[FAIL]` lines are the verdict. There is no `run.lua` aggregator and
 no `_spec` suffix convention; the files are named in `spec_pattern` of
-`.testing.lua`, so a new script has to be added there.
+`.testing.lua`, so a new script has to be added there. `spec_coverage.lua`
+turns a forgotten entry into a red run: every `TESTS/*.lua` must be matched
+by `spec_pattern` or be one of the helpers it lists.
 
 ## Running the suites
 
@@ -62,6 +64,8 @@ See `.github/workflows/ci.yml` for the CI call.
   emoji) byte-offset correctness through search/compute/apply.
 - `rg_partial_failure.lua` — ripgrep exit 2 from unreadable paths only (broken
   symlinks) is a partial success (matches kept); a real rg error still fails.
+- `spec_coverage.lua` — every script under `TESTS/` is matched by
+  `spec_pattern` of `.testing.lua` (or is a listed helper, which must not be).
 - `refine_wiring.lua` — `replacer.pickers.common`'s `without()` and the
   `pickers.refine` handle (`new_refine()`) stacked path/content filters.
 - `config_merge.lua` — `replacer.config`/`replacer.config.DEFAULTS`: every

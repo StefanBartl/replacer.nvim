@@ -23,6 +23,9 @@ return {
     "^TESTS/init_dispatch%.lua$",
     "^TESTS/pickers_backends%.lua$",
     "^TESTS/usrcmd_option_help%.lua$",
+    "^TESTS/rg_partial_failure%.lua$",
+    -- fails when a script under TESTS/ is missing from this list
+    "^TESTS/spec_coverage%.lua$",
   },
   -- Dependencies (directory names) put on the runtimepath: $<NAME>_DIR, .deps/<name>, ../<name>,
   -- stdpath('data')/lazy/<name>.
