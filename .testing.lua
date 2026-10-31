@@ -38,4 +38,11 @@ return {
   host = "c",
   -- Environment variables the specs read; a child editor inherits an allowlist only (never secrets).
   env_allow = { "LIB_NVIM_PATH", "PICKERS_NVIM_PATH", "UI_NVIM_PATH" },
+  -- What the guards let through on purpose (shown in the report, never silent).
+  guard_allow = {
+    -- rg and git are the real tools the plugin drives: specs run rg searches and probes
+    -- (`rg --version`, `rg --type-list`) and build throwaway git repositories in a temp directory
+    -- (argtypes_debug_error, async_utf8, feature_smoke, gitfiles_equivalence, health_pickers_tscode).
+    spawn = { "rg", "git" },
+  },
 }
