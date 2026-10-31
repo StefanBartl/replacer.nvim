@@ -298,9 +298,19 @@ do
   }
   local orig_health = vim.health
   vim.health = fake_health --[[@as table]]
+  -- Record vim.deprecate calls: the old vim.str_byteindex(s, index, use_utf16)
+  -- form goes through it since 0.11 and testing.nvim's deprecation guard
+  -- reports every such call.
+  local deprecations = {}
+  local orig_deprecate = vim.deprecate
+  vim.deprecate = function(name, ...)
+    deprecations[#deprecations + 1] = tostring(name)
+    return orig_deprecate(name, ...)
+  end
 
   local ok_check, check_err = pcall(health_mod.check)
 
+  vim.deprecate = orig_deprecate
   vim.health = orig_health
 
   check("health.check(): runs to completion without error", ok_check, check_err)
@@ -325,6 +335,17 @@ do
   check("health.check(): reports a Pickers section", has_start("Pickers"))
   check("health.check(): reports a Configuration section", has_start("Configuration"))
   check("health.check(): reports a UTF-8 Support section", has_start("UTF-8 Support"))
+  check(
+    "health.check(): UTF-8 byte index conversion reported as working",
+    #vim.tbl_filter(function(c)
+        return c.kind == "ok" and c.msg == "UTF-8 byte index conversion working"
+      end, calls) == 1
+  )
+  check(
+    "health.check(): triggers no vim.deprecate call",
+    #deprecations == 0,
+    table.concat(deprecations, ", ")
+  )
   check(
     "health.check(): reports an Optional integrations section",
     has_start("Optional integrations")
